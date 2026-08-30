@@ -1,0 +1,458 @@
+/* =========================================================
+   Asian Social Rotterdam — shared core
+   Loaded by every page (index.html / event.html / booked.html)
+   ========================================================= */
+
+const CONFIG = {
+  /* Where every form submission is delivered. */
+  contactEmail: 'info@sym-arch.com',
+  orgName: 'Asian Social Rotterdam',
+  siteUrl: 'https://asiansocialsrotterdam.com',
+  timezone: 'Europe/Amsterdam',
+
+  /* Admin passcode — CHANGE THIS. Client-side only: it keeps the panel out of
+     casual sight, it is not real security. Use a backend for real auth. */
+  adminPasscode: 'asr-admin-2026',
+
+  /* --- Email delivery (optional, pick ONE; see README.md) ---------------
+     1) EmailJS  → sends a confirmation to the attendee AND a copy to you.
+     2) Formspree → forwards the submission to your inbox.
+     If both are empty the site falls back to a pre-filled mail draft. */
+  emailjs: {
+    publicKey:        '',   // e.g. 'AbCdEf12345'
+    serviceId:        '',   // e.g. 'service_xxx'
+    rsvpTemplateId:   '',   // e.g. 'template_rsvp'
+    contactTemplateId:''    // e.g. 'template_contact'
+  },
+  formspreeEndpoint: '',    // e.g. 'https://formspree.io/f/xxxxxxx'
+
+  /* --- Image uploads (Supabase Storage) --------------------------------
+     Photos are uploaded from the Admin panel, never pasted as URLs.
+     Fill these in and every upload lands in your Supabase bucket and is
+     served from its public URL. Leave them empty and photos are kept in
+     the admin's own browser instead (fine for testing, not for a live site).
+     Setup steps are in README.md. */
+  supabase: {
+    url:     '',            // e.g. 'https://xxxxxxxx.supabase.co'
+    anonKey: '',            // the project's anon / public key
+    bucket:  'event-photos' // a PUBLIC storage bucket
+  }
+};
+
+/* ---------------------------------------------------------
+   Storage
+   --------------------------------------------------------- */
+const DB = {
+  key: n => 'asr.' + n,
+  get(name, fallback) {
+    try { const v = localStorage.getItem(DB.key(name)); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  },
+  set(name, value) {
+    try { localStorage.setItem(DB.key(name), JSON.stringify(value)); return true; }
+    catch (e) { toast('Storage is full — try removing uploaded photos.', true); return false; }
+  }
+};
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* ---------------------------------------------------------
+   Seed content (first visit only)
+   --------------------------------------------------------- */
+/* No demo content: everything is created from the Admin panel. */
+const SEED_EVENTS = [];
+const SEED_NOTES  = [];
+
+let EVENTS = DB.get('events', null) || SEED_EVENTS.slice();
+let NOTES  = DB.get('notes',  null) || SEED_NOTES.slice();
+let RSVPS  = DB.get('rsvps',  []);
+let MSGS   = DB.get('messages', []);
+if (!DB.get('events', null)) DB.set('events', EVENTS);
+if (!DB.get('notes',  null)) DB.set('notes',  NOTES);
+
+const saveEvents = () => DB.set('events', EVENTS);
+const saveNotes  = () => DB.set('notes',  NOTES);
+const saveRsvps  = () => DB.set('rsvps',  RSVPS);
+const saveMsgs   = () => DB.set('messages', MSGS);
+
+/* ---------------------------------------------------------
+   Small helpers
+   --------------------------------------------------------- */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Parse "YYYY-MM-DD" + "HH:MM" as a local date (never UTC-shifted). */
+function toDate(dateStr, timeStr) {
+  const [y, m, d] = String(dateStr).split('-').map(Number);
+  const [hh, mm] = String(timeStr || '00:00').split(':').map(Number);
+  return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0);
+}
+const startOf = ev => toDate(ev.date, ev.start);
+const endOf   = ev => toDate(ev.date, ev.end || ev.start);
+const isPast  = ev => endOf(ev).getTime() < Date.now();
+
+const fmtDate = (ev, opt) => startOf(ev).toLocaleDateString('en-GB',
+  opt || { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+const fmtLong = ev => fmtDate(ev, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const fmtTime = ev => ev.start + (ev.end ? '–' + ev.end : '');
+
+const byDate = (a, b) => startOf(a) - startOf(b);
+const upcoming = () => EVENTS.filter(e => !isPast(e)).sort(byDate);
+const findEvent = id => EVENTS.find(e => e.id === id);
+
+const CAT = {
+  social:  { label: 'Meetup',  cls: '' },
+  culture: { label: 'Culture', cls: 'c-indigo' },
+  food:    { label: 'Food',    cls: 'c-orange' }
+};
+
+function seatsLeft(ev) {
+  const taken = RSVPS.filter(r => r.eventId === ev.id).reduce((n, r) => n + (Number(r.guests) || 1), 0);
+  return Math.max(0, (Number(ev.capacity) || 50) - taken);
+}
+
+/* Shared card markup — used by the home rails and by the sub-pages. */
+function eventCardHTML(ev) {
+  const cat = CAT[ev.category] || CAT.social;
+  const done = isPast(ev);
+  const full = seatsLeft(ev) <= 0;
+  const teaser = ev.description.length > 118 ? esc(ev.description.slice(0, 118)) + '…' : esc(ev.description);
+  return `<a class="ev-card${done ? ' is-past' : ''}" href="${esc(eventUrl(ev.id))}">
+    <span class="ev-card__img">
+      ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}" loading="lazy">` : ''}
+      <span class="ev-card__tag">${done ? 'Past' : esc(cat.label)}</span>
+    </span>
+    <span class="ev-card__date">
+      <span>${esc(fmtDate(ev, { weekday: 'short', day: 'numeric', month: 'short' }))}</span>
+      <span>${esc(ev.start)}</span>
+    </span>
+    <h3>${esc(ev.title)}</h3>
+    <p>${teaser}</p>
+    <span class="ev-card__foot">
+      <span>${esc(ev.venue)}</span>
+      <b>${done ? 'Finished' : (full ? 'Fully booked' : esc(ev.price || 'Free'))}</b>
+    </span>
+  </a>`;
+}
+
+function noteCardHTML(n) {
+  const date = n.date
+    ? new Date(n.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  return `<a class="note-card" href="${esc(n.url)}" target="_blank" rel="noopener">
+    <span class="note-card__img">
+      ${n.image ? `<img src="${esc(n.image)}" alt="${esc(n.title)}" loading="lazy">` : ''}
+    </span>
+    <span class="note-card__meta">${esc(n.tag || 'note')}${date ? `<span>${esc(date)}</span>` : ''}</span>
+    <h3>${esc(n.title)}</h3>
+    <p>${esc(n.description)}</p>
+    <span class="note-card__more">Read on note →</span>
+  </a>`;
+}
+
+function toast(msg, isErr) {
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.toggle('is-err', !!isErr);
+  el.classList.add('is-on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('is-on'), 4200);
+}
+
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ---------------------------------------------------------
+   Photo uploads
+   Admin picks a file; it goes to Supabase Storage when configured,
+   otherwise it stays in this browser as a data URL.
+   --------------------------------------------------------- */
+const supabaseReady = () => {
+  const s = CONFIG.supabase || {};
+  return Boolean(s.url && s.anonKey && s.bucket);
+};
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error('Could not read that file.'));
+    r.readAsDataURL(file);
+  });
+}
+
+/**
+ * Upload one image and return the URL to store on the event / article.
+ * @returns {Promise<string>}
+ */
+async function uploadImage(file) {
+  if (!file) return '';
+  if (!/^image\//.test(file.type)) throw new Error('That file is not an image.');
+
+  const s = CONFIG.supabase;
+  const name = Date.now().toString(36) + '-' +
+               file.name.toLowerCase().replace(/[^a-z0-9.\-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  if (supabaseReady()) {
+    const base = s.url.replace(/\/+$/, '');
+    const res = await fetch(`${base}/storage/v1/object/${encodeURIComponent(s.bucket)}/${encodeURIComponent(name)}`, {
+      method: 'POST',
+      headers: {
+        apikey: s.anonKey,
+        Authorization: 'Bearer ' + s.anonKey,
+        'Content-Type': file.type,
+        'x-upsert': 'true',
+        'cache-control': '31536000'
+      },
+      body: file
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => '')).slice(0, 160);
+      throw new Error(`Upload failed (${res.status}). ${detail}`);
+    }
+    return `${base}/storage/v1/object/public/${s.bucket}/${name}`;
+  }
+
+  /* No storage configured — keep it in this browser. */
+  if (file.size > 1.6 * 1024 * 1024)
+    throw new Error('Without Supabase configured, photos must be under 1.6 MB.');
+  return fileToDataUrl(file);
+}
+
+const slug = s => String(s).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
+const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s));
+const eventUrl = id => 'event.html?id=' + encodeURIComponent(id);
+
+/* ---------------------------------------------------------
+   Calendar links (Google Calendar / .ics)
+   --------------------------------------------------------- */
+const pad = n => String(n).padStart(2, '0');
+function stampLocal(d) {
+  return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' +
+         pad(d.getHours()) + pad(d.getMinutes()) + '00';
+}
+function stampUTC(d) {
+  return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' +
+         pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+}
+
+function eventDetailsText(ev) {
+  return [
+    ev.description,
+    '',
+    'Venue: ' + ev.venue,
+    ev.address ? 'Address: ' + ev.address : '',
+    'Price: ' + (ev.price || 'Free'),
+    '',
+    'Hosted by ' + CONFIG.orgName + ' · ' + CONFIG.contactEmail
+  ].filter(Boolean).join('\n');
+}
+
+function googleCalendarUrl(ev) {
+  const s = startOf(ev);
+  const e = ev.end ? endOf(ev) : new Date(s.getTime() + 2 * 3600 * 1000);
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: ev.title + ' | ' + CONFIG.orgName,
+    dates: stampLocal(s) + '/' + stampLocal(e),
+    ctz: CONFIG.timezone,
+    details: eventDetailsText(ev),
+    location: [ev.venue, ev.address].filter(Boolean).join(', '),
+    sprop: 'website:' + CONFIG.siteUrl
+  });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+/* Fold long iCalendar lines at 75 octets (RFC 5545). */
+function foldIcsLine(line) {
+  const enc = new TextEncoder();
+  let out = '', len = 0;
+  for (const ch of line) {
+    const n = enc.encode(ch).length;
+    if (len + n > 74) { out += '\r\n '; len = 1; }
+    out += ch; len += n;
+  }
+  return out;
+}
+
+/* .ics with two alarms — 1 day and 2 hours before. */
+function icsFor(ev) {
+  const s = startOf(ev);
+  const e = ev.end ? endOf(ev) : new Date(s.getTime() + 2 * 3600 * 1000);
+  const fold = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+  return [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'CALSCALE:GREGORIAN',
+    'PRODID:-//Asian Social Rotterdam//EN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + ev.id + '@asiansocialsrotterdam',
+    'DTSTAMP:' + stampUTC(new Date()),
+    'DTSTART;TZID=' + CONFIG.timezone + ':' + stampLocal(s),
+    'DTEND;TZID='   + CONFIG.timezone + ':' + stampLocal(e),
+    'SUMMARY:' + fold(ev.title + ' | ' + CONFIG.orgName),
+    'DESCRIPTION:' + fold(eventDetailsText(ev)),
+    'LOCATION:' + fold([ev.venue, ev.address].filter(Boolean).join(', ')),
+    'ORGANIZER;CN=' + CONFIG.orgName + ':mailto:' + CONFIG.contactEmail,
+    'STATUS:CONFIRMED',
+    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:Tomorrow: ' + fold(ev.title), 'END:VALARM',
+    'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:Starting soon: ' + fold(ev.title), 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'
+  ].map(foldIcsLine).join('\r\n');
+}
+
+function mailtoUrl(to, subject, body) {
+  return 'mailto:' + to + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+function gmailComposeUrl({ to, bcc, subject, body }) {
+  const p = new URLSearchParams({ view: 'cm', fs: '1', tf: '1' });
+  if (to) p.set('to', to);
+  if (bcc) p.set('bcc', bcc);
+  p.set('su', subject); p.set('body', body);
+  return 'https://mail.google.com/mail/?' + p.toString();
+}
+
+/* ---------------------------------------------------------
+   Email delivery
+   --------------------------------------------------------- */
+let emailjsReady = null;
+function loadEmailJs() {
+  if (emailjsReady) return emailjsReady;
+  emailjsReady = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+    s.onload = () => { try { window.emailjs.init({ publicKey: CONFIG.emailjs.publicKey }); resolve(window.emailjs); } catch (e) { reject(e); } };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return emailjsReady;
+}
+
+/**
+ * Deliver a submission to CONFIG.contactEmail.
+ * @returns {Promise<'emailjs'|'formspree'|'manual'>}
+ */
+async function deliver(kind, params) {
+  const ej = CONFIG.emailjs;
+  if (ej.publicKey && ej.serviceId) {
+    const tpl = kind === 'rsvp' ? (ej.rsvpTemplateId || ej.contactTemplateId) : (ej.contactTemplateId || ej.rsvpTemplateId);
+    if (tpl) {
+      const lib = await loadEmailJs();
+      await lib.send(ej.serviceId, tpl, Object.assign({ to_email: CONFIG.contactEmail }, params));
+      return 'emailjs';
+    }
+  }
+  if (CONFIG.formspreeEndpoint) {
+    const res = await fetch(CONFIG.formspreeEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(params)
+    });
+    if (!res.ok) throw new Error('Formspree responded ' + res.status);
+    return 'formspree';
+  }
+  return 'manual';
+}
+
+/* ---------------------------------------------------------
+   RSVP — shared by the home page and the event page
+   --------------------------------------------------------- */
+function rsvpConfirmationBody(rsvp, ev) {
+  return `Hi ${rsvp.name},
+
+You're booked for:
+
+  ${ev.title}
+  ${fmtLong(ev)}
+  ${fmtTime(ev)} (${CONFIG.timezone})
+  ${ev.venue}${ev.address ? ', ' + ev.address : ''}
+  ${ev.price || 'Free'} · ${rsvp.guests} ${rsvp.guests > 1 ? 'people' : 'person'}
+
+Add it to your calendar:
+${googleCalendarUrl(ev)}
+
+${ev.description}
+
+See you there!
+${CONFIG.orgName}
+${CONFIG.contactEmail}`;
+}
+
+/**
+ * Validate, store and deliver an RSVP, then hand back where to go next.
+ * @returns {Promise<{rsvp:object, mode:string}>}  throws Error(message) on invalid input
+ */
+async function submitRsvp(input) {
+  const ev = findEvent(input.eventId);
+  const guests = Number(input.guests) || 1;
+  if (!ev) throw new Error('Please pick an event first.');
+  if (!input.name || !input.email) throw new Error('Name and email are required.');
+  if (!isEmail(input.email)) throw new Error('That email address looks incomplete.');
+  if (!input.consent) throw new Error('Please accept the code of conduct to continue.');
+  if (seatsLeft(ev) < guests) throw new Error('Not enough spots left for that group size.');
+
+  const rsvp = {
+    id: uid(), eventId: ev.id, eventTitle: ev.title, eventDate: ev.date,
+    name: input.name, email: input.email, guests,
+    origin: input.origin || '', message: input.message || '',
+    reminder: !!input.reminder, createdAt: new Date().toISOString()
+  };
+  RSVPS.push(rsvp); saveRsvps();
+
+  let mode = 'manual';
+  try {
+    mode = await deliver('rsvp', {
+      type: 'RSVP',
+      to_email: CONFIG.contactEmail,
+      reply_to: rsvp.email,
+      attendee_email: rsvp.email,
+      name: rsvp.name, email: rsvp.email, guests: String(guests),
+      event_title: ev.title,
+      event_date: fmtLong(ev),
+      event_time: fmtTime(ev),
+      event_venue: [ev.venue, ev.address].filter(Boolean).join(', '),
+      calendar_link: googleCalendarUrl(ev),
+      message: rsvp.message || '—',
+      origin: rsvp.origin || '—',
+      subject: `[RSVP] ${ev.title} — ${rsvp.name} (${guests})`
+    });
+  } catch (err) {
+    console.warn('Email delivery failed:', err);
+    mode = 'manual';
+  }
+  return { rsvp, mode };
+}
+
+const bookedUrl = (rsvp, mode) => 'booked.html?id=' + encodeURIComponent(rsvp.id) + '&m=' + mode;
+
+/* ---------------------------------------------------------
+   Shared UI wiring (header menu, reveal-on-scroll, year)
+   --------------------------------------------------------- */
+function initShell() {
+  const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
+
+  const nav = $('#nav'), burger = $('#burger');
+  if (nav && burger) {
+    burger.addEventListener('click', () => {
+      const open = nav.classList.toggle('is-open');
+      burger.setAttribute('aria-expanded', String(open));
+    });
+    nav.addEventListener('click', e => { if (e.target.tagName === 'A') nav.classList.remove('is-open'); });
+  }
+
+  const rev = new IntersectionObserver((entries, obs) => {
+    entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); obs.unobserve(en.target); } });
+  }, { threshold: .12 });
+  $$('.reveal').forEach(el => rev.observe(el));
+}
