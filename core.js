@@ -19,10 +19,12 @@ const CONFIG = {
      2) Formspree → forwards the submission to your inbox.
      If both are empty the site falls back to a pre-filled mail draft. */
   emailjs: {
-    publicKey:        '',   // e.g. 'AbCdEf12345'
-    serviceId:        '',   // e.g. 'service_xxx'
-    rsvpTemplateId:   '',   // e.g. 'template_rsvp'
-    contactTemplateId:''    // e.g. 'template_contact'
+    /* public key: meant to be visible in the browser. Lock it down with
+       Allowed Origins in the EmailJS dashboard (Account -> Security). */
+    publicKey:        'WHpmrGhiE_fnmgVIf',
+    serviceId:        'service_3gpxwuh',
+    rsvpTemplateId:   'template_tzbl1vq',   // 予約確認（参加者宛 + Bcc）
+    contactTemplateId:'template_0ffqo56'    // パートナー問い合わせ（自分宛）
   },
   formspreeEndpoint: '',    // e.g. 'https://formspree.io/f/xxxxxxx'
 

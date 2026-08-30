@@ -58,8 +58,10 @@ python -m http.server 3500 --directory "C:\Users\Tiida\Downloads\asian-socials-r
 ### ② Supabase で画像アップロードを有効にする（下記3章）
 未設定でもアップロードは動きますが、**その端末のブラウザにしか保存されません**。
 
-### ③ メール送信を設定する（下記4章）
-未設定だと、予約・問い合わせが自動では届きません。
+### ③ メール送信（設定済み）
+EmailJS 連携済みです。予約すると参加者に確認メールが届き、`info@sym-arch.com` にも
+Bcc で控えが入ります。パートナー問い合わせも同アドレスに届きます。
+テンプレート本文は `email-templates/` の HTML です。
 
 ## 3. 画像アップロード（Supabase Storage）
 
