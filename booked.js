@@ -29,8 +29,8 @@ function render(rsvp, ev) {
   const organiserMail = mailtoUrl(
     CONFIG.contactEmail,
     `[RSVP] ${ev.title} — ${rsvp.name} (${rsvp.guests})`,
-    `New RSVP\n\nEvent: ${ev.title}\nDate: ${fmtLong(ev)} ${fmtTime(ev)}\nName: ${rsvp.name}\n` +
-    `Email: ${rsvp.email}\nGuests: ${rsvp.guests}\nFrom: ${rsvp.origin || '—'}\nNote: ${rsvp.message || '—'}`
+    `New RSVP\n\nEvent: ${ev.title}\nDate: ${fmtLong(ev)} ${fmtTime(ev)}\n` +
+    `Name: ${rsvp.name}\nEmail: ${rsvp.email}\nGuests: ${rsvp.guests}`
   );
   const selfMail = mailtoUrl(rsvp.email,
     `Your spot at ${ev.title} — ${CONFIG.orgName}`, rsvpConfirmationBody(rsvp, ev));
@@ -79,7 +79,7 @@ function render(rsvp, ev) {
         <h3 class="booked__sub">What happens next</h3>
         <ol class="steps">
           <li><b>Confirmation</b><span>You get the full details${MODE === 'manual' ? ' once we receive your booking' : ' by email'}, including the exact meeting point.</span></li>
-          <li><b>Reminder</b><span>We send a reminder a day before${rsvp.reminder ? '' : ' (you opted out — add the calendar entry above instead)'}.</span></li>
+          <li><b>Reminder</b><span>We send a reminder a day before the event.</span></li>
           <li><b>Come as you are</b><span>Turn up, find a host with a name badge, and we will introduce you to people.</span></li>
         </ol>
 

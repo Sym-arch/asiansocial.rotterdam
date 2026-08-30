@@ -123,18 +123,6 @@ function renderEvent(ev) {
                      </select>
                    </div>
                    <div class="field">
-                     <label for="bFrom">Where are you from?</label>
-                     <input id="bFrom" type="text" placeholder="Japan / Netherlands / …">
-                   </div>
-                   <div class="field">
-                     <label for="bNote">Anything we should know?</label>
-                     <textarea id="bNote" style="min-height:88px" placeholder="Dietary needs, first time, questions…"></textarea>
-                   </div>
-                   <div class="field">
-                     <label class="check"><input type="checkbox" id="bReminder" checked>
-                       <span>Send me a reminder email before the event.</span></label>
-                   </div>
-                   <div class="field">
                      <label class="check"><input type="checkbox" id="bConsent" required>
                        <span>I accept the community code of conduct. <span class="req">*</span></span></label>
                    </div>
@@ -164,9 +152,6 @@ function renderEvent(ev) {
         name: $('#bName').value.trim(),
         email: $('#bEmail').value.trim(),
         guests: $('#bGuests').value,
-        origin: $('#bFrom').value.trim(),
-        message: $('#bNote').value.trim(),
-        reminder: $('#bReminder').checked,
         consent: $('#bConsent').checked
       });
       location.href = bookedUrl(rsvp, mode);

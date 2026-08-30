@@ -295,14 +295,13 @@ function renderAdmin() {
 
   const rs = RSVPS.slice().reverse();
   $('#rsvpTable').innerHTML = rs.length ? `
-    <thead><tr><th>Received</th><th>Event</th><th>Name</th><th>Email</th><th>Pax</th><th>Note</th><th></th></tr></thead>
+    <thead><tr><th>Received</th><th>Event</th><th>Name</th><th>Email</th><th>Pax</th><th></th></tr></thead>
     <tbody>${rs.map(r => `<tr>
       <td>${esc(new Date(r.createdAt).toLocaleDateString('en-GB'))}</td>
       <td>${esc(r.eventTitle)}<br><span class="pill">${esc(r.eventDate)}</span></td>
-      <td>${esc(r.name)}${r.origin ? '<br><small>' + esc(r.origin) + '</small>' : ''}</td>
+      <td>${esc(r.name)}</td>
       <td><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></td>
       <td>${esc(r.guests)}</td>
-      <td>${esc(r.message || '—')}</td>
       <td><button class="mini mini--danger" type="button" data-del-rsvp="${esc(r.id)}">✕</button></td>
     </tr>`).join('')}</tbody>` : '<tbody><tr><td><div class="empty">No RSVPs yet.</div></td></tr></tbody>';
 

@@ -131,7 +131,10 @@ emailjs: {
 | `{{name}}` `{{email}}` `{{guests}}` | `{{name}}` `{{email}}` `{{company}}` |
 | `{{event_title}}` `{{event_date}}` `{{event_time}}` | `{{topic}}` `{{website}}` |
 | `{{event_venue}}` `{{calendar_link}}` | `{{message}}` |
-| `{{origin}}` `{{message}}` | `{{subject}}` `{{to_email}}` `{{reply_to}}` |
+| `{{attendee_email}}` `{{to_email}}` | `{{subject}}` `{{to_email}}` `{{reply_to}}` |
+
+> 予約フォームは **氏名・メール・人数・同意** の4項目だけです（導線を短くするため）。
+> 出身地や自由記述は取っていないので、テンプレートでも参照しないでください。
 
 代替：`CONFIG.formspreeEndpoint` に Formspree のURLを入れるだけでも転送できます（本人への自動返信は無し）。
 

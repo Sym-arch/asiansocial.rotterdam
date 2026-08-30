@@ -409,8 +409,7 @@ async function submitRsvp(input) {
   const rsvp = {
     id: uid(), eventId: ev.id, eventTitle: ev.title, eventDate: ev.date,
     name: input.name, email: input.email, guests,
-    origin: input.origin || '', message: input.message || '',
-    reminder: !!input.reminder, createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString()
   };
   RSVPS.push(rsvp); saveRsvps();
 
@@ -427,8 +426,6 @@ async function submitRsvp(input) {
       event_time: fmtTime(ev),
       event_venue: [ev.venue, ev.address].filter(Boolean).join(', '),
       calendar_link: googleCalendarUrl(ev),
-      message: rsvp.message || '—',
-      origin: rsvp.origin || '—',
       subject: `[RSVP] ${ev.title} — ${rsvp.name} (${guests})`
     });
   } catch (err) {
