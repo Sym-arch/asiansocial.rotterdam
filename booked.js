@@ -31,8 +31,6 @@ function render(rsvp, ev) {
     `New RSVP\n\nEvent: ${ev.title}\nDate: ${fmtLong(ev)} ${fmtTime(ev)}\n` +
     `Name: ${rsvp.name}\nEmail: ${rsvp.email}\nGuests: ${rsvp.guests}`
   );
-  const selfMail = mailtoUrl(rsvp.email,
-    `Your spot at ${ev.title} — ${CONFIG.orgName}`, rsvpConfirmationBody(rsvp, ev));
 
   $('#bookedMain').innerHTML = `
   <section class="booked">
@@ -67,11 +65,8 @@ function render(rsvp, ev) {
         <div class="booked__actions">
           <a class="btn ${MODE === 'manual' ? 'btn--line' : 'btn--brand'}" href="${esc(gcal)}" target="_blank" rel="noopener">
             Add to Google Calendar</a>
-          <a class="btn btn--line" href="${esc(selfMail)}">Email me the details</a>
           ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">Open in Maps</a>` : ''}
         </div>
-        <p class="booked__hint">
-          Adding it to your calendar means your phone reminds you, not just us.</p>
 
         <h3 class="booked__sub">What happens next</h3>
         <ol class="steps">
@@ -80,20 +75,19 @@ function render(rsvp, ev) {
           <li><b>Come as you are</b><span>Turn up, find a host with a name badge, and we will introduce you to people.</span></li>
         </ol>
 
-        <div class="booked__foot">
-          <a class="btn btn--line" href="${esc(eventUrl(ev.id))}">Back to the event</a>
-          <a class="btn btn--line" href="index.html#events">See all events</a>
-          <a class="btn btn--line" href="mailto:${esc(CONFIG.contactEmail)}?subject=${encodeURIComponent('Cancel my RSVP — ' + ev.title)}">Cancel my booking</a>
-        </div>
       </div>
 
       ${others.length ? `
       <div class="booked__more">
-        <h2>While you're here — what else is coming up</h2>
+        <h2>Book another one while you're here</h2>
         <div class="events__grid">
           ${others.map(eventCardHTML).join('')}
         </div>
       </div>` : ''}
+
+      <div class="booked__foot">
+        <a class="btn btn--line" href="index.html">Back to home</a>
+      </div>
     </div>
   </section>`;
 

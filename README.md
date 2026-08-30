@@ -50,7 +50,7 @@ python -m http.server 3500 --directory "C:\Users\Tiida\Downloads\asian-socials-r
 ## 2. 最初にやること
 
 ### ① Admin パスコードを変更する
-`core.js` 冒頭の `CONFIG.adminPasscode`（初期値 `asr-admin-2026`）を変更してください。
+`core.js` 冒頭の `CONFIG.adminPasscode` を変更してください。
 
 > ⚠️ フロントエンドだけの簡易ロックです。ソースを読めば分かるので「関係者以外にうっかり
 > 触られない」レベルの保護です。本格的な認証は Supabase Auth に移行してください。
@@ -141,8 +141,7 @@ emailjs: {
 | `{{first_name}}` `{{event_url}}` `{{event_image}}` | `{{subject}}` `{{to_email}}` `{{reply_to}}` |
 | `{{logo_url}}` `{{site_url}}` `{{attendee_email}}` | |
 
-> 予約フォームは **氏名・メール・人数・同意** の4項目だけです（導線を短くするため）。
-> 出身地や自由記述は取っていないので、テンプレートでも参照しないでください。
+> 予約フォームは **氏名・メール・人数** の3項目だけです（導線を短くするため）。
 
 代替：`CONFIG.formspreeEndpoint` に Formspree のURLを入れるだけでも転送できます（本人への自動返信は無し）。
 
@@ -150,8 +149,6 @@ emailjs: {
 
 ### 参加者側（予約完了ページ）
 - **Add to Google Calendar** — 登録画面が開く（日時・場所・詳細入り、`Europe/Amsterdam`）
-- **Email me the details** — 参加者自身に詳細メールを送る下書きを開く
-
 参加者へのリマインドは「Googleカレンダーに入れてもらう」＋「主催者からのリマインドメール」の2本立てです。
 
 ### 主催者側（Admin → RSVPs タブ）
@@ -164,7 +161,8 @@ emailjs: {
 
 ## 6. Admin ダッシュボード
 
-ヘッダー右上の **Admin** → パスコード入力。
+**Admin ボタンは既定で非表示**です。過去にそのブラウザでサインインした端末でだけ表示されます。
+新しいブラウザから入るときは `https://ドメイン/#admin` を開くとログイン画面が出ます。
 
 | タブ | できること |
 |---|---|
@@ -172,9 +170,6 @@ emailjs: {
 | Note articles | note記事の追加 / 編集 / 削除。URL・タイトル・**サムネイルアップロード**・概要・タグ |
 | RSVPs & messages | 予約一覧、パートナー問い合わせ一覧、リマインド送信、CSV出力 |
 | Data | 全データのJSONエクスポート / インポート / 全削除 |
-
-イベントのカテゴリは、カレンダーとカードの色に対応します：
-赤＝Meetup / 紫＝Culture / オレンジ＝Food。
 
 ## 7. データの保存場所と制限（重要）
 
@@ -195,7 +190,7 @@ emailjs: {
 ```sql
 create table events (
   id text primary key, title text not null, date date not null,
-  start_time text, end_time text, category text, venue text, address text,
+  start_time text, end_time text, venue text, address text,
   price text, image text, description text,
   created_at timestamptz default now()
 );
@@ -205,7 +200,7 @@ create table notes (
 );
 create table rsvps (
   id text primary key, event_id text, name text, email text, guests int,
-  origin text, message text, created_at timestamptz default now()
+  created_at timestamptz default now()
 );
 ```
 読み取りは anon で公開、書き込み（Admin）は Supabase Auth + RLS で保護してください。
@@ -225,7 +220,7 @@ create table rsvps (
 |---|---|
 | キャッチコピー・ミッション文言 | `index.html`（`#home` / `#about`） |
 | セクション背景写真 | `assets/bg-*.jpg` を差し替え（`index.html` の `band__bg`） |
-| SNS / Meetup のリンク | `index.html` のフッター（現在はプレースホルダ） |
+| SNS / Meetup のリンク | 各HTMLのフッター（index / event / booked の3ファイル） |
 | 色・フォント | `styles.css` 冒頭の `:root` |
 | 連絡先メール・パスコード・Supabase設定 | `core.js` の `CONFIG` |
 

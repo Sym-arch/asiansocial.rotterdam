@@ -113,10 +113,6 @@ function renderEvent(ev) {
                        <option value="4">4</option><option value="5">5+</option>
                      </select>
                    </div>
-                   <div class="field">
-                     <label class="check"><input type="checkbox" id="bConsent" required>
-                       <span>I accept the community code of conduct. <span class="req">*</span></span></label>
-                   </div>
                  </div>
                  <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
                    Confirm my RSVP</button>
@@ -139,8 +135,7 @@ function renderEvent(ev) {
         eventId: ev.id,
         name: $('#bName').value.trim(),
         email: $('#bEmail').value.trim(),
-        guests: $('#bGuests').value,
-        consent: $('#bConsent').checked
+        guests: $('#bGuests').value
       });
       location.href = bookedUrl(rsvp, mode);
     } catch (err) {

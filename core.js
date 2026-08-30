@@ -355,7 +355,6 @@ async function submitRsvp(input) {
   if (!ev) throw new Error('Please pick an event first.');
   if (!input.name || !input.email) throw new Error('Name and email are required.');
   if (!isEmail(input.email)) throw new Error('That email address looks incomplete.');
-  if (!input.consent) throw new Error('Please accept the code of conduct to continue.');
 
   const rsvp = {
     id: uid(), eventId: ev.id, eventTitle: ev.title, eventDate: ev.date,
