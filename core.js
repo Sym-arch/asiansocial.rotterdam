@@ -33,9 +33,11 @@ const CONFIG = {
      the admin's own browser instead (fine for testing, not for a live site).
      Setup steps are in README.md. */
   supabase: {
-    url:     '',            // e.g. 'https://xxxxxxxx.supabase.co'
-    anonKey: '',            // the project's anon / public key
-    bucket:  'event-photos' // a PUBLIC storage bucket
+    url:     'https://wbdeeltqrmilmxmatdge.supabase.co',
+    /* anon key: public by design, safe to ship in the browser.
+       NEVER put the service_role key here. */
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiZGVlbHRxcm1pbG14bWF0ZGdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxMDMyOTEsImV4cCI6MjEwMzY3OTI5MX0.Xl81j-lH-eH1k1Y5k4QLp-cpIWA3l5y7zKDc0u2rQ0s',
+    bucket:  'event-photos' // must be a PUBLIC storage bucket
   }
 };
 
