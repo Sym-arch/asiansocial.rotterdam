@@ -19,9 +19,7 @@ function notFound() {
 
 function renderEvent(ev) {
   const cat = CAT[ev.category] || CAT.social;
-  const seats = seatsLeft(ev);
   const done = isPast(ev);
-  const full = seats <= 0;
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
   const mapUrl = ev.address
     ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) : '';
@@ -42,13 +40,12 @@ function renderEvent(ev) {
           <div class="ev-facts">
             <div><span class="lbl">Date</span><div><b>${esc(fmtLong(ev))}</b><span>${esc(fmtTime(ev))} · ${esc(CONFIG.timezone)}</span></div></div>
             <div><span class="lbl">Venue</span><div><b>${esc(ev.venue)}</b><span>${esc(ev.address || 'Rotterdam')}</span></div></div>
-            <div><span class="lbl">Tickets</span><div><b>${esc(ev.price || 'Free')}</b><span>${done ? 'This event has finished' : (full ? 'Fully booked' : seats + ' of ' + esc(ev.capacity || 50) + ' spots left')}</span></div></div>
+            <div><span class="lbl">Tickets</span><div><b>${esc(ev.price || 'Free')}</b>${done ? '<span>This event has finished</span>' : ''}</div></div>
           </div>
 
           <div class="hero__cta">
-            ${done || full ? '' : '<a class="btn btn--brand" href="#book">Reserve your spot</a>'}
+            ${done ? '' : '<a class="btn btn--brand" href="#book">Reserve your spot</a>'}
             <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">Add to Google Calendar</a>
-            <button class="btn btn--line" type="button" id="icsBtn">Download .ics</button>
             ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">Open in Maps</a>` : ''}
           </div>
         </div>
@@ -94,16 +91,11 @@ function renderEvent(ev) {
                <p style="color:var(--muted);font-size:.94rem;margin-bottom:18px">
                  Take a look at what is coming up next instead.</p>
                <a class="btn btn--brand btn--block" href="index.html#events">See upcoming events</a>`
-            : full
-            ? `<h2 style="font-size:1.25rem;margin-bottom:10px">Fully booked</h2>
-               <p style="color:var(--muted);font-size:.94rem;margin-bottom:18px">
-                 All ${esc(ev.capacity || 50)} spots are taken. Email us to join the waiting list.</p>
-               <a class="btn btn--brand btn--block" href="mailto:${esc(CONFIG.contactEmail)}?subject=${encodeURIComponent('Waiting list — ' + ev.title)}">Join the waiting list</a>`
             : `<p class="label label--brand">RSVP</p>
                <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">Reserve your spot</h2>
                <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
-                 ${esc(ev.price || 'Free')} · ${seats} spots left. You can add the event to Google
-                 Calendar right after booking.</p>
+                 ${esc(ev.price || 'Free')}. You can add the event to Google Calendar
+                 right after booking.</p>
                <form id="bookForm" novalidate>
                  <div class="form-grid" style="grid-template-columns:1fr">
                    <div class="field">
@@ -138,9 +130,6 @@ function renderEvent(ev) {
   </section>`;
 
   /* wiring */
-  const ics = $('#icsBtn');
-  if (ics) ics.addEventListener('click', () => download(slug(ev.title) + '.ics', icsFor(ev), 'text/calendar;charset=utf-8'));
-
   const form = $('#bookForm');
   if (form) form.addEventListener('submit', async e => {
     e.preventDefault();

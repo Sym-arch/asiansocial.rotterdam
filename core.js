@@ -114,16 +114,10 @@ const CAT = {
   food:    { label: 'Food',    cls: 'c-orange' }
 };
 
-function seatsLeft(ev) {
-  const taken = RSVPS.filter(r => r.eventId === ev.id).reduce((n, r) => n + (Number(r.guests) || 1), 0);
-  return Math.max(0, (Number(ev.capacity) || 50) - taken);
-}
-
 /* Shared card markup — used by the home rails and by the sub-pages. */
 function eventCardHTML(ev) {
   const cat = CAT[ev.category] || CAT.social;
   const done = isPast(ev);
-  const full = seatsLeft(ev) <= 0;
   const teaser = ev.description.length > 118 ? esc(ev.description.slice(0, 118)) + '…' : esc(ev.description);
   return `<a class="ev-card${done ? ' is-past' : ''}" href="${esc(eventUrl(ev.id))}">
     <span class="ev-card__img">
@@ -138,7 +132,7 @@ function eventCardHTML(ev) {
     <p>${teaser}</p>
     <span class="ev-card__foot">
       <span>${esc(ev.venue)}</span>
-      <b>${done ? 'Finished' : (full ? 'Fully booked' : esc(ev.price || 'Free'))}</b>
+      <b>${done ? 'Finished' : esc(ev.price || 'Free')}</b>
     </span>
   </a>`;
 }
@@ -251,10 +245,6 @@ function stampLocal(d) {
   return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + 'T' +
          pad(d.getHours()) + pad(d.getMinutes()) + '00';
 }
-function stampUTC(d) {
-  return d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' +
-         pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
-}
 
 function eventDetailsText(ev) {
   return [
@@ -281,42 +271,6 @@ function googleCalendarUrl(ev) {
     sprop: 'website:' + CONFIG.siteUrl
   });
   return 'https://calendar.google.com/calendar/render?' + p.toString();
-}
-
-/* Fold long iCalendar lines at 75 octets (RFC 5545). */
-function foldIcsLine(line) {
-  const enc = new TextEncoder();
-  let out = '', len = 0;
-  for (const ch of line) {
-    const n = enc.encode(ch).length;
-    if (len + n > 74) { out += '\r\n '; len = 1; }
-    out += ch; len += n;
-  }
-  return out;
-}
-
-/* .ics with two alarms — 1 day and 2 hours before. */
-function icsFor(ev) {
-  const s = startOf(ev);
-  const e = ev.end ? endOf(ev) : new Date(s.getTime() + 2 * 3600 * 1000);
-  const fold = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-  return [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'CALSCALE:GREGORIAN',
-    'PRODID:-//Asian Social Rotterdam//EN', 'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    'UID:' + ev.id + '@asiansocialsrotterdam',
-    'DTSTAMP:' + stampUTC(new Date()),
-    'DTSTART;TZID=' + CONFIG.timezone + ':' + stampLocal(s),
-    'DTEND;TZID='   + CONFIG.timezone + ':' + stampLocal(e),
-    'SUMMARY:' + fold(ev.title + ' | ' + CONFIG.orgName),
-    'DESCRIPTION:' + fold(eventDetailsText(ev)),
-    'LOCATION:' + fold([ev.venue, ev.address].filter(Boolean).join(', ')),
-    'ORGANIZER;CN=' + CONFIG.orgName + ':mailto:' + CONFIG.contactEmail,
-    'STATUS:CONFIRMED',
-    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:Tomorrow: ' + fold(ev.title), 'END:VALARM',
-    'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:Starting soon: ' + fold(ev.title), 'END:VALARM',
-    'END:VEVENT', 'END:VCALENDAR'
-  ].map(foldIcsLine).join('\r\n');
 }
 
 function mailtoUrl(to, subject, body) {
@@ -407,7 +361,6 @@ async function submitRsvp(input) {
   if (!input.name || !input.email) throw new Error('Name and email are required.');
   if (!isEmail(input.email)) throw new Error('That email address looks incomplete.');
   if (!input.consent) throw new Error('Please accept the code of conduct to continue.');
-  if (seatsLeft(ev) < guests) throw new Error('Not enough spots left for that group size.');
 
   const rsvp = {
     id: uid(), eventId: ev.id, eventTitle: ev.title, eventDate: ev.date,

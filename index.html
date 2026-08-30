@@ -131,12 +131,11 @@
 </section>
 
 <!-- ============ EVENTS ============ -->
-<section class="sec sec--flush" id="events">
-  <div class="band band--day events__intro">
-    <div class="band__bg" style="background-image:url(assets/bg-izakaya.jpg)"></div>
-    <div class="wrap">
+<section class="sec sec--flush band band--sticky" id="events">
+  <div class="band__bg band__bg--sticky" style="background-image:url(assets/bg-club.jpg)"></div>
+  <div class="wrap events__intro">
     <div class="sec__head reveal">
-      <p class="label label--brand">Events</p>
+      <p class="label label--on-night">Events</p>
       <div>
         <h2>What's coming up</h2>
         <p>We meet whenever there is something worth gathering for — there is no fixed
@@ -151,7 +150,6 @@
       </div>
       <p class="label" id="eventsCount"></p>
     </div>
-    </div>
   </div>
 
   <!-- horizontal timeline -->
@@ -160,9 +158,6 @@
       <div class="rail__vp">
         <div class="rail__track" id="eventsTrack"></div>
       </div>
-    </div>
-    <div class="wrap">
-      <p class="rail-hint" id="eventsHint"><i></i>Keep scrolling — the timeline moves sideways</p>
     </div>
   </div>
 
@@ -421,10 +416,6 @@
             <div class="field field--full">
               <label for="aeAddr">Address</label>
               <input id="aeAddr" type="text" placeholder="Veerlaan 19D, 3072 AN Rotterdam">
-            </div>
-            <div class="field">
-              <label for="aeCap">Capacity</label>
-              <input id="aeCap" type="number" min="1" value="40">
             </div>
             <div class="field">
               <label for="aePrice">Price</label>

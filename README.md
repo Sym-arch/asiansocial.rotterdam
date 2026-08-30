@@ -148,8 +148,9 @@ emailjs: {
 
 ### 参加者側（予約完了ページ）
 - **Add to Google Calendar** — 登録画面が開く（日時・場所・詳細入り、`Europe/Amsterdam`）
-- **Apple / Outlook (.ics)** — **開始24時間前と2時間前のアラーム入り**。参加者のカレンダーが自動でリマインド
 - **Email me the details** — 参加者自身に詳細メールを送る下書きを開く
+
+参加者へのリマインドは「Googleカレンダーに入れてもらう」＋「主催者からのリマインドメール」の2本立てです。
 
 ### 主催者側（Admin → RSVPs タブ）
 - イベントを選んで **Send reminder via Gmail** → 予約者全員が **BCC** に入った Gmail 作成画面が開きます
@@ -157,7 +158,7 @@ emailjs: {
 - **Export CSV** … RSVP / 問い合わせをCSV出力
 
 > 「◯日前に自動でリマインドが飛ぶ」完全自動化にはサーバー（cron）が必要です。
-> 現状は「.icsのアラーム」＋「Gmail下書きワンクリック」の構成です。
+> 現状は「参加者のGoogleカレンダー」＋「Gmail下書きワンクリック」の構成です。
 
 ## 6. Admin ダッシュボード
 
@@ -165,7 +166,7 @@ emailjs: {
 
 | タブ | できること |
 |---|---|
-| Events | イベントの追加 / 編集 / 複製 / 削除。日時・場所・定員・料金・**写真アップロード**・詳細 |
+| Events | イベントの追加 / 編集 / 複製 / 削除。日時・場所・料金・**写真アップロード**・詳細 |
 | Note articles | note記事の追加 / 編集 / 削除。URL・タイトル・**サムネイルアップロード**・概要・タグ |
 | RSVPs & messages | 予約一覧、パートナー問い合わせ一覧、リマインド送信、CSV出力 |
 | Data | 全データのJSONエクスポート / インポート / 全削除 |
@@ -193,7 +194,7 @@ emailjs: {
 create table events (
   id text primary key, title text not null, date date not null,
   start_time text, end_time text, category text, venue text, address text,
-  capacity int, price text, image text, description text,
+  price text, image text, description text,
   created_at timestamptz default now()
 );
 create table notes (

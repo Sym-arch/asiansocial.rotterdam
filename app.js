@@ -327,7 +327,6 @@ function eventFormFill(ev) {
   $('#aeCat').value = ev ? (ev.category || 'social') : 'social';
   $('#aeVenue').value = ev ? ev.venue : '';
   $('#aeAddr').value = ev ? (ev.address || '') : '';
-  $('#aeCap').value = ev ? (ev.capacity || 40) : 40;
   $('#aePrice').value = ev ? (ev.price || 'Free') : 'Free';
   $('#aeDesc').value = ev ? ev.description : '';
   $('#aeFile').value = '';
@@ -517,7 +516,6 @@ document.addEventListener('DOMContentLoaded', () => {
       category: $('#aeCat').value,
       venue: $('#aeVenue').value.trim(),
       address: $('#aeAddr').value.trim(),
-      capacity: Number($('#aeCap').value) || 40,
       price: $('#aePrice').value.trim() || 'Free',
       image,
       description: $('#aeDesc').value.trim()

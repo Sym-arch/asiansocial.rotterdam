@@ -21,7 +21,6 @@ function noBooking() {
 
 function render(rsvp, ev) {
   const gcal = googleCalendarUrl(ev);
-  const icsName = slug(ev.title) + '.ics';
   const mapUrl = ev.address
     ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) : '';
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
@@ -69,12 +68,11 @@ function render(rsvp, ev) {
         <div class="booked__actions">
           <a class="btn ${MODE === 'manual' ? 'btn--line' : 'btn--brand'}" href="${esc(gcal)}" target="_blank" rel="noopener">
             Add to Google Calendar</a>
-          <button class="btn btn--line" type="button" id="icsBtn">Apple / Outlook (.ics)</button>
           <a class="btn btn--line" href="${esc(selfMail)}">Email me the details</a>
           ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">Open in Maps</a>` : ''}
         </div>
         <p class="booked__hint">
-          The .ics file comes with reminders 24 hours and 2 hours before the event.</p>
+          Adding it to your calendar means your phone reminds you, not just us.</p>
 
         <h3 class="booked__sub">What happens next</h3>
         <ol class="steps">
@@ -99,11 +97,6 @@ function render(rsvp, ev) {
       </div>` : ''}
     </div>
   </section>`;
-
-  $('#icsBtn').addEventListener('click', () => {
-    download(icsName, icsFor(ev), 'text/calendar;charset=utf-8');
-    toast('Calendar file downloaded — open it to add the event.');
-  });
 
   initShell();
 }
