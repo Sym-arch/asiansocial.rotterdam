@@ -239,6 +239,9 @@ async function uploadImage(file) {
 const slug = s => String(s).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
 const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s));
 const eventUrl = id => 'event.html?id=' + encodeURIComponent(id);
+/* Absolute URL against the page the visitor is on — works on any domain,
+   so emails can link back without hard-coding the host. */
+const absUrl = path => new URL(path, location.href).href;
 
 /* ---------------------------------------------------------
    Calendar links (Google Calendar / .ics)
@@ -425,7 +428,14 @@ async function submitRsvp(input) {
       event_date: fmtLong(ev),
       event_time: fmtTime(ev),
       event_venue: [ev.venue, ev.address].filter(Boolean).join(', '),
+      event_price: ev.price || 'Free',
       calendar_link: googleCalendarUrl(ev),
+      /* absolute URLs so the confirmation email can link and show images */
+      first_name: rsvp.name.split(' ')[0],
+      event_url: absUrl(eventUrl(ev.id)),
+      event_image: /^https?:/i.test(ev.image || '') ? ev.image : absUrl('assets/bg-crowd.jpg'),
+      logo_url: absUrl('assets/logo.jpg'),
+      site_url: absUrl('index.html'),
       subject: `[RSVP] ${ev.title} — ${rsvp.name} (${guests})`
     });
   } catch (err) {

@@ -1,0 +1,194 @@
+<!--
+  Asian Social Rotterdam — 予約確認メール（EmailJS テンプレート①）
+
+  使い方:
+    EmailJS の Email Templates → 対象テンプレート → Content の「</>」(code) を開き、
+    中身をすべて消してこのファイルの中身を貼り付ける。
+
+  テンプレートの設定欄:
+    To Email  : {{attendee_email}}
+    From Name : Asian Social Rotterdam
+    Reply To  : info@sym-arch.com
+    Bcc       : info@sym-arch.com
+    Subject   : You're in — {{event_title}}
+
+  サイト側から渡している変数:
+    {{first_name}} {{name}} {{guests}}
+    {{event_title}} {{event_date}} {{event_time}} {{event_venue}} {{event_price}}
+    {{event_url}}     … 予約したイベントの詳細ページ（絶対URL）
+    {{calendar_link}} … Googleカレンダー登録リンク
+    {{event_image}}   … イベント写真（未設定なら共通画像にフォールバック）
+    {{logo_url}} {{site_url}}
+
+  メール用に table レイアウト＋インラインCSSで書いています（Outlook 対策）。
+-->
+<div style="margin:0;padding:0;background-color:#f2ece3;">
+
+  <!-- 受信一覧に出るプレビュー文（本文には表示されない） -->
+  <div style="display:none;font-size:1px;color:#f2ece3;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
+    You're on the list for {{event_title}} — here are the details.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2ece3;">
+    <tr>
+      <td align="center" style="padding:32px 12px;">
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width:600px;max-width:100%;background-color:#faf7f2;">
+
+          <!-- ロゴ -->
+          <tr>
+            <td style="padding:28px 32px 22px 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-right:12px;">
+                    <img src="{{logo_url}}" width="40" height="40" alt="Asian Social Rotterdam"
+                         style="display:block;width:40px;height:40px;border-radius:20px;border:0;">
+                  </td>
+                  <td style="font-family:Helvetica,Arial,sans-serif;">
+                    <div style="font-size:15px;font-weight:bold;color:#0e0b14;letter-spacing:-0.2px;">Asian Social</div>
+                    <div style="font-size:10px;font-weight:bold;color:#c10e2e;letter-spacing:2px;text-transform:uppercase;">Rotterdam</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr><td style="padding:0 32px;"><div style="height:1px;background-color:#ddd5c8;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+          <!-- 見出し -->
+          <tr>
+            <td style="padding:34px 32px 0 32px;font-family:Helvetica,Arial,sans-serif;">
+              <div style="font-size:11px;font-weight:bold;letter-spacing:2.4px;text-transform:uppercase;color:#15803d;padding-bottom:16px;">
+                Booking confirmed
+              </div>
+              <h1 style="margin:0;font-size:38px;line-height:1.08;letter-spacing:-1px;color:#0e0b14;font-weight:bold;">
+                You're in,<br>{{first_name}}.
+              </h1>
+              <p style="margin:20px 0 0 0;font-size:16px;line-height:1.6;color:#3a3348;">
+                Your spot is saved. Come as you are — you do not need to know anyone, and
+                you do not need to be Asian. Half the room is meeting people for the first
+                time too, and our hosts will make sure you are not standing on your own.
+              </p>
+            </td>
+          </tr>
+
+          <!-- イベント写真 -->
+          <tr>
+            <td style="padding:30px 32px 0 32px;">
+              <img src="{{event_image}}" width="536" alt="{{event_title}}"
+                   style="display:block;width:100%;max-width:536px;height:auto;border:0;">
+            </td>
+          </tr>
+
+          <!-- イベント詳細 -->
+          <tr>
+            <td style="padding:26px 32px 0 32px;font-family:Helvetica,Arial,sans-serif;">
+              <h2 style="margin:0 0 18px 0;font-size:23px;line-height:1.2;letter-spacing:-0.4px;color:#0e0b14;font-weight:bold;">
+                {{event_title}}
+              </h2>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="88" style="padding:12px 0;border-top:1px solid #ddd5c8;font-size:10px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#7a7288;vertical-align:top;">Date</td>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;font-size:15px;color:#0e0b14;">{{event_date}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;font-size:10px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#7a7288;vertical-align:top;">Time</td>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;font-size:15px;color:#0e0b14;">{{event_time}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;font-size:10px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#7a7288;vertical-align:top;">Where</td>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;font-size:15px;color:#0e0b14;">{{event_venue}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;border-bottom:1px solid #ddd5c8;font-size:10px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:#7a7288;vertical-align:top;">Booking</td>
+                  <td style="padding:12px 0;border-top:1px solid #ddd5c8;border-bottom:1px solid #ddd5c8;font-size:15px;color:#0e0b14;">{{guests}} person(s) &middot; {{event_price}}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ボタン -->
+          <tr>
+            <td style="padding:26px 32px 0 32px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td bgcolor="#c10e2e" style="padding:0;">
+                    <a href="{{event_url}}"
+                       style="display:inline-block;padding:15px 30px;font-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:bold;color:#ffffff;text-decoration:none;letter-spacing:0.2px;">
+                      See the event details
+                    </a>
+                  </td>
+                  <td width="12" style="font-size:0;line-height:0;">&nbsp;</td>
+                  <td style="border:1px solid #cfc7ba;padding:0;">
+                    <a href="{{calendar_link}}"
+                       style="display:inline-block;padding:14px 26px;font-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:bold;color:#0e0b14;text-decoration:none;letter-spacing:0.2px;">
+                      Add to Google Calendar
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- 当日の雰囲気 -->
+          <tr>
+            <td style="padding:36px 32px 0 32px;font-family:Helvetica,Arial,sans-serif;">
+              <div style="font-size:11px;font-weight:bold;letter-spacing:2.4px;text-transform:uppercase;color:#7a7288;padding-bottom:14px;">
+                What to expect
+              </div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="22" style="padding:9px 0;font-size:15px;color:#c10e2e;vertical-align:top;">&bull;</td>
+                  <td style="padding:9px 0;font-size:15px;line-height:1.55;color:#3a3348;">
+                    Everything runs in English. Any level is fine.
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 0;font-size:15px;color:#c10e2e;vertical-align:top;">&bull;</td>
+                  <td style="padding:9px 0;font-size:15px;line-height:1.55;color:#3a3348;">
+                    Arriving alone is the most normal thing here. Find a host and we will
+                    introduce you to a small group.
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:9px 0;font-size:15px;color:#c10e2e;vertical-align:top;">&bull;</td>
+                  <td style="padding:9px 0;font-size:15px;line-height:1.55;color:#3a3348;">
+                    Bring a friend if you like — just reply to this email so we can keep
+                    the numbers right.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- 署名 -->
+          <tr>
+            <td style="padding:34px 32px 0 32px;font-family:Helvetica,Arial,sans-serif;">
+              <p style="margin:0;font-size:16px;line-height:1.6;color:#3a3348;">
+                See you in Rotterdam,<br>
+                <strong style="color:#0e0b14;">Asian Social Rotterdam</strong>
+              </p>
+            </td>
+          </tr>
+
+          <tr><td style="padding:30px 32px 0 32px;"><div style="height:1px;background-color:#ddd5c8;font-size:0;line-height:0;">&nbsp;</div></td></tr>
+
+          <!-- フッター -->
+          <tr>
+            <td style="padding:18px 32px 34px 32px;font-family:Helvetica,Arial,sans-serif;font-size:12px;line-height:1.7;color:#7a7288;">
+              Plans changed? Just reply to this email and we will free up your spot for
+              someone else.<br>
+              <a href="{{site_url}}" style="color:#7a7288;text-decoration:underline;">asiansocial.rotterdam</a>
+              &nbsp;&middot;&nbsp;
+              <a href="mailto:info@sym-arch.com" style="color:#7a7288;text-decoration:underline;">info@sym-arch.com</a>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</div>

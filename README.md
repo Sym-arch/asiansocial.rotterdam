@@ -21,6 +21,7 @@ asian-socials-rotterdam/
 ├── app.js              … トップページ用（横スクロール、カレンダー、Admin）
 ├── event.js            … イベント詳細ページ用
 ├── booked.js           … 予約完了ページ用
+├── email-templates/    … EmailJS に貼り付けるメール本文（HTML）
 ├── assets/
 │   ├── logo.jpg        … ロゴ
 │   ├── bg-*.jpg        … セクション背景写真（フリー素材）
@@ -110,10 +111,14 @@ supabase: {
 
 1. https://www.emailjs.com/ で無料登録（月200通まで無料）
 2. Gmail（info@sym-arch.com）を Email Service として接続 → `service_xxx` を取得
-3. テンプレートを2つ作成
-   - **RSVP用**（`template_rsvp`）: 宛先 `{{attendee_email}}`、Bcc または Reply-To に `{{to_email}}`
-   - **問い合わせ用**（`template_contact`）: 宛先 `{{to_email}}`、Reply-To `{{reply_to}}`
-4. Public Key を取得し、`core.js` の `CONFIG.emailjs` に貼り付け
+3. テンプレートを2つ作成（プリセットは Contact Us でOK。中身は全部書き換えます）
+   - **予約確認**: To `{{attendee_email}}` / Bcc `info@sym-arch.com` / Reply-To `info@sym-arch.com`
+     Subject `You're in — {{event_title}}`
+     本文は Content の `</>`（code）を開いて **`email-templates/rsvp-confirmation.html`** を貼り付け
+   - **パートナー問い合わせ**: To `info@sym-arch.com` / Reply-To `{{reply_to}}` / Subject `{{subject}}`
+     本文は **`email-templates/partner-inquiry.html`** を貼り付け
+4. Template ID は EmailJS が自動採番します。生成された ID をそのまま使ってください
+5. Public Key を取得し、`core.js` の `CONFIG.emailjs` に貼り付け
 
 ```js
 emailjs: {
@@ -130,8 +135,9 @@ emailjs: {
 |---|---|
 | `{{name}}` `{{email}}` `{{guests}}` | `{{name}}` `{{email}}` `{{company}}` |
 | `{{event_title}}` `{{event_date}}` `{{event_time}}` | `{{topic}}` `{{website}}` |
-| `{{event_venue}}` `{{calendar_link}}` | `{{message}}` |
-| `{{attendee_email}}` `{{to_email}}` | `{{subject}}` `{{to_email}}` `{{reply_to}}` |
+| `{{event_venue}}` `{{event_price}}` `{{calendar_link}}` | `{{message}}` |
+| `{{first_name}}` `{{event_url}}` `{{event_image}}` | `{{subject}}` `{{to_email}}` `{{reply_to}}` |
+| `{{logo_url}}` `{{site_url}}` `{{attendee_email}}` | |
 
 > 予約フォームは **氏名・メール・人数・同意** の4項目だけです（導線を短くするため）。
 > 出身地や自由記述は取っていないので、テンプレートでも参照しないでください。
