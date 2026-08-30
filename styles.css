@@ -82,7 +82,8 @@ ul,ol{margin:0;padding:0;list-style:none}
   gap:clamp(20px,4vw,56px);align-items:start;margin-bottom:clamp(34px,5vw,60px);
 }
 .sec__head h2{font-size:clamp(2rem,4.6vw,3.4rem);text-wrap:balance}
-.sec__head p{color:var(--muted);max-width:62ch;margin-top:16px;font-size:1.02rem}
+/* only the description paragraph, so the .label utility keeps its own colour */
+.sec__head > div p{color:var(--muted);max-width:62ch;margin-top:16px;font-size:1.02rem}
 
 .link{
   display:inline-flex;align-items:center;gap:8px;text-decoration:none;
@@ -173,12 +174,12 @@ ul,ol{margin:0;padding:0;list-style:none}
 .band--day .pillar p{color:var(--muted)}
 
 /* ---------- hero ---------- */
-.hero{border-top:0;padding:clamp(70px,11vw,150px) 0 clamp(48px,6vw,86px)}
+.hero{border-top:0;padding:clamp(56px,8vw,112px) 0 clamp(44px,5vw,76px)}
 .hero__kicker{display:flex;align-items:center;gap:14px;margin-bottom:26px}
 .hero__kicker span{height:1px;flex:1;max-width:120px;background:var(--rule-night)}
 .hero h1{
-  font-size:clamp(2.7rem,8.4vw,7rem);line-height:.94;letter-spacing:-.04em;
-  text-wrap:balance;max-width:16ch;
+  font-size:clamp(2.3rem,6.4vw,5.4rem);line-height:.98;letter-spacing:-.035em;
+  max-width:18ch;
 }
 .hero h1 em{font-style:normal;color:var(--brand)}
 .hero__lead{
@@ -227,7 +228,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .mission li b{font-weight:700;color:var(--ink)}
 
 /* ---------- horizontal rails ---------- */
-.rail{position:relative}
+.rail{position:relative;padding-top:clamp(28px,4vw,52px)}
 .rail__vp{
   position:sticky;top:var(--header-h);height:calc(100vh - var(--header-h));
   display:flex;align-items:center;overflow:hidden;
@@ -308,6 +309,11 @@ ul,ol{margin:0;padding:0;list-style:none}
   font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
 }
 .rail-hint i{display:block;width:44px;height:1px;background:var(--rule);font-style:normal}
+
+/* the events intro sits on its own photo strip; the rail below stays plain */
+.events__intro{padding:clamp(48px,7vw,96px) 0 clamp(32px,4vw,52px)}
+.events__intro .sec__head{margin-bottom:clamp(26px,3vw,38px)}
+.events__intro .toolbar{margin-bottom:0}
 
 /* ---------- toolbar / view switch ---------- */
 .toolbar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;margin-bottom:26px}
@@ -391,10 +397,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 
 /* ---------- partners ---------- */
 .partner-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:start}
-.perks{border-top:1px solid var(--rule-night)}
-.perk{padding:22px 0;border-bottom:1px solid var(--rule-night)}
+.perks{border-top:1px solid var(--rule)}
+.perk{padding:22px 0;border-bottom:1px solid var(--rule)}
 .perk h4{font-family:var(--display);font-size:1.1rem;font-weight:500;margin-bottom:6px}
-.perk p{font-size:.9rem;color:var(--on-night-muted)}
+.perk p{font-size:.9rem;color:var(--muted)}
 
 /* ---------- footer ---------- */
 .footer{background:var(--night);color:var(--on-night);padding:clamp(48px,6vw,80px) 0 28px}

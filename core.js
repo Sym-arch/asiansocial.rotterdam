@@ -12,7 +12,7 @@ const CONFIG = {
 
   /* Admin passcode — CHANGE THIS. Client-side only: it keeps the panel out of
      casual sight, it is not real security. Use a backend for real auth. */
-  adminPasscode: 'asr-admin-2026',
+  adminPasscode: 't11data1y0',
 
   /* --- Email delivery (optional, pick ONE; see README.md) ---------------
      1) EmailJS  → sends a confirmation to the attendee AND a copy to you.
@@ -216,7 +216,9 @@ async function uploadImage(file) {
         apikey: s.anonKey,
         Authorization: 'Bearer ' + s.anonKey,
         'Content-Type': file.type,
-        'x-upsert': 'true',
+        /* No x-upsert: an upsert is checked against the UPDATE policy, which
+           would force a second policy in Supabase. File names already carry a
+           timestamp, so a plain insert never collides. */
         'cache-control': '31536000'
       },
       body: file
