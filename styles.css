@@ -348,7 +348,6 @@ ul,ol{margin:0;padding:0;list-style:none}
 .band .cal__num{color:var(--on-night-muted)}
 .band .cal__cell.is-today{background:rgba(255,107,127,.12)}
 .band .cal__cell.is-today .cal__num{color:#ff6b7f}
-.band .cal__legend{border-top-color:var(--rule-night);color:var(--on-night-muted)}
 .band .cal__ev.is-past{color:var(--on-night-muted);border-left-color:var(--rule-night)}
 
 /* ---------- toolbar / view switch ---------- */
@@ -394,14 +393,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   overflow:hidden;overflow-wrap:anywhere;transition:opacity .15s ease;
 }
 .cal__ev:hover{opacity:.85}
-.cal__ev.c-indigo{background:var(--violet)}
-.cal__ev.c-orange{background:var(--ember);color:#241004}
 .cal__ev.is-past{background:transparent;color:var(--muted);border-left:2px solid var(--rule)}
-.cal__legend{
-  display:flex;flex-wrap:wrap;gap:22px;padding:18px 0 0;border-top:1px solid var(--rule);
-  font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
-}
-.cal__legend i{display:inline-block;width:16px;height:2px;margin-right:8px;vertical-align:middle}
 
 /* ---------- forms ---------- */
 .form-block{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:start}

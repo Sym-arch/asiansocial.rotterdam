@@ -169,8 +169,7 @@ function renderCalendar() {
     const key = y + '-' + pad(m + 1) + '-' + pad(c.day);
     const evs = EVENTS.filter(e => e.date === key).sort((a, b) => a.start.localeCompare(b.start));
     const chips = evs.map(ev => {
-      const cat = CAT[ev.category] || CAT.social;
-      return `<a class="cal__ev ${cat.cls} ${isPast(ev) ? 'is-past' : ''}"
+      return `<a class="cal__ev ${isPast(ev) ? 'is-past' : ''}"
                 href="${esc(eventUrl(ev.id))}" title="${esc(ev.start + ' ' + ev.title)}"
                 aria-label="${esc(ev.title + ' — ' + fmtDate(ev))}">${esc(ev.start)} ${esc(ev.title)}</a>`;
     }).join('');
@@ -240,6 +239,22 @@ function closeModal(el) {
    Admin
    --------------------------------------------------------- */
 let isAdmin = sessionStorage.getItem('asr.admin') === '1';
+
+/* The Admin button is hidden for everyone. It only appears on a browser that
+   has signed in here before (remembered on this device), or when the page is
+   opened with #admin. A static site cannot know who the visitor is, so this
+   keeps the entry point out of sight rather than authenticating anyone. */
+const ADMIN_DEVICE = 'asr.adminDevice';
+const isAdminDevice = () => {
+  try { return localStorage.getItem(ADMIN_DEVICE) === '1'; } catch { return false; }
+};
+function rememberAdminDevice() {
+  try { localStorage.setItem(ADMIN_DEVICE, '1'); } catch {}
+}
+function revealAdminEntry() {
+  const btn = $('#adminOpen');
+  if (btn) btn.hidden = false;
+}
 
 function requireAdmin() {
   if (isAdmin) { renderAdmin(); openModal('#adminModal'); }
@@ -324,7 +339,6 @@ function eventFormFill(ev) {
   $('#aeDate').value = ev ? ev.date : '';
   $('#aeStart').value = ev ? ev.start : '19:00';
   $('#aeEnd').value = ev ? (ev.end || '') : '22:00';
-  $('#aeCat').value = ev ? (ev.category || 'social') : 'social';
   $('#aeVenue').value = ev ? ev.venue : '';
   $('#aeAddr').value = ev ? (ev.address || '') : '';
   $('#aePrice').value = ev ? (ev.price || 'Free') : 'Free';
@@ -465,10 +479,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);
+  if (isAdminDevice()) revealAdminEntry();
+  /* opening the site with #admin lets you get in on a new browser */
+  if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
+  });
+
   $('#loginForm').addEventListener('submit', e => {
     e.preventDefault();
     if ($('#adminPass').value === CONFIG.adminPasscode) {
       isAdmin = true; sessionStorage.setItem('asr.admin', '1');
+      rememberAdminDevice(); revealAdminEntry();
       $('#adminPass').value = '';
       closeModal($('#loginModal'));
       renderAdmin(); openModal('#adminModal');
@@ -513,7 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
       date: $('#aeDate').value,
       start: $('#aeStart').value,
       end: $('#aeEnd').value,
-      category: $('#aeCat').value,
       venue: $('#aeVenue').value.trim(),
       address: $('#aeAddr').value.trim(),
       price: $('#aePrice').value.trim() || 'Free',

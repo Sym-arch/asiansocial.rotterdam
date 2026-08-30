@@ -47,7 +47,6 @@ function render(rsvp, ev) {
         <div class="booked__event">
           ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">` : ''}
           <div>
-            <p class="label label--brand">${esc((CAT[ev.category] || CAT.social).label)}</p>
             <h2>${esc(ev.title)}</h2>
             <ul class="booked__meta">
               <li><span class="lbl">Date</span>${esc(fmtLong(ev))}</li>

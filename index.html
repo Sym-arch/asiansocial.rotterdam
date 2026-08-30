@@ -36,7 +36,7 @@
       <a href="#events">Events</a>
       <a href="#note">Note</a>
       <a href="#partners">For Partners</a>
-      <button class="btn btn--line btn--sm" id="adminOpen" type="button">Admin</button>
+      <button class="btn btn--line btn--sm" id="adminOpen" type="button" hidden>Admin</button>
     </nav>
   </div>
 </header>
@@ -175,12 +175,6 @@
         </div>
         <div class="cal__grid" id="calDow"></div>
         <div class="cal__grid" id="calGrid"></div>
-        <div class="cal__legend">
-          <span><i style="background:#c10e2e"></i>Meetup</span>
-          <span><i style="background:#5b4bd6"></i>Culture</span>
-          <span><i style="background:#f97316"></i>Food</span>
-          <span><i style="background:rgba(14,11,20,.2)"></i>Past</span>
-        </div>
       </div>
     </div>
   </div>
@@ -346,7 +340,6 @@
         <div class="field">
           <label for="adminPass">Admin passcode</label>
           <input id="adminPass" type="password" autocomplete="current-password" placeholder="••••••••">
-          <small>Default passcode: <code>asr-admin-2026</code> — change it in <code>core.js</code> (CONFIG.adminPasscode).</small>
         </div>
         <div class="form-actions">
           <button class="btn btn--brand btn--block" type="submit">Sign in</button>
@@ -392,14 +385,6 @@
             <div class="field">
               <label for="aeDate">Date <span class="req">*</span></label>
               <input id="aeDate" type="date" required>
-            </div>
-            <div class="field">
-              <label for="aeCat">Category</label>
-              <select id="aeCat">
-                <option value="social">Meetup / social</option>
-                <option value="culture">Culture &amp; workshop</option>
-                <option value="food">Food &amp; nightlife</option>
-              </select>
             </div>
             <div class="field">
               <label for="aeStart">Start time <span class="req">*</span></label>

@@ -110,21 +110,14 @@ const byDate = (a, b) => startOf(a) - startOf(b);
 const upcoming = () => EVENTS.filter(e => !isPast(e)).sort(byDate);
 const findEvent = id => EVENTS.find(e => e.id === id);
 
-const CAT = {
-  social:  { label: 'Meetup',  cls: '' },
-  culture: { label: 'Culture', cls: 'c-indigo' },
-  food:    { label: 'Food',    cls: 'c-orange' }
-};
-
 /* Shared card markup — used by the home rails and by the sub-pages. */
 function eventCardHTML(ev) {
-  const cat = CAT[ev.category] || CAT.social;
   const done = isPast(ev);
   const teaser = ev.description.length > 118 ? esc(ev.description.slice(0, 118)) + '…' : esc(ev.description);
   return `<a class="ev-card${done ? ' is-past' : ''}" href="${esc(eventUrl(ev.id))}">
     <span class="ev-card__img">
       ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}" loading="lazy">` : ''}
-      <span class="ev-card__tag">${done ? 'Past' : esc(cat.label)}</span>
+      ${done ? '<span class="ev-card__tag">Past</span>' : ''}
     </span>
     <span class="ev-card__date">
       <span>${esc(fmtDate(ev, { weekday: 'short', day: 'numeric', month: 'short' }))}</span>

@@ -18,7 +18,6 @@ function notFound() {
 }
 
 function renderEvent(ev) {
-  const cat = CAT[ev.category] || CAT.social;
   const done = isPast(ev);
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
   const mapUrl = ev.address
@@ -33,7 +32,7 @@ function renderEvent(ev) {
 
       <div class="ev-hero__grid">
         <div>
-          <p class="label label--brand">${done ? 'Past event' : esc(cat.label)}</p>
+          ${done ? '<p class="label label--brand">Past event</p>' : ''}
           <h1>${esc(ev.title)}</h1>
           <p class="lead" style="margin-top:14px">${esc(ev.description).split('\n')[0]}</p>
 
@@ -53,7 +52,7 @@ function renderEvent(ev) {
         <div class="ev-hero__img">
           ${ev.image
             ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">`
-            : `<div class="ev-hero__ph">${esc(cat.label)}</div>`}
+            : `<div class="ev-hero__ph">Asian Social Rotterdam</div>`}
         </div>
       </div>
     </div>
