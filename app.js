@@ -192,15 +192,15 @@ async function handleMessage(e, kind) {
         topic: get('#pType'), website: get('#pSite'), message: get('#pMsg') }
     : { name: get('#cName'), email: get('#cEmail'), topic: get('#cTopic'), message: get('#cMsg') };
 
-  if (!data.name || !data.email || !data.message) return toast('Please fill in every required field.', true);
-  if (!isEmail(data.email)) return toast('That email address looks incomplete.', true);
+  if (!data.name || !data.email || !data.message) return toast(t('partner.err.required'), true);
+  if (!isEmail(data.email)) return toast(t('partner.err.email'), true);
 
   MSGS.push(Object.assign({ id: uid(), kind, createdAt: new Date().toISOString() }, data));
   saveMsgs();
 
   const btn = f.querySelector('button[type=submit]');
   const label = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Sending…';
+  btn.disabled = true; btn.textContent = t('partner.sending');
 
   const subject = kind === 'partner'
     ? `[Partner inquiry] ${data.company} — ${data.topic}`
@@ -219,7 +219,7 @@ async function handleMessage(e, kind) {
     toast('Opening your mail app to send the message to ' + CONFIG.contactEmail);
   } else {
     f.reset();
-    toast('Thanks! Your message is on its way — we reply within a few days.');
+    toast(t('partner.sent'));
   }
   renderAdmin();
 }
@@ -398,8 +398,25 @@ function refreshPublic() {
 /* ---------------------------------------------------------
    Wiring
    --------------------------------------------------------- */
+/**
+ * 翻訳ページでは入力欄を出さない。
+ * プロキシは <input> にフォーカスが入ると警告を出して入力を止めるので、
+ * 母語の案内と「自前ドメイン ＋ ?lang=xx」へのボタンだけを見せます。
+ */
+function swapPartnerFormForCta() {
+  const box = $('#partnerBox');
+  if (!box || !onProxy()) return;
+  box.innerHTML =
+    `<p class="label label--brand">${esc(t('partner.label'))}</p>
+     <h3 style="font-size:1.6rem;margin:16px 0 18px">${esc(t('cta.partner.title'))}</h3>
+     <p style="color:var(--muted);max-width:46ch;margin-bottom:26px">${esc(t('cta.partner.body'))}</p>
+     <a class="btn btn--brand" href="${esc(nativeUrl(currentLang(), '#partners'))}">
+       ${esc(t('cta.partner.button'))}</a>`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initShell();
+  swapPartnerFormForCta();
   renderDow();
 
   createRail('#eventsRail', '#eventsTrack', '#eventsProgress');
@@ -517,7 +534,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* Forms */
-  $('#partnerForm').addEventListener('submit', e => handleMessage(e, 'partner'));
+  /* 翻訳ページでは案内に差し替え済みなので、フォームが無いことがあります */
+  const pf = $('#partnerForm');
+  if (pf) pf.addEventListener('submit', e => handleMessage(e, 'partner'));
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);

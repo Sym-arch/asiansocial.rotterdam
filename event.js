@@ -17,6 +17,54 @@ function notFound() {
     </div>`;
 }
 
+/**
+ * 予約欄の中身。
+ *
+ * Google 翻訳のプロキシは <input> にフォーカスが入った時点で警告を出し、
+ * 入力を止めてしまいます（<form> の有無は無関係。実測で確認済み）。
+ * そのため翻訳ページでは入力欄を出さず、母語の案内と
+ * 「自前ドメイン ＋ ?lang=xx」へのボタンだけを見せます。
+ * 移動先では下のフォームが同じ言語で表示され、警告も出ません。
+ */
+function bookingHTML(ev) {
+  if (onProxy()) {
+    return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
+      <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('cta.rsvp.title'))}</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:20px">${esc(t('cta.rsvp.body'))}</p>
+      <a class="btn btn--brand btn--block" href="${esc(nativeUrl(currentLang(), '#book'))}">
+        ${esc(t('cta.rsvp.button'))}</a>`;
+  }
+
+  return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
+    <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('rsvp.title'))}</h2>
+    <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
+      ${esc(ev.price || 'Free')}. ${esc(t('rsvp.note'))}</p>
+    <form id="bookForm" novalidate>
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field">
+          <label for="bName">${esc(t('rsvp.name'))} <span class="req">*</span></label>
+          <input id="bName" type="text" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="bEmail">${esc(t('rsvp.email'))} <span class="req">*</span></label>
+          <input id="bEmail" type="email" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="bGuests">${esc(t('rsvp.guests'))}</label>
+          <select id="bGuests">
+            <option value="1">${esc(t('rsvp.justme'))}</option>
+            <option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5+</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
+        ${esc(t('rsvp.submit'))}</button>
+      <small style="display:block;margin-top:12px;color:var(--muted);font-size:.78rem">
+        ${esc(t('rsvp.privacy'))}</small>
+    </form>`;
+}
+
 function renderEvent(ev) {
   const done = isPast(ev);
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
@@ -90,35 +138,7 @@ function renderEvent(ev) {
                <p style="color:var(--muted);font-size:.94rem;margin-bottom:18px">
                  Take a look at what is coming up next instead.</p>
                <a class="btn btn--brand btn--block" href="index.html#events">See upcoming events</a>`
-            : `<p class="label label--brand">RSVP</p>
-               <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">Reserve your spot</h2>
-               <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
-                 ${esc(ev.price || 'Free')}. You can add the event to Google Calendar
-                 right after booking.</p>
-               <form id="bookForm" novalidate>
-                 <div class="form-grid" style="grid-template-columns:1fr">
-                   <div class="field">
-                     <label for="bName">Full name <span class="req">*</span></label>
-                     <input id="bName" type="text" autocomplete="name" required>
-                   </div>
-                   <div class="field">
-                     <label for="bEmail">Email <span class="req">*</span></label>
-                     <input id="bEmail" type="email" autocomplete="email" required>
-                   </div>
-                   <div class="field">
-                     <label for="bGuests">Number of people</label>
-                     <select id="bGuests">
-                       <option value="1">Just me (1)</option>
-                       <option value="2">2</option><option value="3">3</option>
-                       <option value="4">4</option><option value="5">5+</option>
-                     </select>
-                   </div>
-                 </div>
-                 <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
-                   Confirm my RSVP</button>
-                 <small style="display:block;margin-top:12px;color:var(--muted);font-size:.78rem">
-                   No account needed. Your details are only used to manage this booking.</small>
-               </form>`}
+            : bookingHTML(ev)}
         </div>
       </aside>
     </div>
@@ -129,7 +149,7 @@ function renderEvent(ev) {
   if (form) form.addEventListener('submit', async e => {
     e.preventDefault();
     const btn = $('#bSubmit');
-    btn.disabled = true; btn.textContent = 'Sending…';
+    btn.disabled = true; btn.textContent = t('rsvp.sending');
     try {
       const { rsvp, mode } = await submitRsvp({
         eventId: ev.id,
@@ -140,7 +160,7 @@ function renderEvent(ev) {
       location.href = bookedUrl(rsvp, mode);
     } catch (err) {
       toast(err.message, true);
-      btn.disabled = false; btn.textContent = 'Confirm my RSVP';
+      btn.disabled = false; btn.textContent = t('rsvp.submit');
     }
   });
 

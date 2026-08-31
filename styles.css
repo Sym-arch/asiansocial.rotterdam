@@ -604,6 +604,17 @@ ul,ol{margin:0;padding:0;list-style:none}
 .toast.is-on{transform:translate(-50%,0)}
 .toast.is-err{background:var(--brand);color:#fff}
 
+/* ---------- language notice ----------
+   自前ドメインを ?lang=xx で開いたときの一言。
+   本文は英語のままフォームだけ母語、という状態を説明します。 */
+.langnote{border-bottom:1px solid var(--rule);background:var(--paper-2)}
+.langnote .wrap{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;
+  padding:11px 0;font-size:.84rem;color:var(--muted);
+}
+.langnote a{color:var(--brand);text-decoration:none;border-bottom:1px solid currentColor}
+.langnote a:hover{opacity:.75}
+
 /* ---------- reveal ---------- */
 .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease,transform .7s ease}
 .reveal.is-in{opacity:1;transform:none}

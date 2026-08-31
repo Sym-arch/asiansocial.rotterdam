@@ -100,7 +100,14 @@ const startOf = ev => toDate(ev.date, ev.start);
 const endOf   = ev => toDate(ev.date, ev.end || ev.start);
 const isPast  = ev => endOf(ev).getTime() < Date.now();
 
-const fmtDate = (ev, opt) => startOf(ev).toLocaleDateString('en-GB',
+/* 日付を表示するロケール。タイ語は既定だと仏暦になるのでグレゴリオ暦に固定します。 */
+const dateLocale = () => {
+  const l = currentLang();
+  if (l === 'en') return 'en-GB';
+  return l === 'th' ? 'th-TH-u-ca-gregory' : l;
+};
+
+const fmtDate = (ev, opt) => startOf(ev).toLocaleDateString(dateLocale(),
   opt || { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 const fmtLong = ev => fmtDate(ev, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const fmtTime = ev => ev.start + (ev.end ? '–' + ev.end : '');
@@ -133,7 +140,7 @@ function eventCardHTML(ev) {
 
 function noteCardHTML(n) {
   const date = n.date
-    ? new Date(n.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? new Date(n.date).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
   return `<a class="note-card" href="${esc(n.url)}" target="_blank" rel="noopener">
     <span class="note-card__img">
@@ -351,9 +358,9 @@ ${CONFIG.contactEmail}`;
 async function submitRsvp(input) {
   const ev = findEvent(input.eventId);
   const guests = Number(input.guests) || 1;
-  if (!ev) throw new Error('Please pick an event first.');
-  if (!input.name || !input.email) throw new Error('Name and email are required.');
-  if (!isEmail(input.email)) throw new Error('That email address looks incomplete.');
+  if (!ev) throw new Error(t('rsvp.err.event'));
+  if (!input.name || !input.email) throw new Error(t('rsvp.err.required'));
+  if (!isEmail(input.email)) throw new Error(t('rsvp.err.email'));
 
   const rsvp = {
     id: uid(), eventId: ev.id, eventTitle: ev.title, eventDate: ev.date,
@@ -400,7 +407,11 @@ async function submitRsvp(input) {
   return { rsvp, mode };
 }
 
-const bookedUrl = (rsvp, mode) => 'booked.html?id=' + encodeURIComponent(rsvp.id) + '&m=' + mode;
+const bookedUrl = (rsvp, mode) => {
+  const lang = uiLang();
+  return 'booked.html?id=' + encodeURIComponent(rsvp.id) + '&m=' + mode +
+         (lang === 'en' ? '' : '&lang=' + lang);
+};
 
 /* ---------------------------------------------------------
    Shared content (Supabase tables)
@@ -640,23 +651,78 @@ const LANGS = [
 
 const TRANSLATE_HOST = '.translate.goog';
 
-/* Which language is the visitor reading right now? */
-function currentLang() {
-  if (!location.hostname.endsWith(TRANSLATE_HOST)) return 'en';
+/* いま Google 翻訳のプロキシ越しに読まれているか */
+const onProxy = () => location.hostname.endsWith(TRANSLATE_HOST);
+
+/* プロキシが翻訳している言語 */
+function proxyLang() {
+  if (!onProxy()) return 'en';
   return new URLSearchParams(location.search).get('_x_tr_tl') || 'en';
+}
+
+/* 自前ドメインでの表示言語（?lang=xx）。フォーム周りだけこれで訳します。 */
+function uiLang() {
+  const code = new URLSearchParams(location.search).get('lang');
+  return (code && I18N[code]) ? code : 'en';
+}
+
+/* 訪問者がいま実際に読んでいる言語（プロキシ経由でも自前でも） */
+const currentLang = () => (onProxy() ? proxyLang() : uiLang());
+
+/**
+ * 自前の翻訳を引く。無いキーは英語にフォールバックします。
+ * @param {string} key   i18n.js のキー
+ * @param {object} [vars] {name:'Tai'} のように {name} を差し替える
+ */
+function t(key, vars) {
+  const dict = I18N[currentLang()] || I18N.en;
+  let out = (dict && dict[key]) || I18N.en[key] || key;
+  if (vars) Object.keys(vars).forEach(k => { out = out.split('{' + k + '}').join(vars[k]); });
+  return out;
 }
 
 /* The original (untranslated) address of the page being viewed. */
 function originalUrl() {
   const u = new URL(location.href);
-  if (!u.hostname.endsWith(TRANSLATE_HOST)) return u.href;
+  const strip = p => { ['_x_tr_sl', '_x_tr_tl', '_x_tr_hl', '_x_tr_pto', 'lang'].forEach(k => p.delete(k)); };
+  if (!onProxy()) {
+    strip(u.searchParams);
+    return u.href;
+  }
   /* the proxy encodes "." as "-" and a real "-" as "--" */
   const host = u.hostname.slice(0, -TRANSLATE_HOST.length)
     .replace(/--|-/g, m => (m === '--' ? '-' : '.'));
   const p = new URLSearchParams(u.search);
-  ['_x_tr_sl', '_x_tr_tl', '_x_tr_hl', '_x_tr_pto'].forEach(k => p.delete(k));
+  strip(p);
   const q = p.toString();
   return 'https://' + host + u.pathname + (q ? '?' + q : '') + u.hash;
+}
+
+/**
+ * 同じページを「自前ドメイン ＋ ?lang=xx」で開くURL。
+ * 翻訳ページからフォームへ渡すための出口です。
+ * @param {string} code 言語コード
+ * @param {string} [hash] '#book' など
+ */
+function nativeUrl(code, hash) {
+  const u = new URL(originalUrl());
+  if (code && code !== 'en' && I18N[code]) u.searchParams.set('lang', code);
+  u.hash = hash || '';
+  return u.href;
+}
+
+/* サイト内リンクに ?lang= を引き継ぐ（自前翻訳のUIを保つため） */
+function keepLangOnLinks(root) {
+  const code = uiLang();
+  if (onProxy() || code === 'en') return;
+  $$('a[href]', root || document).forEach(a => {
+    const href = a.getAttribute('href');
+    /* 外部リンク・メール・ページ内アンカー・言語メニューは触らない */
+    if (!href || /^(#|mailto:|tel:|https?:|\/\/)/i.test(href)) return;
+    const u = new URL(href, location.href);
+    u.searchParams.set('lang', code);
+    a.setAttribute('href', u.pathname.split('/').pop() + u.search + u.hash);
+  });
 }
 
 /* Same page, read through Google Translate in the chosen language. */
@@ -667,6 +733,34 @@ function translatedUrl(code) {
   const p = new URLSearchParams(u.search);
   p.set('_x_tr_sl', 'en'); p.set('_x_tr_tl', code); p.set('_x_tr_hl', code);
   return 'https://' + host + u.pathname + '?' + p.toString() + u.hash;
+}
+
+/**
+ * data-i18n / data-i18n-ph の付いた要素を自前の訳に差し替える。
+ * 翻訳ページでは Google がすでに訳しているので何もしません。
+ */
+function applyI18n(root) {
+  if (onProxy() || uiLang() === 'en') return;
+  const box = root || document;
+  $$('[data-i18n]', box).forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-ph]', box).forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+}
+
+/**
+ * 自前ドメインを ?lang=xx で開いている人への一言。
+ * 本文は英語のままフォームだけ母語、という状態を説明し、
+ * 読むだけなら翻訳ページへ戻れるようにします。
+ */
+function showNativeNotice() {
+  const code = uiLang();
+  if (onProxy() || code === 'en' || $('.langnote')) return;
+  const main = document.querySelector('main');
+  if (!main) return;
+  const bar = document.createElement('div');
+  bar.className = 'langnote';
+  bar.innerHTML = `<div class="wrap"><span>${esc(t('native.notice'))}</span>
+    <a href="${esc(translatedUrl(code))}">${esc(t('native.back'))}</a></div>`;
+  main.prepend(bar);
 }
 
 const isLocalHost = () => /^(localhost|127\.|0\.0\.0\.0|\[?::1)/.test(location.hostname) || location.protocol === 'file:';
@@ -713,6 +807,9 @@ function initLangMenu() {
 function initShell() {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
   initLangMenu();
+  keepLangOnLinks();
+  applyI18n();
+  showNativeNotice();
 
   const nav = $('#nav'), burger = $('#burger');
   if (nav && burger) {

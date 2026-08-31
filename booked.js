@@ -36,57 +36,55 @@ function render(rsvp, ev) {
   <section class="booked">
     <div class="wrap">
       <div class="booked__card">
-        <div class="booked__tick">Booking confirmed</div>
-        <h1>You're on the list, ${esc(rsvp.name.split(' ')[0])}!</h1>
-        <p class="lead">${MODE === 'manual'
-          ? 'One last step — send your booking to the organisers so we can save your spot, then add the event to your calendar.'
-          : 'Your booking is confirmed and a confirmation email is on its way. Add the event to your calendar so you get a reminder before it starts.'}</p>
+        <div class="booked__tick">${esc(t('booked.tick'))}</div>
+        <h1>${esc(t('booked.title', { name: rsvp.name.split(' ')[0] }))}</h1>
+        <p class="lead">${esc(t(MODE === 'manual' ? 'booked.lead.manual' : 'booked.lead.auto'))}</p>
 
         <div class="booked__event">
           ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">` : ''}
           <div>
             <h2>${esc(ev.title)}</h2>
             <ul class="booked__meta">
-              <li><span class="lbl">Date</span>${esc(fmtLong(ev))}</li>
-              <li><span class="lbl">Time</span>${esc(fmtTime(ev))} (${esc(CONFIG.timezone)})</li>
-              <li><span class="lbl">Venue</span>${esc(ev.venue)}${ev.address ? ', ' + esc(ev.address) : ''}</li>
-              <li><span class="lbl">Tickets</span>${esc(ev.price || 'Free')} · ${esc(rsvp.guests)} ${rsvp.guests > 1 ? 'people' : 'person'}</li>
-              <li><span class="lbl">Email</span>${esc(rsvp.email)}</li>
+              <li><span class="lbl">${esc(t('meta.date'))}</span>${esc(fmtLong(ev))}</li>
+              <li><span class="lbl">${esc(t('meta.time'))}</span>${esc(fmtTime(ev))} (${esc(CONFIG.timezone)})</li>
+              <li><span class="lbl">${esc(t('meta.venue'))}</span>${esc(ev.venue)}${ev.address ? ', ' + esc(ev.address) : ''}</li>
+              <li><span class="lbl">${esc(t('meta.tickets'))}</span>${esc(ev.price || 'Free')} · ${esc(rsvp.guests)} ${esc(t(rsvp.guests > 1 ? 'meta.people' : 'meta.person'))}</li>
+              <li><span class="lbl">${esc(t('meta.email'))}</span>${esc(rsvp.email)}</li>
             </ul>
           </div>
         </div>
 
         ${MODE === 'manual' ? `
         <a class="btn btn--brand btn--block booked__primary" href="${esc(organiserMail)}">
-          Send my booking to the organisers</a>
-        <p class="booked__hint">This opens your mail app with everything filled in — just press send.</p>` : ''}
+          ${esc(t('booked.manualBtn'))}</a>
+        <p class="booked__hint">${esc(t('booked.manualHint'))}</p>` : ''}
 
-        <h3 class="booked__sub">Add it to your calendar</h3>
+        <h3 class="booked__sub">${esc(t('booked.calendar'))}</h3>
         <div class="booked__actions">
           <a class="btn ${MODE === 'manual' ? 'btn--line' : 'btn--brand'}" href="${esc(gcal)}" target="_blank" rel="noopener">
-            Add to Google Calendar</a>
-          ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">Open in Maps</a>` : ''}
+            ${esc(t('booked.gcal'))}</a>
+          ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('booked.maps'))}</a>` : ''}
         </div>
 
-        <h3 class="booked__sub">What happens next</h3>
+        <h3 class="booked__sub">${esc(t('booked.next'))}</h3>
         <ol class="steps">
-          <li><b>Confirmation</b><span>You get the full details${MODE === 'manual' ? ' once we receive your booking' : ' by email'}, including the exact meeting point.</span></li>
-          <li><b>Reminder</b><span>We send a reminder a day before the event.</span></li>
-          <li><b>Come as you are</b><span>Turn up, find a host with a name badge, and we will introduce you to people.</span></li>
+          <li><b>${esc(t('booked.step1'))}</b><span>${esc(t(MODE === 'manual' ? 'booked.step1.manual' : 'booked.step1.body'))}</span></li>
+          <li><b>${esc(t('booked.step2'))}</b><span>${esc(t('booked.step2.body'))}</span></li>
+          <li><b>${esc(t('booked.step3'))}</b><span>${esc(t('booked.step3.body'))}</span></li>
         </ol>
 
       </div>
 
       ${others.length ? `
       <div class="booked__more">
-        <h2>Book another one while you're here</h2>
+        <h2>${esc(t('booked.more'))}</h2>
         <div class="events__grid">
           ${others.map(eventCardHTML).join('')}
         </div>
       </div>` : ''}
 
       <div class="booked__foot">
-        <a class="btn btn--line" href="index.html">Back to home</a>
+        <a class="btn btn--line" href="index.html">${esc(t('booked.home'))}</a>
       </div>
     </div>
   </section>`;

@@ -244,44 +244,45 @@
         </li>
       </ul>
 
-      <div class="reveal">
-        <p class="label label--brand">Partner inquiry</p>
-        <h3 style="font-size:1.6rem;margin:16px 0 30px">Get in touch</h3>
+      <div class="reveal" id="partnerBox">
+        <p class="label label--brand" data-i18n="partner.label">Partner inquiry</p>
+        <h3 style="font-size:1.6rem;margin:16px 0 30px" data-i18n="partner.title">Get in touch</h3>
         <form id="partnerForm" novalidate>
           <div class="form-grid">
             <div class="field field--full">
-              <label for="pCompany">Company / venue / outlet <span class="req">*</span></label>
-              <input id="pCompany" name="company" type="text" required placeholder="e.g. Restaurant Sakura Rotterdam">
+              <label for="pCompany"><span data-i18n="partner.company">Company / venue / outlet</span> <span class="req">*</span></label>
+              <input id="pCompany" name="company" type="text" required data-i18n-ph="partner.ph.company" placeholder="e.g. Restaurant Sakura Rotterdam">
             </div>
             <div class="field">
-              <label for="pName">Contact person <span class="req">*</span></label>
+              <label for="pName"><span data-i18n="partner.contact">Contact person</span> <span class="req">*</span></label>
               <input id="pName" name="name" type="text" autocomplete="name" required>
             </div>
             <div class="field">
-              <label for="pEmail">Email <span class="req">*</span></label>
+              <label for="pEmail"><span data-i18n="partner.email">Email</span> <span class="req">*</span></label>
               <input id="pEmail" name="email" type="email" autocomplete="email" required>
             </div>
             <div class="field">
-              <label for="pType">Type of partnership</label>
+              <label for="pType" data-i18n="partner.type">Type of partnership</label>
               <select id="pType" name="type">
-                <option>Host an event at our venue</option>
-                <option>Sponsorship / product placement</option>
-                <option>Media coverage / interview</option>
-                <option>Content collaboration</option>
-                <option>Other</option>
+                <!-- value は英語で固定。訪問者の言語に関わらず問い合わせメールは英語で届きます -->
+                <option value="Host an event at our venue" data-i18n="partner.type.venue">Host an event at our venue</option>
+                <option value="Sponsorship / product placement" data-i18n="partner.type.spons">Sponsorship / product placement</option>
+                <option value="Media coverage / interview" data-i18n="partner.type.media">Media coverage / interview</option>
+                <option value="Content collaboration" data-i18n="partner.type.collab">Content collaboration</option>
+                <option value="Other" data-i18n="partner.type.other">Other</option>
               </select>
             </div>
             <div class="field">
-              <label for="pSite">Website / Instagram</label>
+              <label for="pSite" data-i18n="partner.site">Website / Instagram</label>
               <input id="pSite" name="website" type="text" placeholder="https://">
             </div>
             <div class="field field--full">
-              <label for="pMsg">Tell us what you have in mind <span class="req">*</span></label>
-              <textarea id="pMsg" name="message" required placeholder="We have a 60-seat izakaya near Blaak and would love to host a food night…"></textarea>
+              <label for="pMsg"><span data-i18n="partner.message">Tell us what you have in mind</span> <span class="req">*</span></label>
+              <textarea id="pMsg" name="message" required data-i18n-ph="partner.ph.message" placeholder="We have a 60-seat izakaya near Blaak and would love to host a food night…"></textarea>
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn btn--brand" type="submit">Send partner inquiry</button>
+            <button class="btn btn--brand" type="submit" id="partnerSubmit" data-i18n="partner.submit">Send partner inquiry</button>
           </div>
         </form>
       </div>
@@ -522,6 +523,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="i18n.js"></script>
 <script src="core.js"></script>
 <script src="app.js"></script>
 </body>
