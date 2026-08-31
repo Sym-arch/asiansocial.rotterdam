@@ -339,12 +339,18 @@
     </div>
     <div class="modal__body">
       <form id="loginForm">
-        <div class="field">
-          <label for="adminPass">Admin passcode</label>
-          <input id="adminPass" type="password" autocomplete="current-password" placeholder="••••••••">
+        <div class="form-grid" style="grid-template-columns:1fr">
+          <div class="field">
+            <label for="adminEmail">Email</label>
+            <input id="adminEmail" type="email" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="adminPass">Password</label>
+            <input id="adminPass" type="password" autocomplete="current-password" required>
+          </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn--brand btn--block" type="submit">Sign in</button>
+          <button class="btn btn--brand btn--block" type="submit" id="loginSubmit">Sign in</button>
         </div>
       </form>
     </div>

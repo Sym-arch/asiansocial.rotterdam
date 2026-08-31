@@ -10,9 +10,8 @@ const CONFIG = {
   siteUrl: 'https://asiansocialsrotterdam.com',
   timezone: 'Europe/Amsterdam',
 
-  /* Admin passcode — CHANGE THIS. Client-side only: it keeps the panel out of
-     casual sight, it is not real security. Use a backend for real auth. */
-  adminPasscode: 't11data1y0',
+  /* Admin sign-in uses Supabase Auth (email + password) — see README.
+     Create the account in the Supabase dashboard and keep sign-ups disabled. */
 
   /* --- Email delivery (optional, pick ONE; see README.md) ---------------
      1) EmailJS  → sends a confirmation to the attendee AND a copy to you.
@@ -363,6 +362,15 @@ async function submitRsvp(input) {
   };
   RSVPS.push(rsvp); saveRsvps();
 
+  /* the booking belongs in the table; the confirmation email is the backstop
+     if the write fails, so never block the visitor on it */
+  if (supabaseReady()) {
+    sbInsert('rsvps', {
+      id: rsvp.id, event_id: ev.id, event_title: ev.title, event_date: ev.date,
+      name: rsvp.name, email: rsvp.email, guests
+    }).catch(err => console.warn('rsvp not stored:', err.message));
+  }
+
   let mode = 'manual';
   try {
     mode = await deliver('rsvp', {
@@ -400,9 +408,71 @@ const bookedUrl = (rsvp, mode) => 'booked.html?id=' + encodeURIComponent(rsvp.id
    in Supabase. localStorage is only a cache, which also keeps the site
    readable if the request fails.
    --------------------------------------------------------- */
+/* --- Admin sign-in (Supabase Auth) ---------------------------------------
+   Attendee names and emails are personal data, so the rsvps table can only
+   be read by a signed-in user. Everything public keeps using the anon key. */
+let SESSION = DB.get('session', null);
+
+const authBase = () => CONFIG.supabase.url.replace(/\/+$/, '') + '/auth/v1';
+const isSignedIn = () => Boolean(SESSION && SESSION.access_token);
+const signedInAs = () => (SESSION && SESSION.email) || '';
+
+function storeSession(data, email) {
+  SESSION = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    email: (data.user && data.user.email) || email || '',
+    expires_at: Date.now() + ((data.expires_in || 3600) - 60) * 1000
+  };
+  DB.set('session', SESSION);
+  return SESSION;
+}
+
+async function signIn(email, password) {
+  const res = await fetch(authBase() + '/token?grant_type=password', {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error_description || data.msg || data.message || 'Sign in failed');
+  return storeSession(data, email);
+}
+
+async function refreshSession() {
+  if (!SESSION || !SESSION.refresh_token) return false;
+  const res = await fetch(authBase() + '/token?grant_type=refresh_token', {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: SESSION.refresh_token })
+  });
+  if (!res.ok) { signOut(); return false; }
+  storeSession(await res.json(), SESSION.email);
+  return true;
+}
+
+/** Renew the token shortly before it expires so a long admin session keeps working. */
+async function ensureSession() {
+  if (!SESSION) return false;
+  if (Date.now() < (SESSION.expires_at || 0)) return true;
+  return refreshSession();
+}
+
+function signOut() {
+  if (SESSION && SESSION.access_token) {
+    fetch(authBase() + '/logout', {
+      method: 'POST',
+      headers: { apikey: CONFIG.supabase.anonKey, Authorization: 'Bearer ' + SESSION.access_token }
+    }).catch(() => {});
+  }
+  SESSION = null;
+  DB.set('session', null);
+}
+
+const sbToken = () => (isSignedIn() ? SESSION.access_token : CONFIG.supabase.anonKey);
 const sbHeaders = () => ({
   apikey: CONFIG.supabase.anonKey,
-  Authorization: 'Bearer ' + CONFIG.supabase.anonKey,
+  Authorization: 'Bearer ' + sbToken(),
   'Content-Type': 'application/json'
 });
 const sbUrl = (table, query) =>
@@ -429,6 +499,14 @@ async function sbUpsert(table, row) {
     body: JSON.stringify(row)
   });
   if (!res.ok) throw new Error(table + ' save failed (' + res.status + '). ' + (await res.text()).slice(0, 140));
+}
+async function sbInsert(table, row) {
+  const res = await fetch(sbUrl(table), {
+    method: 'POST',
+    headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
+    body: JSON.stringify(row)
+  });
+  if (!res.ok) throw new Error(table + ' insert failed (' + res.status + '). ' + (await res.text()).slice(0, 140));
 }
 async function sbDelete(table, id) {
   const res = await fetch(sbUrl(table, 'id=eq.' + encodeURIComponent(id)), {
@@ -527,6 +605,17 @@ const dropNote  = id  => supabaseReady() ? sbDelete('notes', id) : Promise.resol
  * Draw once from the cache so the page is never blank, then redraw with
  * whatever Supabase returns.
  */
+/** Every booking in the table. Requires a signed-in admin (RLS). */
+async function loadRsvps() {
+  if (!supabaseReady() || !(await ensureSession())) return [];
+  const rows = await sbSelect('rsvps', 'order=created_at.desc');
+  return rows.map(r => ({
+    id: r.id, eventId: r.event_id, eventTitle: r.event_title, eventDate: r.event_date,
+    name: r.name, email: r.email, guests: r.guests, createdAt: r.created_at
+  }));
+}
+const deleteRsvp = id => sbDelete('rsvps', id);
+
 function bootstrapContent(render) {
   render();
   loadContent().then(() => render());

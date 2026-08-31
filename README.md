@@ -50,11 +50,14 @@ python -m http.server 3500 --directory "C:\Users\Tiida\Downloads\asian-socials-r
 
 ## 2. 最初にやること
 
-### ① Admin パスコードを変更する
-`core.js` 冒頭の `CONFIG.adminPasscode` を変更してください。
+### ① Supabase に管理者アカウントを作る
+Admin のログインは **Supabase Auth（メール＋パスワード）** です。
 
-> ⚠️ フロントエンドだけの簡易ロックです。ソースを読めば分かるので「関係者以外にうっかり
-> 触られない」レベルの保護です。本格的な認証は Supabase Auth に移行してください。
+1. Supabase → **Authentication → Users → Add user → Create new user**
+   メールとパスワードを設定し、**Auto Confirm User を ON**
+2. **Authentication → Providers → Email** で **Enable Sign Ups を OFF**
+   （他人が勝手にアカウントを作れないように）
+3. サイトの Admin からそのメール・パスワードでサインイン
 
 ### ② Supabase で画像アップロードを有効にする（下記3章）
 未設定でもアップロードは動きますが、**その端末のブラウザにしか保存されません**。
@@ -190,7 +193,7 @@ English（既定）/ Nederlands / 日本語 / 简体中文 / 繁體中文（台�
 |---|---|
 | Events | イベントの追加 / 編集 / 複製 / 削除。日時・場所・料金・**写真アップロード**・詳細 |
 | Note articles | note記事の追加 / 編集 / 削除。URL・タイトル・**サムネイルアップロード**・概要・タグ |
-| RSVPs & messages | 予約一覧、パートナー問い合わせ一覧、リマインド送信、CSV出力 |
+| RSVPs & messages | **全端末の予約一覧**（サインイン時のみ）、問い合わせ、リマインド送信、CSV出力 |
 
 イベントとnote記事は保存と同時に Supabase のテーブルへ書き込まれます。
 テーブルを作る前にブラウザ内だけに作られたものがあれば、管理端末で開いたときに
@@ -202,7 +205,8 @@ English（既定）/ Nederlands / 日本語 / 简体中文 / 繁體中文（台�
 |---|---|
 | イベント / note記事 | **Supabase のテーブル**（`events` / `notes`）。localStorage はキャッシュ |
 | 画像 | **Supabase Storage**（`event-photos` バケット） |
-| RSVP / 問い合わせ | 訪問者のブラウザ ＋ **EmailJS でメール送信** |
+| 予約（RSVP） | **Supabase の `rsvps` テーブル** ＋ 確認メール |
+| パートナー問い合わせ | EmailJS でメール送信 |
 
 ### テーブルの作成（初回のみ）
 `supabase/schema.sql` の中身を Supabase の **SQL Editor** に貼り付けて実行してください。
@@ -247,3 +251,18 @@ cron で自動リマインドを送ることもできるようになります。
 背景写真はすべてフリー素材（CC0 / パブリックドメイン）ですが、**昼の写真（`bg-day.jpg`）だけ
 CC BY 2.0** でクレジット表記が必要なため、フッターに `Daylight photo: Weldon Ken, CC BY 2.0`
 を入れています。差し替える場合はこの表記も外してください。
+
+## 12. 予約データとプライバシー
+
+予約には参加者の氏名とメールアドレスが入ります。anon キーはページのソースに
+含まれているため、**`rsvps` の読み取りは anon に許可していません**。
+
+| 操作 | 許可 |
+|---|---|
+| INSERT（訪問者が予約する） | anon / authenticated |
+| SELECT・DELETE（一覧・削除） | **authenticated のみ** |
+
+そのため Admin の予約一覧は **Supabase Auth でサインインしているときだけ**表示されます。
+サインアウトすると一覧は空になります（データが消えるわけではありません）。
+
+セッションはブラウザに保存され、有効期限が近づくと自動で更新されます。

@@ -239,7 +239,8 @@ function closeModal(el) {
 /* ---------------------------------------------------------
    Admin
    --------------------------------------------------------- */
-let isAdmin = sessionStorage.getItem('asr.admin') === '1';
+let isAdmin = isSignedIn();
+let ADMIN_RSVPS = [];   // every booking, read from Supabase once signed in
 
 /* The Admin button is hidden for everyone. It only appears on a browser that
    has signed in here before (remembered on this device), or when the page is
@@ -258,8 +259,19 @@ function revealAdminEntry() {
 }
 
 function requireAdmin() {
-  if (isAdmin) { renderAdmin(); openModal('#adminModal'); }
-  else { openModal('#loginModal'); setTimeout(() => $('#adminPass').focus(), 60); }
+  if (isAdmin) { renderAdmin(); openModal('#adminModal'); refreshRsvps(); }
+  else { openModal('#loginModal'); setTimeout(() => $('#adminEmail').focus(), 60); }
+}
+
+/** Pull the booking list; without a valid session RLS returns nothing. */
+async function refreshRsvps() {
+  if (!isAdmin) return;
+  try {
+    ADMIN_RSVPS = await loadRsvps();
+    renderAdmin();
+  } catch (err) {
+    toast('Could not load the bookings: ' + err.message, true);
+  }
 }
 
 function fillReminderSelect() {
@@ -271,10 +283,10 @@ function fillReminderSelect() {
 function renderAdmin() {
   if (!isAdmin) return;
 
-  const seatsBooked = RSVPS.reduce((n, r) => n + (Number(r.guests) || 1), 0);
+  const seatsBooked = ADMIN_RSVPS.reduce((n, r) => n + (Number(r.guests) || 1), 0);
   $('#adminKpi').innerHTML = `
     <div><b>${upcoming().length}</b><span>Upcoming events</span></div>
-    <div><b>${RSVPS.length}</b><span>RSVPs</span></div>
+    <div><b>${ADMIN_RSVPS.length}</b><span>RSVPs</span></div>
     <div><b>${seatsBooked}</b><span>Seats booked</span></div>
     <div><b>${MSGS.length}</b><span>Messages</span></div>
     <div><b>${NOTES.length}</b><span>Note articles</span></div>`;
@@ -285,7 +297,7 @@ function renderAdmin() {
     <div class="admin-row">
       <div class="admin-row__main">
         <strong>${esc(ev.title)} ${isPast(ev) ? '<span class="pill">past</span>' : ''}</strong>
-        <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)} · ${RSVPS.filter(r => r.eventId === ev.id).length} RSVPs</span>
+        <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)} · ${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} RSVPs</span>
       </div>
       <div class="admin-row__act">
         <a class="mini" href="${esc(eventUrl(ev.id))}" target="_blank" rel="noopener">View page</a>
@@ -309,7 +321,7 @@ function renderAdmin() {
       </div>
     </div>`).join('') : '<div class="empty">No articles yet.</div>';
 
-  const rs = RSVPS.slice().reverse();
+  const rs = ADMIN_RSVPS.slice();
   $('#rsvpTable').innerHTML = rs.length ? `
     <thead><tr><th>Received</th><th>Event</th><th>Name</th><th>Email</th><th>Pax</th><th></th></tr></thead>
     <tbody>${rs.map(r => `<tr>
@@ -487,7 +499,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (t.dataset.delRsvp) {
       if (!confirm('Delete this RSVP?')) return;
-      RSVPS = RSVPS.filter(x => x.id !== t.dataset.delRsvp); saveRsvps(); refreshPublic(); renderAdmin();
+      const goneRsvp = t.dataset.delRsvp;
+      ADMIN_RSVPS = ADMIN_RSVPS.filter(x => x.id !== goneRsvp);
+      RSVPS = RSVPS.filter(x => x.id !== goneRsvp); saveRsvps(); renderAdmin();
+      deleteRsvp(goneRsvp).catch(err => toast(err.message, true));
       return;
     }
     if (t.dataset.delMsg) {
@@ -506,26 +521,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);
-  if (isAdminDevice()) revealAdminEntry();
+  if (isAdminDevice() || isSignedIn()) revealAdminEntry();
+  if (isSignedIn()) refreshRsvps();
   /* opening the site with #admin lets you get in on a new browser */
   if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
   window.addEventListener('hashchange', () => {
     if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
   });
 
-  $('#loginForm').addEventListener('submit', e => {
+  $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault();
-    if ($('#adminPass').value === CONFIG.adminPasscode) {
-      isAdmin = true; sessionStorage.setItem('asr.admin', '1');
+    const btn = $('#loginSubmit'), label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      await signIn($('#adminEmail').value.trim(), $('#adminPass').value);
+      isAdmin = true;
       rememberAdminDevice(); revealAdminEntry();
       $('#adminPass').value = '';
       closeModal($('#loginModal'));
       renderAdmin(); openModal('#adminModal');
-      toast('Signed in as admin.');
-    } else toast('Wrong passcode.', true);
+      toast('Signed in as ' + signedInAs());
+      refreshRsvps();
+    } catch (err) {
+      toast(err.message, true);
+    }
+    btn.disabled = false; btn.textContent = label;
   });
   $('#adminLogout').addEventListener('click', () => {
-    isAdmin = false; sessionStorage.removeItem('asr.admin');
+    signOut(); isAdmin = false; ADMIN_RSVPS = [];
     closeModal($('#adminModal')); toast('Signed out.');
   });
 
@@ -614,7 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#sendReminder').addEventListener('click', () => {
     const ev = findEvent($('#reminderEvent').value);
     if (!ev) return toast('Pick an event first.', true);
-    const list = RSVPS.filter(r => r.eventId === ev.id);
+    const list = ADMIN_RSVPS.filter(r => r.eventId === ev.id);
     if (!list.length) return toast('Nobody has booked this event yet.', true);
     const bcc = [...new Set(list.map(r => r.email))].join(',');
     const body =
@@ -646,7 +669,7 @@ ${CONFIG.contactEmail}`;
 
   $('#copyEmails').addEventListener('click', async () => {
     const ev = findEvent($('#reminderEvent').value);
-    const list = ev ? RSVPS.filter(r => r.eventId === ev.id) : [];
+    const list = ev ? ADMIN_RSVPS.filter(r => r.eventId === ev.id) : [];
     const emails = [...new Set(list.map(r => r.email))].join(', ');
     if (!emails) return toast('No addresses for that event.', true);
     try { await navigator.clipboard.writeText(emails); toast('Copied ' + list.length + ' address(es).'); }
@@ -654,8 +677,8 @@ ${CONFIG.contactEmail}`;
   });
 
   $('#exportRsvp').addEventListener('click', () => {
-    if (!RSVPS.length) return toast('Nothing to export.', true);
-    download('asr-rsvps.csv', toCsv(RSVPS), 'text/csv;charset=utf-8');
+    if (!ADMIN_RSVPS.length) return toast('Nothing to export.', true);
+    download('asr-rsvps.csv', toCsv(ADMIN_RSVPS), 'text/csv;charset=utf-8');
   });
   $('#exportMsg').addEventListener('click', () => {
     if (!MSGS.length) return toast('Nothing to export.', true);
