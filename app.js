@@ -676,45 +676,6 @@ ${CONFIG.contactEmail}`;
     btn.disabled = false; btn.textContent = label;
   });
 
-  $('#exportAll').addEventListener('click', () => {
-    download('asr-data-' + new Date().toISOString().slice(0, 10) + '.json',
-      JSON.stringify({ events: EVENTS, notes: NOTES, rsvps: RSVPS, messages: MSGS }, null, 2),
-      'application/json');
-  });
-  $('#importFile').addEventListener('change', e => {
-    const file = e.target.files[0]; if (!file) return;
-    const r = new FileReader();
-    r.onload = () => {
-      try {
-        const d = JSON.parse(r.result);
-        if (Array.isArray(d.events)) { EVENTS = d.events; saveEvents(); }
-        if (Array.isArray(d.notes)) { NOTES = d.notes; saveNotes(); }
-        if (Array.isArray(d.rsvps)) { RSVPS = d.rsvps; saveRsvps(); }
-        if (Array.isArray(d.messages)) { MSGS = d.messages; saveMsgs(); }
-        refreshPublic(); renderNotes(); renderAdmin();
-        toast('Data imported');
-      } catch { toast('That file could not be read as JSON.', true); }
-      e.target.value = '';
-    };
-    r.readAsText(file);
-  });
-  $('#resetAll').addEventListener('click', () => {
-    if (!confirm('This permanently deletes every event, article, RSVP and message stored in this browser. Continue?')) return;
-    EVENTS = []; NOTES = []; RSVPS = []; MSGS = [];
-    saveEvents(); saveNotes(); saveRsvps(); saveMsgs();
-    refreshPublic(); renderNotes(); renderAdmin();
-    toast('Everything deleted.');
-  });
-
-  const notice = $('#storageNotice');
-  if (notice) {
-    notice.innerHTML = supabaseReady()
-      ? 'Photos are uploaded to your Supabase bucket <b>' + esc(CONFIG.supabase.bucket) + '</b>. ' +
-        'Events, articles and submissions are still stored in this browser — export them as JSON to move them.'
-      : '<b>Supabase is not configured yet.</b> Photos you upload are kept in this browser only, ' +
-        'and so are events, articles and submissions. Add your project URL and anon key to ' +
-        '<b>core.js</b> (CONFIG.supabase) — see README.md.';
-  }
 
   eventFormFill(null); noteFormFill(null);
 });

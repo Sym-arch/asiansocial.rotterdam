@@ -368,7 +368,6 @@
         <button type="button" class="is-on" data-tab="events">Events</button>
         <button type="button" data-tab="notes">Note articles</button>
         <button type="button" data-tab="inbox">RSVPs &amp; messages</button>
-        <button type="button" data-tab="data">Data</button>
       </div>
 
       <!-- EVENTS TAB -->
@@ -427,7 +426,13 @@
           </div>
         </form>
 
-        <div class="admin-head"><h4>Published events</h4><span class="pill" id="aeCount">0</span></div>
+        <div class="admin-head">
+          <h4>Published events</h4>
+          <div class="admin-row__act">
+            <span class="pill" id="aeCount">0</span>
+            <button class="mini" type="button" id="syncUp">Upload local content to Supabase</button>
+          </div>
+        </div>
         <div class="admin-list" id="adminEventList"></div>
       </section>
 
@@ -503,29 +508,6 @@
           <button class="mini" type="button" id="exportMsg">Export CSV</button>
         </div>
         <div class="table-scroll"><table class="inbox-table" id="msgTable"></table></div>
-      </section>
-
-      <!-- DATA TAB -->
-      <section class="tabpane" data-pane="data">
-        <div class="notice" id="storageNotice"></div>
-        <div class="admin-list">
-          <div class="admin-row">
-            <div class="admin-row__main"><strong>Upload local content to Supabase</strong><span>Pushes events and articles that only exist in this browser</span></div>
-            <div class="admin-row__act"><button class="mini" type="button" id="syncUp">Upload</button></div>
-          </div>
-          <div class="admin-row">
-            <div class="admin-row__main"><strong>Export all data</strong><span>Events, articles, RSVPs and messages as one JSON file</span></div>
-            <div class="admin-row__act"><button class="mini" type="button" id="exportAll">Download JSON</button></div>
-          </div>
-          <div class="admin-row">
-            <div class="admin-row__main"><strong>Import data</strong><span>Restore from a previously exported JSON file</span></div>
-            <div class="admin-row__act"><label class="mini" for="importFile">Choose file</label><input id="importFile" type="file" accept="application/json" hidden></div>
-          </div>
-          <div class="admin-row">
-            <div class="admin-row__main"><strong>Delete everything</strong><span>Removes all events, articles, RSVPs and messages from this browser</span></div>
-            <div class="admin-row__act"><button class="mini mini--danger" type="button" id="resetAll">Delete all</button></div>
-          </div>
-        </div>
       </section>
 
     </div>
