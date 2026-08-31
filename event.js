@@ -95,7 +95,7 @@ function renderEvent(ev) {
                <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
                  ${esc(ev.price || 'Free')}. You can add the event to Google Calendar
                  right after booking.</p>
-               <div id="bookForm">
+               <form id="bookForm" novalidate>
                  <div class="form-grid" style="grid-template-columns:1fr">
                    <div class="field">
                      <label for="bName">Full name <span class="req">*</span></label>
@@ -114,18 +114,20 @@ function renderEvent(ev) {
                      </select>
                    </div>
                  </div>
-                 <button class="btn btn--brand btn--block" type="button" data-submit id="bSubmit" style="margin-top:18px">
+                 <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
                    Confirm my RSVP</button>
                  <small style="display:block;margin-top:12px;color:var(--muted);font-size:.78rem">
                    No account needed. Your details are only used to manage this booking.</small>
-               </div>`}
+               </form>`}
         </div>
       </aside>
     </div>
   </section>`;
 
   /* wiring */
-  wireForm('#bookForm', async () => {
+  const form = $('#bookForm');
+  if (form) form.addEventListener('submit', async e => {
+    e.preventDefault();
     const btn = $('#bSubmit');
     btn.disabled = true; btn.textContent = 'Sending…';
     try {

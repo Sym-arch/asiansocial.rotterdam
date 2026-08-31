@@ -84,51 +84,6 @@ const saveMsgs   = () => DB.set('messages', MSGS);
 const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
-/**
- * Wire up a form-like block that is NOT a <form> element.
- *
- * なぜ <form> を使わないのか:
- *   Google 翻訳のプロキシ（*.translate.goog）はページ内の <form> を見つけると
- *   「このフォームはサポートされていません」というダイアログを出し、入力を止めます。
- *   このサイトの送信はすべて JS（fetch）で行っていて <form> の submit 機能は
- *   まったく使っていないため、要素を <div> にしてダイアログごと回避しています。
- *
- * <form> をやめて失われるのは「Enter キーで送信」だけなので、ここで補います。
- *
- * @param {string|Element} target  フォーム相当のコンテナ
- * @param {Function} handler       送信時の処理。第2引数にコンテナが渡ります
- */
-function wireForm(target, handler) {
-  const box = typeof target === 'string' ? $(target) : target;
-  if (!box) return;
-
-  const fire = e => { e.preventDefault(); handler(e, box); };
-
-  box.addEventListener('click', e => {
-    const btn = e.target.closest('[data-submit]');
-    if (btn && box.contains(btn)) fire(e);
-  });
-
-  /* Enter で送信。textarea は改行を打てるよう、そのまま通します */
-  box.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
-    const t = e.target;
-    if (!t || !t.matches || !t.matches('input:not([type=file]), select')) return;
-    fire(e);
-  });
-}
-
-/* <form> ではないので form.reset() が使えません。送信後の入力欄クリアはこれで。 */
-function clearFields(target) {
-  const box = typeof target === 'string' ? $(target) : target;
-  if (!box) return;
-  $$('input, textarea, select', box).forEach(el => {
-    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-    else if (el.tagName === 'SELECT') el.selectedIndex = 0;
-    else el.value = '';
-  });
-}
-
 function esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
