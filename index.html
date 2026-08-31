@@ -247,7 +247,7 @@
       <div class="reveal">
         <p class="label label--brand">Partner inquiry</p>
         <h3 style="font-size:1.6rem;margin:16px 0 30px">Get in touch</h3>
-        <form id="partnerForm" novalidate>
+        <div id="partnerForm">
           <div class="form-grid">
             <div class="field field--full">
               <label for="pCompany">Company / venue / outlet <span class="req">*</span></label>
@@ -281,9 +281,9 @@
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn btn--brand" type="submit">Send partner inquiry</button>
+            <button class="btn btn--brand" type="button" data-submit id="partnerSubmit">Send partner inquiry</button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>
@@ -338,7 +338,7 @@
       <button class="modal__close" type="button" data-close aria-label="Close">✕</button>
     </div>
     <div class="modal__body">
-      <form id="loginForm">
+      <div id="loginForm">
         <div class="form-grid" style="grid-template-columns:1fr">
           <div class="field">
             <label for="adminEmail">Email</label>
@@ -350,9 +350,9 @@
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn--brand btn--block" type="submit" id="loginSubmit">Sign in</button>
+          <button class="btn btn--brand btn--block" type="button" data-submit id="loginSubmit">Sign in</button>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 </div>
@@ -378,7 +378,7 @@
 
       <!-- EVENTS TAB -->
       <section class="tabpane is-on" data-pane="events">
-        <form class="admin-form" id="adminEventForm">
+        <div class="admin-form" id="adminEventForm">
           <div class="admin-head" style="margin-top:0">
             <h4 id="adminEventFormTitle">Add a new event</h4>
             <button class="mini" type="button" id="adminEventReset">Clear form</button>
@@ -428,9 +428,9 @@
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn btn--brand" type="submit" id="aeSubmit">Publish event</button>
+            <button class="btn btn--brand" type="button" data-submit id="aeSubmit">Publish event</button>
           </div>
-        </form>
+        </div>
 
         <div class="admin-head">
           <h4>Published events</h4>
@@ -444,7 +444,7 @@
 
       <!-- NOTES TAB -->
       <section class="tabpane" data-pane="notes">
-        <form class="admin-form" id="adminNoteForm">
+        <div class="admin-form" id="adminNoteForm">
           <div class="admin-head" style="margin-top:0">
             <h4 id="adminNoteFormTitle">Add a note article</h4>
             <button class="mini" type="button" id="adminNoteReset">Clear form</button>
@@ -482,9 +482,9 @@
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn" type="submit" id="anSubmit">Publish article</button>
+            <button class="btn" type="button" data-submit id="anSubmit">Publish article</button>
           </div>
-        </form>
+        </div>
 
         <div class="admin-head"><h4>Published articles</h4><span class="pill" id="anCount">0</span></div>
         <div class="admin-list" id="adminNoteList"></div>

@@ -182,9 +182,7 @@ function renderCalendar() {
 /* ---------------------------------------------------------
    Contact + partner forms
    --------------------------------------------------------- */
-async function handleMessage(e, kind) {
-  e.preventDefault();
-  const f = e.target;
+async function handleMessage(kind) {
   const get = id => (($(id) || {}).value || '').trim();
 
   const data = kind === 'partner'
@@ -198,7 +196,7 @@ async function handleMessage(e, kind) {
   MSGS.push(Object.assign({ id: uid(), kind, createdAt: new Date().toISOString() }, data));
   saveMsgs();
 
-  const btn = f.querySelector('button[type=submit]');
+  const btn = $('#partnerSubmit');
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Sending…';
 
@@ -218,7 +216,7 @@ async function handleMessage(e, kind) {
     window.location.href = mailtoUrl(CONFIG.contactEmail, subject, body);
     toast('Opening your mail app to send the message to ' + CONFIG.contactEmail);
   } else {
-    f.reset();
+    clearFields('#partnerForm');
     toast('Thanks! Your message is on its way — we reply within a few days.');
   }
   renderAdmin();
@@ -517,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* Forms */
-  $('#partnerForm').addEventListener('submit', e => handleMessage(e, 'partner'));
+  wireForm('#partnerForm', () => handleMessage('partner'));
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);
@@ -529,8 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
   });
 
-  $('#loginForm').addEventListener('submit', async e => {
-    e.preventDefault();
+  wireForm('#loginForm', async () => {
     const btn = $('#loginSubmit'), label = btn.textContent;
     btn.disabled = true; btn.textContent = 'Signing in…';
     try {
@@ -560,8 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin: event form */
   $('#adminEventReset').addEventListener('click', () => eventFormFill(null));
-  $('#adminEventForm').addEventListener('submit', async e => {
-    e.preventDefault();
+  wireForm('#adminEventForm', async () => {
     const required = ['#aeTitle', '#aeDate', '#aeStart', '#aeVenue', '#aeDesc'];
     if (required.some(sel => !$(sel).value.trim()))
       return toast('Fill in title, date, start time, venue and description.', true);
@@ -599,8 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin: note form */
   $('#adminNoteReset').addEventListener('click', () => noteFormFill(null));
-  $('#adminNoteForm').addEventListener('submit', async e => {
-    e.preventDefault();
+  wireForm('#adminNoteForm', async () => {
     if (!$('#anTitle').value.trim() || !$('#anUrl').value.trim() || !$('#anDesc').value.trim())
       return toast('Title, URL and summary are required.', true);
 
