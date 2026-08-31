@@ -395,12 +395,26 @@ document.addEventListener('DOMContentLoaded', () => {
   bindRailScroll();
   window.addEventListener('load', measureRails);
 
-  bootstrapContent(() => {
+  const drawAll = () => {
     if (!calTouched) calCursor = initialCalMonth();
     renderCalendar(); renderEventRail(); renderHeroNext(); renderNotes();
     fillReminderSelect(); renderAdmin();
     requestAnimationFrame(measureRails);
-  });
+  };
+  bootstrapContent(drawAll);
+
+  /* content created before the tables existed would otherwise stay stranded
+     in this browser, so lift it up once from the admin's own device */
+  if (supabaseReady() && isAdminDevice()) {
+    loadContent()
+      .then(() => syncLocalToSupabase())
+      .then(r => {
+        if (!r.events && !r.notes) return;
+        toast(`Uploaded ${r.events} event(s) and ${r.notes} article(s) to Supabase.`);
+        return loadContent().then(drawAll);
+      })
+      .catch(err => console.warn('sync skipped:', err));
+  }
 
   /* Scroll-spy */
   ['home', 'about', 'events', 'note', 'partners'].forEach(id => {
@@ -647,6 +661,21 @@ ${CONFIG.contactEmail}`;
     if (!MSGS.length) return toast('Nothing to export.', true);
     download('asr-messages.csv', toCsv(MSGS), 'text/csv;charset=utf-8');
   });
+  $('#syncUp').addEventListener('click', async e => {
+    const btn = e.currentTarget, label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Uploading…';
+    try {
+      const r = await syncLocalToSupabase();
+      await loadContent(); drawAll();
+      toast(r.failed
+        ? `Uploaded ${r.events + r.notes}, ${r.failed} failed — check the table policies.`
+        : `Uploaded ${r.events} event(s) and ${r.notes} article(s).`, Boolean(r.failed));
+    } catch (err) {
+      toast(err.message, true);
+    }
+    btn.disabled = false; btn.textContent = label;
+  });
+
   $('#exportAll').addEventListener('click', () => {
     download('asr-data-' + new Date().toISOString().slice(0, 10) + '.json',
       JSON.stringify({ events: EVENTS, notes: NOTES, rsvps: RSVPS, messages: MSGS }, null, 2),

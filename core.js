@@ -408,10 +408,19 @@ const sbHeaders = () => ({
 const sbUrl = (table, query) =>
   CONFIG.supabase.url.replace(/\/+$/, '') + '/rest/v1/' + table + (query ? '?' + query : '');
 
-async function sbSelect(table, query) {
+const wait = ms => new Promise(r => setTimeout(r, ms));
+
+/* PostgREST answers 404 for a moment while it reloads its schema cache
+   (which a request for a table that does not exist triggers), so one retry
+   keeps an unrelated table from being taken down with it. */
+async function sbSelect(table, query, attempt = 0) {
   const res = await fetch(sbUrl(table, 'select=*' + (query ? '&' + query : '')), { headers: sbHeaders() });
-  if (!res.ok) throw new Error(table + ' read failed (' + res.status + ')');
-  return res.json();
+  if (res.ok) return res.json();
+  if (attempt < 2 && (res.status === 404 || res.status >= 500)) {
+    await wait(600 * (attempt + 1));
+    return sbSelect(table, query, attempt + 1);
+  }
+  throw new Error(table + ' read failed (' + res.status + ')');
 }
 async function sbUpsert(table, row) {
   const res = await fetch(sbUrl(table), {
@@ -448,25 +457,64 @@ const noteToRow = n => ({
 
 let contentSource = supabaseReady() ? 'loading' : 'local';
 
-/** Pull events and articles from Supabase into EVENTS / NOTES. */
+/**
+ * Pull events and articles from Supabase into EVENTS / NOTES.
+ * The two tables are handled independently: if one is missing or fails,
+ * the other still loads and the missing one keeps its cached copy.
+ */
 async function loadContent() {
   if (!supabaseReady()) return false;
-  try {
-    const [ev, nt] = await Promise.all([
-      sbSelect('events', 'order=date.asc'),
-      sbSelect('notes', 'order=date.desc')
-    ]);
-    EVENTS = ev.map(evFromRow);
-    NOTES = nt.map(noteFromRow);
-    DB.set('events', EVENTS);
-    DB.set('notes', NOTES);
-    contentSource = 'supabase';
-    return true;
-  } catch (err) {
-    console.warn('Falling back to the cached content:', err);
-    contentSource = 'cache';
-    return false;
+  const [ev, nt] = await Promise.allSettled([
+    sbSelect('events', 'order=date.asc'),
+    sbSelect('notes', 'order=date.desc')
+  ]);
+  let loaded = 0;
+
+  if (ev.status === 'fulfilled') {
+    EVENTS = ev.value.map(evFromRow); DB.set('events', EVENTS); loaded++;
+  } else {
+    console.warn('events: using the cached copy —', ev.reason && ev.reason.message);
   }
+  if (nt.status === 'fulfilled') {
+    NOTES = nt.value.map(noteFromRow); DB.set('notes', NOTES); loaded++;
+  } else {
+    console.warn('notes: using the cached copy —', nt.reason && nt.reason.message);
+  }
+
+  contentSource = loaded ? 'supabase' : 'cache';
+  return loaded > 0;
+}
+
+/**
+ * Push anything that exists only in this browser up to Supabase.
+ * Run from the admin device so content created before the tables existed
+ * is not stranded locally.
+ * @returns {Promise<{events:number, notes:number, failed:number}>}
+ */
+async function syncLocalToSupabase() {
+  const out = { events: 0, notes: 0, failed: 0 };
+  if (!supabaseReady()) return out;
+
+  const [remoteEv, remoteNt] = await Promise.allSettled([
+    sbSelect('events'), sbSelect('notes')
+  ]);
+  const known = list => new Set(list.status === 'fulfilled' ? list.value.map(r => r.id) : null);
+
+  if (remoteEv.status === 'fulfilled') {
+    const have = known(remoteEv);
+    for (const e of EVENTS) {
+      if (have.has(e.id)) continue;
+      try { await sbUpsert('events', evToRow(e)); out.events++; } catch { out.failed++; }
+    }
+  }
+  if (remoteNt.status === 'fulfilled') {
+    const have = known(remoteNt);
+    for (const n of NOTES) {
+      if (have.has(n.id)) continue;
+      try { await sbUpsert('notes', noteToRow(n)); out.notes++; } catch { out.failed++; }
+    }
+  }
+  return out;
 }
 
 /* Admin writes: keep the local copy and the table in step. */
