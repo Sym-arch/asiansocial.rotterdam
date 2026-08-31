@@ -259,6 +259,9 @@ function revealAdminEntry() {
 }
 
 function requireAdmin() {
+  /* Admin もフォームの塊なので、翻訳ページでは警告に阻まれます。
+     開かずに、そのまま英語の本来のページへ送ります。 */
+  if (onProxy()) { location.href = nativeUrl('en', '#admin'); return; }
   if (isAdmin) { renderAdmin(); openModal('#adminModal'); refreshRsvps(); }
   else { openModal('#loginModal'); setTimeout(() => $('#adminEmail').focus(), 60); }
 }
@@ -428,6 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!calTouched) calCursor = initialCalMonth();
     renderCalendar(); renderEventRail(); renderHeroNext(); renderNotes();
     fillReminderSelect(); renderAdmin();
+    keepLangOnLinks();   /* カードは後から描かれるので、描くたびに ?lang= を付け直す */
     requestAnimationFrame(measureRails);
   };
   bootstrapContent(drawAll);
