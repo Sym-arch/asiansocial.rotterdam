@@ -395,6 +395,96 @@ async function submitRsvp(input) {
 const bookedUrl = (rsvp, mode) => 'booked.html?id=' + encodeURIComponent(rsvp.id) + '&m=' + mode;
 
 /* ---------------------------------------------------------
+   Shared content (Supabase tables)
+   Events and articles have to be the same for every visitor, so they live
+   in Supabase. localStorage is only a cache, which also keeps the site
+   readable if the request fails.
+   --------------------------------------------------------- */
+const sbHeaders = () => ({
+  apikey: CONFIG.supabase.anonKey,
+  Authorization: 'Bearer ' + CONFIG.supabase.anonKey,
+  'Content-Type': 'application/json'
+});
+const sbUrl = (table, query) =>
+  CONFIG.supabase.url.replace(/\/+$/, '') + '/rest/v1/' + table + (query ? '?' + query : '');
+
+async function sbSelect(table, query) {
+  const res = await fetch(sbUrl(table, 'select=*' + (query ? '&' + query : '')), { headers: sbHeaders() });
+  if (!res.ok) throw new Error(table + ' read failed (' + res.status + ')');
+  return res.json();
+}
+async function sbUpsert(table, row) {
+  const res = await fetch(sbUrl(table), {
+    method: 'POST',
+    headers: Object.assign(sbHeaders(), { Prefer: 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify(row)
+  });
+  if (!res.ok) throw new Error(table + ' save failed (' + res.status + '). ' + (await res.text()).slice(0, 140));
+}
+async function sbDelete(table, id) {
+  const res = await fetch(sbUrl(table, 'id=eq.' + encodeURIComponent(id)), {
+    method: 'DELETE', headers: sbHeaders()
+  });
+  if (!res.ok) throw new Error(table + ' delete failed (' + res.status + ')');
+}
+
+/* "start" and "end" are reserved words in SQL, so the columns are named differently */
+const evFromRow = r => ({
+  id: r.id, title: r.title, date: r.date, start: r.start_time, end: r.end_time,
+  venue: r.venue, address: r.address, price: r.price, image: r.image, description: r.description
+});
+const evToRow = e => ({
+  id: e.id, title: e.title, date: e.date, start_time: e.start, end_time: e.end,
+  venue: e.venue, address: e.address, price: e.price, image: e.image, description: e.description
+});
+const noteFromRow = r => ({
+  id: r.id, title: r.title, url: r.url, date: r.date,
+  tag: r.tag, image: r.image, description: r.description
+});
+const noteToRow = n => ({
+  id: n.id, title: n.title, url: n.url, date: n.date || null,
+  tag: n.tag, image: n.image, description: n.description
+});
+
+let contentSource = supabaseReady() ? 'loading' : 'local';
+
+/** Pull events and articles from Supabase into EVENTS / NOTES. */
+async function loadContent() {
+  if (!supabaseReady()) return false;
+  try {
+    const [ev, nt] = await Promise.all([
+      sbSelect('events', 'order=date.asc'),
+      sbSelect('notes', 'order=date.desc')
+    ]);
+    EVENTS = ev.map(evFromRow);
+    NOTES = nt.map(noteFromRow);
+    DB.set('events', EVENTS);
+    DB.set('notes', NOTES);
+    contentSource = 'supabase';
+    return true;
+  } catch (err) {
+    console.warn('Falling back to the cached content:', err);
+    contentSource = 'cache';
+    return false;
+  }
+}
+
+/* Admin writes: keep the local copy and the table in step. */
+const pushEvent = rec => supabaseReady() ? sbUpsert('events', evToRow(rec)) : Promise.resolve();
+const dropEvent = id  => supabaseReady() ? sbDelete('events', id) : Promise.resolve();
+const pushNote  = rec => supabaseReady() ? sbUpsert('notes', noteToRow(rec)) : Promise.resolve();
+const dropNote  = id  => supabaseReady() ? sbDelete('notes', id) : Promise.resolve();
+
+/**
+ * Draw once from the cache so the page is never blank, then redraw with
+ * whatever Supabase returns.
+ */
+function bootstrapContent(render) {
+  render();
+  loadContent().then(() => render());
+}
+
+/* ---------------------------------------------------------
    Language switcher
    English is the site itself. The other languages are served through
    Google's translation proxy, so event text written in the Admin panel

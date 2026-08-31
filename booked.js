@@ -96,7 +96,13 @@ function render(rsvp, ev) {
 
 document.addEventListener('DOMContentLoaded', () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
-  const rsvp = RSVPS.find(r => r.id === Q.get('id'));
-  const ev = rsvp ? findEvent(rsvp.eventId) : null;
-  if (rsvp && ev) render(rsvp, ev); else noBooking();
+  bootstrapContent(() => {
+    const rsvp = RSVPS.find(r => r.id === Q.get('id'));
+    const ev = rsvp ? findEvent(rsvp.eventId) : null;
+    if (rsvp && ev) render(rsvp, ev);
+    else if (contentSource === 'loading') {
+      $('#bookedMain').innerHTML =
+        '<div class="wrap" style="padding:90px 0 60px"><div class="empty">Loading your booking…</div></div>';
+    } else noBooking();
+  });
 });

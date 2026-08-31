@@ -22,6 +22,7 @@ asian-socials-rotterdam/
 ├── event.js            … イベント詳細ページ用
 ├── booked.js           … 予約完了ページ用
 ├── email-templates/    … EmailJS に貼り付けるメール本文（HTML）
+├── supabase/schema.sql … events / notes テーブルの作成SQL
 ├── assets/
 │   ├── logo.jpg        … ロゴ
 │   ├── bg-*.jpg        … セクション背景写真（フリー素材）
@@ -180,7 +181,7 @@ English（既定）/ Nederlands / 日本語 / 简体中文 / 繁體中文（台�
 - より高品質にしたい場合は、後から翻訳ファイル方式（各言語の文言を人力で用意）に
   差し替えられます。その場合もこのボタンの位置と選択肢はそのまま使えます
 
-## 6. Admin ダッシュボード
+## 7. Admin ダッシュボード
 
 **Admin ボタンは既定で非表示**です。過去にそのブラウザでサインインした端末でだけ表示されます。
 新しいブラウザから入るときは `https://ドメイン/#admin` を開くとログイン画面が出ます。
@@ -192,42 +193,34 @@ English（既定）/ Nederlands / 日本語 / 简体中文 / 繁體中文（台�
 | RSVPs & messages | 予約一覧、パートナー問い合わせ一覧、リマインド送信、CSV出力 |
 | Data | 全データのJSONエクスポート / インポート / 全削除 |
 
-## 7. データの保存場所と制限（重要）
+## 8. データの保存場所
 
-| データ | 現在の保存先 | 公開サイトとして使うには |
-|---|---|---|
-| 画像 | Supabase Storage（未設定ならブラウザ） | 3章の設定で解決 |
-| イベント / note記事 | **そのブラウザの localStorage** | `core.js` の `SEED_EVENTS`/`SEED_NOTES` に書き出すか、Supabase のテーブル化 |
-| RSVP / 問い合わせ | **訪問者のブラウザ** ＋ メール送信 | 4章の設定が必須 |
+| データ | 保存先 |
+|---|---|
+| イベント / note記事 | **Supabase のテーブル**（`events` / `notes`）。localStorage はキャッシュ |
+| 画像 | **Supabase Storage**（`event-photos` バケット） |
+| RSVP / 問い合わせ | 訪問者のブラウザ ＋ **EmailJS でメール送信** |
 
-### 当面の運用
-1. Supabase（画像）と EmailJS（メール）を設定する
-2. イベントは Admin で作成 → **Data → Download JSON** → 中身を `core.js` の `SEED_EVENTS` に貼って再デプロイ
-3. 更新頻度が上がったら、下記のテーブル化へ
+### テーブルの作成（初回のみ）
+`supabase/schema.sql` の中身を Supabase の **SQL Editor** に貼り付けて実行してください。
+これをやるまでイベントは「投稿した人のブラウザ」にしか残らず、他の訪問者には見えません。
 
-### 次の一手：イベント本体も Supabase に載せる
-`core.js` のデータ層（`DB` / `EVENTS` / `NOTES` / `RSVPS` / `MSGS`）を差し替えるだけで移行できます。
+> ⚠️ anon キーで書き込めるポリシーになっています。キーはブラウザのソースに含まれるので、
+> 理屈のうえでは第三者もイベントを追加・削除できます。本格運用の前に Supabase Auth を入れて
+> 書き込みを `to authenticated` に絞ることをおすすめします（SQL はファイル末尾にコメントで記載）。
+
+### RSVP をテーブルに載せる場合（任意）
 
 ```sql
-create table events (
-  id text primary key, title text not null, date date not null,
-  start_time text, end_time text, venue text, address text,
-  price text, image text, description text,
-  created_at timestamptz default now()
-);
-create table notes (
-  id text primary key, title text not null, url text not null,
-  date date, tag text, image text, description text
-);
 create table rsvps (
   id text primary key, event_id text, name text, email text, guests int,
   created_at timestamptz default now()
 );
 ```
-読み取りは anon で公開、書き込み（Admin）は Supabase Auth + RLS で保護してください。
-こうすると「全訪問者が同じイベントを見る」「予約がDBに溜まる」「cronで自動リマインド」が可能になります。
+いまは予約がメールでしか残りませんが、テーブルに載せると一覧がどの端末からも見られ、
+cron で自動リマインドを送ることもできるようになります。
 
-## 8. デプロイ
+## 9. デプロイ
 
 - **Vercel** … このフォルダをドラッグ&ドロップ、または `vercel` コマンド
 - **Netlify** … フォルダをドロップするだけ
@@ -235,7 +228,7 @@ create table rsvps (
 
 デプロイ後、`core.js` の `CONFIG.siteUrl` を実際のドメインに変更してください。
 
-## 9. 変更しやすい場所
+## 10. 変更しやすい場所
 
 | やりたいこと | 場所 |
 |---|---|
@@ -245,7 +238,7 @@ create table rsvps (
 | 色・フォント | `styles.css` 冒頭の `:root` |
 | 連絡先メール・パスコード・Supabase設定 | `core.js` の `CONFIG` |
 
-## 10. 写真のライセンス
+## 11. 写真のライセンス
 
 `assets/CREDITS.json` に出典を記録しています。
 背景写真はすべてフリー素材（CC0 / パブリックドメイン）ですが、**昼の写真（`bg-day.jpg`）だけ

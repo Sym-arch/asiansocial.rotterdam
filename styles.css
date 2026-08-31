@@ -148,8 +148,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .burger span::after{top:6px}
 
 /* ---------- language switcher ---------- */
-.lang{position:relative;margin-left:auto}
-.nav ~ .lang,.lang + .burger{margin-left:0}
+.lang{position:relative}
 .lang__btn{
   display:inline-flex;align-items:center;gap:7px;
   border:1px solid var(--rule);background:transparent;cursor:pointer;
@@ -158,6 +157,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 .lang__btn:hover{border-color:var(--ink);color:var(--ink)}
 .lang__btn::after{content:"";width:5px;height:5px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:translateY(-2px) rotate(45deg)}
+/* the hidden attribute has to beat display:grid */
+.lang__menu[hidden]{display:none}
 .lang__menu{
   position:absolute;right:0;top:calc(100% + 8px);z-index:70;min-width:190px;
   background:var(--paper);border:1px solid var(--rule);box-shadow:0 18px 44px rgba(14,11,20,.16);
@@ -629,7 +630,8 @@ ul,ol{margin:0;padding:0;list-style:none}
   .nav a{padding:14px 0;font-size:1rem;border-bottom:1px solid var(--rule-soft)}
   .nav a::after{display:none}
   .header .btn{margin:14px 0 0}
-  .burger{display:flex}
+  .lang{margin-left:auto}
+  .burger{display:flex;margin-left:0}
   .next-item{grid-template-columns:74px 1fr;gap:12px}
   .next-item span{grid-column:2}
   .form-grid{grid-template-columns:1fr}

@@ -141,6 +141,7 @@ function initialCalMonth() {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 let calCursor = initialCalMonth();
+let calTouched = false;   // don't jump the month away while it is being browsed
 
 function renderDow() {
   $('#calDow').innerHTML = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -387,13 +388,19 @@ function refreshPublic() {
    --------------------------------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
   initShell();
-  renderDow(); renderCalendar(); renderEventRail(); renderHeroNext(); renderNotes(); fillReminderSelect();
+  renderDow();
 
   createRail('#eventsRail', '#eventsTrack', '#eventsProgress');
   createRail('#noteRail', '#noteTrack', '#noteProgress');
   bindRailScroll();
-  measureRails();
   window.addEventListener('load', measureRails);
+
+  bootstrapContent(() => {
+    if (!calTouched) calCursor = initialCalMonth();
+    renderCalendar(); renderEventRail(); renderHeroNext(); renderNotes();
+    fillReminderSelect(); renderAdmin();
+    requestAnimationFrame(measureRails);
+  });
 
   /* Scroll-spy */
   ['home', 'about', 'events', 'note', 'partners'].forEach(id => {
@@ -408,9 +415,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* Calendar nav */
-  $('#calPrev').addEventListener('click', () => { calCursor.setMonth(calCursor.getMonth() - 1); renderCalendar(); });
-  $('#calNext').addEventListener('click', () => { calCursor.setMonth(calCursor.getMonth() + 1); renderCalendar(); });
-  $('#calToday').addEventListener('click', () => { calCursor = new Date(); calCursor.setDate(1); renderCalendar(); });
+  $('#calPrev').addEventListener('click', () => { calTouched = true; calCursor.setMonth(calCursor.getMonth() - 1); renderCalendar(); });
+  $('#calNext').addEventListener('click', () => { calTouched = true; calCursor.setMonth(calCursor.getMonth() + 1); renderCalendar(); });
+  $('#calToday').addEventListener('click', () => { calTouched = true; calCursor = new Date(); calCursor.setDate(1); renderCalendar(); });
 
   /* Timeline / calendar switch */
   $$('.seg [data-view]').forEach(b => b.addEventListener('click', () => {
@@ -436,14 +443,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (t.dataset.dupEv) {
       const src = EVENTS.find(x => x.id === t.dataset.dupEv);
       if (!src) return;
-      EVENTS.push(Object.assign({}, src, { id: uid(), title: src.title + ' (copy)' }));
+      const copy = Object.assign({}, src, { id: uid(), title: src.title + ' (copy)' });
+      EVENTS.push(copy);
       saveEvents(); refreshPublic(); renderAdmin();
+      pushEvent(copy).catch(err => toast(err.message, true));
       toast('Event duplicated — edit the date before publishing.');
       return;
     }
     if (t.dataset.delEv) {
       if (!confirm('Delete this event? RSVPs for it stay in the inbox.')) return;
-      EVENTS = EVENTS.filter(x => x.id !== t.dataset.delEv); saveEvents(); refreshPublic(); renderAdmin();
+      const gone = t.dataset.delEv;
+      EVENTS = EVENTS.filter(x => x.id !== gone); saveEvents(); refreshPublic(); renderAdmin();
+      dropEvent(gone).catch(err => toast(err.message, true));
       toast('Event deleted.');
       return;
     }
@@ -454,7 +465,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (t.dataset.delNote) {
       if (!confirm('Delete this article?')) return;
-      NOTES = NOTES.filter(x => x.id !== t.dataset.delNote); saveNotes(); renderNotes(); renderAdmin();
+      const goneNote = t.dataset.delNote;
+      NOTES = NOTES.filter(x => x.id !== goneNote); saveNotes(); renderNotes(); renderAdmin();
+      dropNote(goneNote).catch(err => toast(err.message, true));
       requestAnimationFrame(measureRails);
       return;
     }
@@ -543,6 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     if (existing) Object.assign(existing, rec); else EVENTS.push(rec);
     saveEvents(); eventFormFill(null); refreshPublic(); renderAdmin();
+    try { await pushEvent(rec); } catch (err) { return toast(err.message, true); }
     toast(existing ? 'Event updated' : 'Event published');
   });
 
@@ -578,6 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (existing) Object.assign(existing, rec); else NOTES.push(rec);
     saveNotes(); noteFormFill(null); renderNotes(); renderAdmin();
     requestAnimationFrame(measureRails);
+    try { await pushNote(rec); } catch (err) { return toast(err.message, true); }
     toast(existing ? 'Article updated' : 'Article published');
   });
 

@@ -147,8 +147,17 @@ function renderEvent(ev) {
   initShell();
 }
 
+function loadingState() {
+  $('#eventMain').innerHTML =
+    '<div class="wrap" style="padding:90px 0 60px"><div class="empty">Loading the event…</div></div>';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
-  const ev = EV_ID ? findEvent(EV_ID) : null;
-  if (ev) renderEvent(ev); else notFound();
+  bootstrapContent(() => {
+    const ev = EV_ID ? findEvent(EV_ID) : null;
+    if (ev) renderEvent(ev);
+    else if (contentSource === 'loading') loadingState();
+    else notFound();
+  });
 });
