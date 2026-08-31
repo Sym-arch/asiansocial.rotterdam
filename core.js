@@ -395,10 +395,97 @@ async function submitRsvp(input) {
 const bookedUrl = (rsvp, mode) => 'booked.html?id=' + encodeURIComponent(rsvp.id) + '&m=' + mode;
 
 /* ---------------------------------------------------------
+   Language switcher
+   English is the site itself. The other languages are served through
+   Google's translation proxy, so event text written in the Admin panel
+   gets translated too — nothing has to be maintained per language.
+   --------------------------------------------------------- */
+const LANGS = [
+  { code: 'en',    label: 'English',            short: 'EN' },
+  { code: 'nl',    label: 'Nederlands',         short: 'NL' },
+  { code: 'ja',    label: '日本語', short: 'JA' },
+  { code: 'zh-CN', label: '简体中文', short: 'ZH' },
+  { code: 'zh-TW', label: '繁體中文（台灣）', short: 'TW' },
+  { code: 'ko',    label: '한국어', short: 'KO' },
+  { code: 'th',    label: 'ไทย', short: 'TH' },
+  { code: 'id',    label: 'Bahasa Indonesia',   short: 'ID' }
+];
+
+const TRANSLATE_HOST = '.translate.goog';
+
+/* Which language is the visitor reading right now? */
+function currentLang() {
+  if (!location.hostname.endsWith(TRANSLATE_HOST)) return 'en';
+  return new URLSearchParams(location.search).get('_x_tr_tl') || 'en';
+}
+
+/* The original (untranslated) address of the page being viewed. */
+function originalUrl() {
+  const u = new URL(location.href);
+  if (!u.hostname.endsWith(TRANSLATE_HOST)) return u.href;
+  /* the proxy encodes "." as "-" and a real "-" as "--" */
+  const host = u.hostname.slice(0, -TRANSLATE_HOST.length)
+    .replace(/--|-/g, m => (m === '--' ? '-' : '.'));
+  const p = new URLSearchParams(u.search);
+  ['_x_tr_sl', '_x_tr_tl', '_x_tr_hl', '_x_tr_pto'].forEach(k => p.delete(k));
+  const q = p.toString();
+  return 'https://' + host + u.pathname + (q ? '?' + q : '') + u.hash;
+}
+
+/* Same page, read through Google Translate in the chosen language. */
+function translatedUrl(code) {
+  const u = new URL(originalUrl());
+  if (code === 'en') return u.href;
+  const host = u.hostname.replace(/-/g, '--').replace(/\./g, '-') + TRANSLATE_HOST;
+  const p = new URLSearchParams(u.search);
+  p.set('_x_tr_sl', 'en'); p.set('_x_tr_tl', code); p.set('_x_tr_hl', code);
+  return 'https://' + host + u.pathname + '?' + p.toString() + u.hash;
+}
+
+const isLocalHost = () => /^(localhost|127\.|0\.0\.0\.0|\[?::1)/.test(location.hostname) || location.protocol === 'file:';
+
+function initLangMenu() {
+  const box = $('#lang'), btn = $('#langBtn'), menu = $('#langMenu');
+  if (!box || !btn || !menu) return;
+
+  const active = currentLang();
+  const activeLang = LANGS.find(l => l.code === active) || LANGS[0];
+  btn.textContent = activeLang.short;
+  btn.setAttribute('aria-label', 'Language: ' + activeLang.label);
+
+  menu.innerHTML = LANGS.map(l =>
+    `<li><a href="${esc(translatedUrl(l.code))}" data-lang="${l.code}"
+        class="${l.code === active ? 'is-on' : ''}">${esc(l.label)}</a></li>`).join('');
+
+  const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  const open  = () => { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); };
+  close();
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    menu.hidden ? open() : close();
+  });
+  document.addEventListener('click', e => { if (!box.contains(e.target)) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  /* the proxy cannot reach a machine that is not on the public internet */
+  if (isLocalHost()) {
+    menu.addEventListener('click', e => {
+      const a = e.target.closest('a[data-lang]');
+      if (!a || a.dataset.lang === 'en') return;
+      e.preventDefault();
+      close();
+      toast('Translation works on the live domain, not on localhost.', true);
+    });
+  }
+}
+
+/* ---------------------------------------------------------
    Shared UI wiring (header menu, reveal-on-scroll, year)
    --------------------------------------------------------- */
 function initShell() {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
+  initLangMenu();
 
   const nav = $('#nav'), burger = $('#burger');
   if (nav && burger) {
