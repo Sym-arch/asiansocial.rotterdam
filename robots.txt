@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# 予約完了ページは本人だけのものなので検索結果には出しません
+Disallow: /booked.html
+
+Sitemap: https://asiansocial-rotterdam.vercel.app/sitemap.xml

@@ -7,7 +7,9 @@ const CONFIG = {
   /* Where every form submission is delivered. */
   contactEmail: 'info@sym-arch.com',
   orgName: 'Asian Social Rotterdam',
-  siteUrl: 'https://asiansocialsrotterdam.com',
+  /* 独自ドメインを取ったら、ここと index/event/booked.html の canonical・og:url、
+     robots.txt、sitemap.xml の5か所を差し替えてください */
+  siteUrl: 'https://asiansocial-rotterdam.vercel.app',
   timezone: 'Europe/Amsterdam',
 
   /* Admin sign-in uses Supabase Auth (email + password) — see README.
