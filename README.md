@@ -112,6 +112,34 @@ supabase: {
 アップロードした画像は base64 でブラウザ内（localStorage）に保存されます。
 テストには十分ですが、**他の人には見えません**。1.6MB を超えるファイルは弾かれます。
 
+## 3.5. 認証メールの送信（Supabase + Resend）— 設定済み
+
+会員のログインコードやパスワード再設定は **Supabase Auth が送ります**。
+Supabase 標準の送信枠は **1時間に2通** で本番では即座に詰まるため、
+Resend を独自SMTPとして接続してあります。
+
+| 項目 | 値 |
+|---|---|
+| 送信元 | `noreply@symarch-llc.com`（Asian Social Rotterdam） |
+| Host / Port | `smtp.resend.com` / `465` |
+| Username | `resend`（Resend共通の固定文字列。メールアドレスではない） |
+| Password | Resend の APIキー（`supabase-auth-smtp`／送信専用／symarch-llc.com 限定） |
+| 送信上限 | 100通/時（Supabase 側） |
+| 同一ユーザーへの間隔 | 60秒 |
+
+`symarch-llc.com` は Resend で verified 済み（SPF / DKIM 設定済み）。
+
+> ⚠️ Supabase の SMTP 設定画面を開くと、**Chrome の自動入力が Username に
+> メールアドレス、Password に保存済みパスワードを入れてくる**ことがあります。
+> そのまま保存すると認証が通らないうえ、保存後は値を確認できません。
+> Username が `resend` になっているか、毎回確認してください。
+
+> Resend 無料枠は **100通/日・3,000通/月** です。会員が増えたら有料枠の検討が要ります。
+
+**残っている作業**: 認証メールの本文は Supabase 標準の英語テンプレートのままです。
+`email-templates/` と同じデザインに揃えるのは、フェーズ1で自前のログイン画面を
+作るときにまとめて行います。
+
 ## 4. メール送信の設定（EmailJS 推奨）
 
 バックエンド無しで「予約完了メールを本人に自動送信 ＋ 自分にも控えを送る」を実現できます。
