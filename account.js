@@ -2,56 +2,100 @@
    Asian Social Rotterdam — 会員ページ（account.html）
    core.js が必要です。
 
-   画面は2つだけです。
-     サインインしていない → メールアドレス → 6桁コード
-     サインインしている   → 会員証・名前の変更・予約の履歴
+   このページは2つの役割を持ちます。
+     1. 会員になると何が得られるかを示す（訪問者向け）
+     2. 戻ってきた会員のサインイン先（会員向け）
 
-   翻訳ページ（*.translate.goog）ではセッションが持ち越せないため、
-   このページは自前ドメインでのみ意味を持ちます。プロキシ経由で来た人は
-   自前ドメインへ送ります。
+   ただし、実際の入口はここではありません。イベントを予約した人が
+   その場で会員になるので、獲得は予約フォームで起きます。
+   このページは「戻ってくる場所」であり「説明する場所」です。
+
+   翻訳ページ（*.translate.goog）ではセッションが別オリジンになり
+   成立しないため、プロキシ経由で来た人は自前ドメインへ送ります。
    ========================================================= */
 
-let PENDING_EMAIL = '';   /* コード入力中のメールアドレス */
+let AUTH_MODE = 'create';   /* 'create' | 'signin' */
 
 /* ---------------------------------------------------------
-   サインインしていないとき
+   サインインしていないとき — 説明 ＋ フォーム
    --------------------------------------------------------- */
-function signInHTML() {
+function guestHTML() {
+  const perk = (label, items) => `
+    <div class="perks__group">
+      <p class="perks__when">${esc(label)}</p>
+      <ul class="ticks">
+        ${items.map(x => `<li>${esc(x)}</li>`).join('')}
+      </ul>
+    </div>`;
+
   return `
-  <section class="section">
-    <div class="wrap" style="max-width:560px">
+  <section class="sec sec--flush band band--day acct-hero">
+    <div class="band__bg" style="background-image:url(assets/bg-day.jpg)"></div>
+    <div class="wrap acct-hero__inner">
       <p class="label label--brand">${esc(t('account.title'))}</p>
-      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);margin:14px 0 16px">${esc(t('account.signin.title'))}</h1>
-      <p style="color:var(--muted);margin-bottom:32px">${esc(t('account.signin.body'))}</p>
+      <h1>${esc(t('account.hero'))}</h1>
+      <p class="lead">${esc(t('account.heroBody'))}</p>
+    </div>
+  </section>
 
-      <div id="stepEmail">
-        <div class="field">
-          <label for="acEmail">${esc(t('rsvp.email'))}</label>
-          <input id="acEmail" type="email" autocomplete="email" inputmode="email">
+  <section class="sec">
+    <div class="wrap acct-grid">
+      <div>
+        <h2 class="acct-h2">${esc(t('account.perks'))}</h2>
+        <div class="perks">
+          ${perk(t('account.now'),   [t('account.now1'),  t('account.now2')])}
+          ${perk(t('account.soon'),  [t('account.soon1'), t('account.soon2')])}
+          ${perk(t('account.later'), [t('account.later1')])}
         </div>
-        <button class="btn btn--brand" type="button" id="acSend" style="margin-top:18px">
-          ${esc(t('account.sendCode'))}</button>
       </div>
 
-      <div id="stepCode" hidden>
-        <p style="color:var(--muted);font-size:.9rem;margin-bottom:22px">${esc(t('account.codeSent'))}</p>
-        <div class="field">
-          <label for="acCode">${esc(t('account.code'))}</label>
-          <input id="acCode" type="text" inputmode="numeric" autocomplete="one-time-code"
-                 maxlength="6" pattern="[0-9]*"
-                 style="letter-spacing:.5em;font-size:1.3rem">
-        </div>
-        <button class="btn btn--brand" type="button" id="acVerify" style="margin-top:18px">
-          ${esc(t('account.verify'))}</button>
-        <button class="mini" type="button" id="acRestart" style="margin-top:18px;margin-left:14px">
-          ${esc(t('account.resend'))}</button>
-      </div>
+      <aside class="acct-form" id="authBox">
+        ${authFormHTML()}
+      </aside>
     </div>
   </section>`;
 }
 
+function authFormHTML() {
+  const creating = AUTH_MODE === 'create';
+  return `
+    <h2>${esc(t(creating ? 'account.create' : 'account.signin.title'))}</h2>
+
+    ${creating ? `
+    <div class="field">
+      <label for="auName">${esc(t('account.name'))}</label>
+      <input id="auName" type="text" autocomplete="name">
+    </div>` : ''}
+
+    <div class="field">
+      <label for="auEmail">${esc(t('rsvp.email'))}</label>
+      <input id="auEmail" type="email" autocomplete="email" inputmode="email">
+    </div>
+
+    <div class="field">
+      <label for="auPass">${esc(t('account.password'))}</label>
+      <input id="auPass" type="password"
+             autocomplete="${creating ? 'new-password' : 'current-password'}"
+             placeholder="${creating ? esc(t('account.passwordPh')) : ''}">
+    </div>
+
+    <button class="btn btn--brand btn--block" type="button" id="auSubmit" style="margin-top:20px">
+      ${esc(t(creating ? 'account.createBtn' : 'account.signinBtn'))}</button>
+
+    <p class="acct-swap">
+      ${esc(t(creating ? 'account.haveAccount' : 'account.noAccount'))}
+      <button type="button" class="linkish" id="auSwap">
+        ${esc(t(creating ? 'account.toSignin' : 'account.toCreate'))}</button>
+    </p>
+
+    ${creating ? '' : `
+    <p class="acct-swap">
+      <button type="button" class="linkish" id="auForgot">${esc(t('account.forgot'))}</button>
+    </p>`}`;
+}
+
 /* ---------------------------------------------------------
-   サインインしているとき
+   サインインしているとき — 会員証
    --------------------------------------------------------- */
 function memberHTML(rsvps) {
   const profile = (MEMBER && MEMBER.profile) || {};
@@ -62,24 +106,20 @@ function memberHTML(rsvps) {
     : '';
 
   return `
-  <section class="section">
-    <div class="wrap" style="max-width:720px">
+  <section class="sec sec--flush acct-member">
+    <div class="wrap" style="max-width:760px">
       <p class="label label--brand">${esc(t('account.card'))}</p>
 
       <div class="card-member">
         <div class="card-member__top">
           <img src="assets/logo.jpg" alt="" width="46" height="46">
-          <div>
-            <b>Asian Social</b>
-            <span>Rotterdam</span>
-          </div>
+          <div><b>Asian Social</b><span>Rotterdam</span></div>
         </div>
         <div class="card-member__name">${esc(profile.name || profile.email || signedInAs())}</div>
         <div class="card-member__meta">
           <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>
           ${since ? `<span>${esc(t('account.since'))} ${esc(since)}</span>` : ''}
         </div>
-        <p class="card-member__note">${esc(t('account.enNote'))}</p>
       </div>
 
       <div class="acct-block">
@@ -113,10 +153,6 @@ function memberHTML(rsvps) {
   </section>`;
 }
 
-function loadingHTML() {
-  return '<div class="wrap" style="padding:90px 0 60px"><div class="empty">…</div></div>';
-}
-
 /* ---------------------------------------------------------
    描画と配線
    --------------------------------------------------------- */
@@ -124,10 +160,10 @@ async function renderAccount() {
   const main = $('#accountMain');
 
   if (!isSignedIn()) {
-    main.innerHTML = signInHTML();
-    wireSignIn();
+    main.innerHTML = guestHTML();
+    wireAuth();
   } else {
-    main.innerHTML = loadingHTML();
+    main.innerHTML = '<div class="wrap" style="padding:110px 0 90px"><div class="empty">…</div></div>';
     const [, rsvps] = await Promise.all([loadMember(), loadMyRsvps()]);
     main.innerHTML = memberHTML(rsvps);
     wireMember();
@@ -135,54 +171,56 @@ async function renderAccount() {
   initShell();
 }
 
-function wireSignIn() {
-  const send = $('#acSend'), verify = $('#acVerify');
+function wireAuth() {
+  const box = $('#authBox');
 
-  const doSend = async () => {
-    const email = $('#acEmail').value.trim();
-    const label = send.textContent;
-    send.disabled = true; send.textContent = t('account.sending');
+  const submit = async () => {
+    const btn = $('#auSubmit'), label = btn.textContent;
+    const creating = AUTH_MODE === 'create';
+    btn.disabled = true;
+    btn.textContent = t(creating ? 'account.creating' : 'account.signingIn');
     try {
-      await requestCode(email);
-      PENDING_EMAIL = email;
-      $('#stepEmail').hidden = true;
-      $('#stepCode').hidden = false;
-      $('#acCode').focus();
-    } catch (err) {
-      toast(err.message, true);
-    }
-    send.disabled = false; send.textContent = label;
-  };
-
-  const doVerify = async () => {
-    const label = verify.textContent;
-    verify.disabled = true; verify.textContent = t('account.verifying');
-    try {
-      await verifyCode(PENDING_EMAIL, $('#acCode').value);
+      if (creating) {
+        await signUp($('#auEmail').value, $('#auPass').value, ($('#auName') || {}).value);
+        toast(t('account.welcome'));
+      } else {
+        await signIn($('#auEmail').value, $('#auPass').value);
+      }
       renderAccount();
       return;
     } catch (err) {
       toast(err.message, true);
     }
-    verify.disabled = false; verify.textContent = label;
+    btn.disabled = false; btn.textContent = label;
   };
 
-  send.addEventListener('click', doSend);
-  verify.addEventListener('click', doVerify);
-  $('#acRestart').addEventListener('click', () => {
-    $('#stepCode').hidden = true;
-    $('#stepEmail').hidden = false;
-    $('#acEmail').focus();
+  $('#auSubmit').addEventListener('click', submit);
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('input')) submit();
   });
 
-  /* Enter でも進めるように */
-  $('#acEmail').addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
-  $('#acCode').addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
+  $('#auSwap').addEventListener('click', () => {
+    AUTH_MODE = AUTH_MODE === 'create' ? 'signin' : 'create';
+    box.innerHTML = authFormHTML();
+    applyI18n(box);
+    wireAuth();
+    $('#auEmail').focus();
+  });
+
+  const forgot = $('#auForgot');
+  if (forgot) forgot.addEventListener('click', async () => {
+    try {
+      await sendPasswordReset($('#auEmail').value);
+      toast(t('account.resetSent'));
+    } catch (err) {
+      toast(err.message, true);
+    }
+  });
 }
 
 function wireMember() {
   $('#acSave').addEventListener('click', async () => {
-    const btn = $('#acSave'), label = btn.textContent;
+    const btn = $('#acSave');
     btn.disabled = true;
     try {
       await saveProfile({ name: $('#acName').value.trim(), locale: currentLang() });
@@ -190,18 +228,17 @@ function wireMember() {
     } catch (err) {
       toast(err.message, true);
     }
-    btn.disabled = false; btn.textContent = label;
+    btn.disabled = false;
   });
 
   $('#acSignOut').addEventListener('click', () => {
     signOut();
+    AUTH_MODE = 'signin';
     renderAccount();
   });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  /* 翻訳プロキシではセッションが別オリジンになり成立しないので、
-     自前ドメインの同じ言語へ送ります */
   if (onProxy()) { location.href = nativeUrl(currentLang()); return; }
   renderAccount();
 });

@@ -448,17 +448,6 @@ function storeSession(data, email) {
   return SESSION;
 }
 
-async function signIn(email, password) {
-  const res = await fetch(authBase() + '/token?grant_type=password', {
-    method: 'POST',
-    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error_description || data.msg || data.message || 'Sign in failed');
-  return storeSession(data, email);
-}
-
 async function refreshSession() {
   if (!SESSION || !SESSION.refresh_token) return false;
   const res = await fetch(authBase() + '/token?grant_type=refresh_token', {
@@ -479,48 +468,78 @@ async function ensureSession() {
 }
 
 /* ---------------------------------------------------------
-   会員のサインイン（6桁コード）
+   会員のサインアップとサインイン（メール＋パスワード）
 
-   パスワードは使いません。理由は3つあります。
-   - パスワードを置いても「忘れた」経路が残るので、結局メールが根になる
-   - 設定を促すメールは大半が放置され、死んだアカウントが増える
-   - リンクではなくコードにすると、転送されても打ち込む先が無く、
-     メールセキュリティ製品の自動クリックでも消費されない
+   当初は6桁コードにしていましたが、パスワードに戻しました。
+   見慎れていた問題が2つあったためです。
+   - Supabase の OTP を 6桁にしても、メール本文のテンプレートを
+     {{ .Token }} に変えない限り送られるのはリンクです。
+     実際に送信ログを見ると "Your sign-in link" が届いていました
+   - コード方式自体が見慣れないという声もありました
+
+   パスワードなら、確認メールも再設定メールも
+   「リンクを押す」で正しく成立し、既存のテンプレートがそのまま使えます。
    --------------------------------------------------------- */
 
-/**
- * 6桁コードを送る。
- * 登録済みかどうかは返しません（総当たりで会員名簿を推測されないため）。
- */
-async function requestCode(email) {
+const MIN_PASSWORD = 8;
+
+/** アカウントを作ってそのままサインインする。 */
+async function signUp(email, password, name) {
   if (!isEmail(email)) throw new Error(t('rsvp.err.email'));
-  const res = await fetch(authBase() + '/otp', {
+  if (String(password).length < MIN_PASSWORD) throw new Error(t('account.err.password'));
+
+  const res = await fetch(authBase() + '/signup', {
     method: 'POST',
     headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim(), create_user: true })
+    body: JSON.stringify({
+      email: email.trim(),
+      password: password,
+      data: { name: (name || '').trim() }
+    })
   });
-  if (!res.ok) {
-    const d = await res.json().catch(() => ({}));
-    throw new Error(d.msg || d.error_description || d.error || 'Could not send the code.');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.msg || data.error_description || data.error || 'Could not create the account.');
+
+  /* メール確認を必須にしている場合、ここではまだトークンが返りません。
+     そのときは続けてサインインを試します。 */
+  if (data.access_token) {
+    SESSION = null;
+    storeSession(data, email);
+    await loadMember();
+    return SESSION;
   }
-  return true;
+  return signIn(email, password);
 }
 
-/** コードを検証してサインインする。 */
-async function verifyCode(email, code) {
-  const res = await fetch(authBase() + '/verify', {
+/** メールとパスワードでサインインする。 */
+async function signIn(email, password) {
+  const res = await fetch(authBase() + '/token?grant_type=password', {
     method: 'POST',
     headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'email', email: email.trim(), token: String(code).trim() })
+    body: JSON.stringify({ email: String(email).trim(), password: password })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.access_token) {
-    throw new Error(data.msg || data.error_description || t('account.err.code'));
+    throw new Error(data.error_description || data.msg || t('account.err.signin'));
   }
   SESSION = null;                 /* 別人のセッションが残らないように */
   storeSession(data, email);
   await loadMember();
   return SESSION;
+}
+
+/**
+ * パスワード再設定のリンクを送る。
+ * 登録済みかどうかは返しません（会員名簿を推測されないため）。
+ */
+async function sendPasswordReset(email) {
+  if (!isEmail(email)) throw new Error(t('rsvp.err.email'));
+  await fetch(authBase() + '/recover', {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim() })
+  }).catch(() => {});
+  return true;
 }
 
 /* ---------------------------------------------------------

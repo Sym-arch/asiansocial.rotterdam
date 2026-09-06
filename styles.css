@@ -606,6 +606,42 @@ ul,ol{margin:0;padding:0;list-style:none}
 .toast.is-on{transform:translate(-50%,0)}
 .toast.is-err{background:var(--brand);color:#fff}
 
+/* ---------- membership page ----------
+   会員ページ。上下にゆとりを取り、説明とフォームを横に並べます。 */
+.acct-hero{padding:clamp(80px,10vw,150px) 0 clamp(64px,8vw,120px)}
+.acct-hero__inner{max-width:640px}
+.acct-hero h1{
+  font-size:clamp(2.2rem,5.6vw,4rem);letter-spacing:-.035em;line-height:1.04;
+  margin-top:18px;text-wrap:balance;
+}
+.acct-hero .lead{margin-top:22px;max-width:52ch;font-size:1.06rem;line-height:1.6}
+
+.acct-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,380px);gap:clamp(40px,6vw,90px);align-items:start}
+.acct-h2{font-size:1.5rem;font-weight:500;letter-spacing:-.01em;margin-bottom:34px}
+
+.perks__group{margin-bottom:38px}
+.perks__when{
+  font-size:.66rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--brand);margin-bottom:12px;
+}
+.perks .ticks li{color:var(--ink-2)}
+
+.acct-form{border-top:2px solid var(--ink);padding-top:26px}
+.acct-form h2{font-size:1.15rem;font-weight:600;margin-bottom:24px}
+.acct-swap{margin-top:18px;font-size:.84rem;color:var(--muted)}
+.linkish{
+  background:none;border:0;padding:0;font:inherit;cursor:pointer;
+  color:var(--brand);border-bottom:1px solid currentColor;
+}
+.linkish:hover{opacity:.72}
+
+.acct-member{padding:clamp(64px,8vw,120px) 0 clamp(72px,9vw,130px)}
+
+@media (max-width:860px){
+  .acct-grid{grid-template-columns:1fr}
+  .acct-form{margin-top:8px}
+}
+
 /* ---------- account / member card ----------
    会員証。箱で囲わず、上下のヘアラインと余白で区切ります。 */
 .card-member{

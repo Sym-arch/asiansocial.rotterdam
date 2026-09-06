@@ -114,7 +114,7 @@ supabase: {
 
 ## 3.5. 認証メールの送信（Supabase + Resend）— 設定済み
 
-会員のログインコードやパスワード再設定は **Supabase Auth が送ります**。
+会員登録の確認やパスワード再設定は **Supabase Auth が送ります**。
 Supabase 標準の送信枠は **1時間に2通** で本番では即座に詰まるため、
 Resend を独自SMTPとして接続してあります。
 
