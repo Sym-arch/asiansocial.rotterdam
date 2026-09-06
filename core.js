@@ -209,11 +209,14 @@ async function uploadImage(file) {
 
   if (supabaseReady()) {
     const base = s.url.replace(/\/+$/, '');
+    /* バケットへの書き込みは管理者だけに絞るので、匿名キーではなく
+       ログイン中のトークンで送ります（未ログインなら匿名キーに戻ります）。 */
+    await ensureSession();
     const res = await fetch(`${base}/storage/v1/object/${encodeURIComponent(s.bucket)}/${encodeURIComponent(name)}`, {
       method: 'POST',
       headers: {
         apikey: s.anonKey,
-        Authorization: 'Bearer ' + s.anonKey,
+        Authorization: 'Bearer ' + sbToken(),
         'Content-Type': file.type,
         /* No x-upsert: an upsert is checked against the UPDATE policy, which
            would force a second policy in Supabase. File names already carry a
