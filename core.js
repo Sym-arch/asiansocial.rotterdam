@@ -651,22 +651,6 @@ async function fetchTicket(secret) {
   return rows[0] || null;
 }
 
-/**
- * 入場の消し込み。
- * 判定と更新をDB側の1文にまとめているので、
- * 2台で同時に押しても必ず片方だけが通ります。
- */
-async function checkInTicket(secret) {
-  const res = await fetch(sbUrl('rpc/check_in_ticket'), {
-    method: 'POST',
-    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_secret: secret })
-  });
-  if (!res.ok) throw new Error('check-in failed (' + res.status + ')');
-  const rows = await res.json();
-  return rows[0] || { ok: false, reason: 'unknown' };
-}
-
 /* --- 受付（管理者のみ） ------------------------------------------------
    secret は列の権限から外してあるので、管理者でも取り出せません。
    受付は名簿から手で通す形になります（それで十分で、かつ安全です）。 */
@@ -683,26 +667,26 @@ async function adminListTickets(eventId) {
 }
 
 /**
- * 受付から手で通します。
- * 「使用済みだが通す」も残せるようにしているのは、転送された画面が
- * 先にスライドされたとき、本物の人を弾いたままにしないためです。
+ * 受付のチェックを入れる／外す。
+ * 取り消せることが大事です。押し間違いは必ず起きるので、
+ * 一方通行にすると現場で直せなくなります。
  */
-async function adminCheckIn(ticketId, override) {
+async function adminSetCheckIn(ticketId, checkedIn) {
   if (!(await ensureSession())) throw new Error('Not signed in.');
   const res = await fetch(sbUrl('tickets', 'id=eq.' + encodeURIComponent(ticketId)), {
     method: 'PATCH',
     headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
     body: JSON.stringify({
-      status: 'used',
-      checked_in_at: new Date().toISOString(),
-      checked_in_by: signedInAs()
+      status: checkedIn ? 'used' : 'valid',
+      checked_in_at: checkedIn ? new Date().toISOString() : null,
+      checked_in_by: checkedIn ? signedInAs() : null
     })
   });
   if (!res.ok) throw new Error('check-in failed (' + res.status + ')');
 
   sbInsert('ticket_history', {
     ticket_id: ticketId,
-    action: override ? 'override' : 'checked_in',
+    action: checkedIn ? 'checked_in' : 'undone',
     by_email: signedInAs(),
     detail: { source: 'door' }
   }).catch(() => {});
