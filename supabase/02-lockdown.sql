@@ -59,7 +59,7 @@ $$;
 insert into admins (user_id, note)
 select id, 'owner'
   from auth.users
- where email = 'ここを自分のメールアドレスに'
+ where email = 't.iino@sym-arch.com'
     on conflict (user_id) do nothing;
 
 
@@ -92,8 +92,16 @@ create policy "admin delete notes"  on notes
 
 -- ---------------------------------------------------------
 -- 5. 予約：追加は誰でも、読み取りと削除は管理者だけ
---    （既存は「ログイン済みなら誰でも読める」。会員が増える前に絞る）
+--
+--    実際のポリシーを確認したところ2点ずれていました。
+--    ・INSERT が {anon} だけ → ログイン中の会員が予約すると弾かれます
+--      （リクエストが authenticated ロールで届くため）。会員を作る前に直します。
+--    ・DELETE のポリシーが存在しない → 管理者でも予約を削除できません。
 -- ---------------------------------------------------------
+drop policy if exists "anon insert rsvps" on rsvps;
+create policy "anyone insert rsvps" on rsvps
+  for insert to anon, authenticated with check ( true );
+
 drop policy if exists "auth read rsvps"   on rsvps;
 drop policy if exists "auth delete rsvps" on rsvps;
 
@@ -101,9 +109,6 @@ create policy "admin read rsvps"   on rsvps
   for select to authenticated using ( is_admin() );
 create policy "admin delete rsvps" on rsvps
   for delete to authenticated using ( is_admin() );
-
--- 追加は従来どおり誰でも（訪問者がアカウント無しで予約できるため）
--- 既存の "anon insert rsvps" はそのまま残します。
 
 
 -- ---------------------------------------------------------
@@ -114,7 +119,10 @@ create policy "admin delete rsvps" on rsvps
 --    変更済みであることが前提です。未変更のまま実行すると
 --    Admin からのアップロードが 403 になります。
 -- ---------------------------------------------------------
+--    UPDATE のポリシーも匿名に開いていました（バケット内のファイルを
+--    誰でも上書きできる状態）。サイトは上書きを使わないので、そのまま閉じます。
 drop policy if exists "anon upload event-photos" on storage.objects;
+drop policy if exists "anon update event-photos" on storage.objects;
 
 create policy "admin upload event-photos" on storage.objects
   for insert to authenticated
