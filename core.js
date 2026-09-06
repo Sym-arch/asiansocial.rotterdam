@@ -439,7 +439,9 @@ function storeSession(data, email) {
   SESSION = {
     access_token: data.access_token,
     refresh_token: data.refresh_token,
-    email: (data.user && data.user.email) || email || '',
+    /* トークン更新のレスポンスに user が無いことがあるので、前の値を残します */
+    user_id: (data.user && data.user.id) || (SESSION && SESSION.user_id) || '',
+    email: (data.user && data.user.email) || (SESSION && SESSION.email) || email || '',
     expires_at: Date.now() + ((data.expires_in || 3600) - 60) * 1000
   };
   DB.set('session', SESSION);
@@ -476,6 +478,105 @@ async function ensureSession() {
   return refreshSession();
 }
 
+/* ---------------------------------------------------------
+   会員のサインイン（6桁コード）
+
+   パスワードは使いません。理由は3つあります。
+   - パスワードを置いても「忘れた」経路が残るので、結局メールが根になる
+   - 設定を促すメールは大半が放置され、死んだアカウントが増える
+   - リンクではなくコードにすると、転送されても打ち込む先が無く、
+     メールセキュリティ製品の自動クリックでも消費されない
+   --------------------------------------------------------- */
+
+/**
+ * 6桁コードを送る。
+ * 登録済みかどうかは返しません（総当たりで会員名簿を推測されないため）。
+ */
+async function requestCode(email) {
+  if (!isEmail(email)) throw new Error(t('rsvp.err.email'));
+  const res = await fetch(authBase() + '/otp', {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim(), create_user: true })
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.msg || d.error_description || d.error || 'Could not send the code.');
+  }
+  return true;
+}
+
+/** コードを検証してサインインする。 */
+async function verifyCode(email, code) {
+  const res = await fetch(authBase() + '/verify', {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'email', email: email.trim(), token: String(code).trim() })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.access_token) {
+    throw new Error(data.msg || data.error_description || t('account.err.code'));
+  }
+  SESSION = null;                 /* 別人のセッションが残らないように */
+  storeSession(data, email);
+  await loadMember();
+  return SESSION;
+}
+
+/* ---------------------------------------------------------
+   会員データ
+   --------------------------------------------------------- */
+let MEMBER = null;   /* { profile, membership } */
+
+/** サインイン中の会員のプロフィールと会員ランクを読む。 */
+async function loadMember() {
+  if (!(await ensureSession()) || !SESSION.user_id) { MEMBER = null; return null; }
+  const id = encodeURIComponent(SESSION.user_id);
+  try {
+    const [profiles, memberships] = await Promise.all([
+      sbSelect('profiles', 'id=eq.' + id),
+      sbSelect('memberships', 'user_id=eq.' + id)
+    ]);
+    MEMBER = { profile: profiles[0] || null, membership: memberships[0] || null };
+  } catch (err) {
+    console.warn('member load failed:', err.message);
+    MEMBER = null;
+  }
+  return MEMBER;
+}
+
+/** 'guest' | 'free' | 'premium' */
+function memberTier() {
+  if (!isSignedIn()) return 'guest';
+  return (MEMBER && MEMBER.membership && MEMBER.membership.tier) || 'free';
+}
+
+/** 名前と言語だけ更新できます（他の列はDB側で拒否されます）。 */
+async function saveProfile(fields) {
+  if (!(await ensureSession())) throw new Error('Not signed in.');
+  const res = await fetch(sbUrl('profiles', 'id=eq.' + encodeURIComponent(SESSION.user_id)), {
+    method: 'PATCH',
+    headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
+    body: JSON.stringify(fields)
+  });
+  if (!res.ok) throw new Error('Could not save (' + res.status + ')');
+  if (MEMBER && MEMBER.profile) Object.assign(MEMBER.profile, fields);
+}
+
+/**
+ * 自分の予約。メールアドレスで突き合わせるので、
+ * アカウントを作る前にした予約も出てきます。
+ */
+async function loadMyRsvps() {
+  if (!(await ensureSession())) return [];
+  try {
+    return await sbSelect('rsvps', 'order=event_date.desc');
+  } catch (err) {
+    console.warn('bookings load failed:', err.message);
+    return [];
+  }
+}
+
 function signOut() {
   if (SESSION && SESSION.access_token) {
     fetch(authBase() + '/logout', {
@@ -484,6 +585,7 @@ function signOut() {
     }).catch(() => {});
   }
   SESSION = null;
+  MEMBER = null;
   DB.set('session', null);
 }
 
