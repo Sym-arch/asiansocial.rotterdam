@@ -167,6 +167,22 @@ revoke insert, update, delete on memberships from authenticated;
 
 
 -- ---------------------------------------------------------
+-- 7.5 会員が「自分の予約」を見られるようにする
+--
+--    rsvps には user_id がありません。アカウント無しでも予約できる
+--    設計なので、予約時点では誰の予約か分からないためです。
+--    そこで JWT のメールアドレスと突き合わせます。こうすると
+--    「アカウントを作る前にした予約」も、後からログインすれば見えます。
+-- ---------------------------------------------------------
+drop policy if exists "read own rsvps" on rsvps;
+create policy "read own rsvps" on rsvps
+  for select to authenticated
+  using ( lower(email) = lower(auth.jwt() ->> 'email') );
+
+create index if not exists rsvps_email_idx on rsvps (lower(email));
+
+
+-- ---------------------------------------------------------
 -- 8. EN（日本コミュニティ）用の列
 --    会員基盤は共通のまま、イベントだけブランドで分けます。
 --    'en' は言語コード（?lang=en）と紛らわしいので使いません。
