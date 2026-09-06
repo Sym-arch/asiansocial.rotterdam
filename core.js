@@ -366,6 +366,27 @@ async function submitRsvp(input) {
   const ev = findEvent(input.eventId);
   const guests = Number(input.guests) || 1;
   if (!ev) throw new Error(t('rsvp.err.event'));
+
+  /* サインイン済みなら入力させない。
+     未サインインなら、予約と同時に無料会員を作ります。 */
+  if (isSignedIn()) {
+    input = Object.assign({}, input, {
+      name:  input.name  || (MEMBER && MEMBER.profile && MEMBER.profile.name) || signedInAs(),
+      email: signedInAs()
+    });
+  } else {
+    if (!input.name || !input.email) throw new Error(t('rsvp.err.required'));
+    if (!isEmail(input.email)) throw new Error(t('rsvp.err.email'));
+    if (String(input.password || '').length < MIN_PASSWORD) throw new Error(t('account.err.password'));
+    try {
+      await signUp(input.email, input.password, input.name);
+    } catch (err) {
+      /* 既存のアドレスなら、パスワードを推測させずサインインへ向けます */
+      if (/already|registered|exists/i.test(err.message)) throw new Error(t('rsvp.err.exists'));
+      throw err;
+    }
+  }
+
   if (!input.name || !input.email) throw new Error(t('rsvp.err.required'));
   if (!isEmail(input.email)) throw new Error(t('rsvp.err.email'));
 
@@ -540,6 +561,212 @@ async function sendPasswordReset(email) {
     body: JSON.stringify({ email: email.trim() })
   }).catch(() => {});
   return true;
+}
+
+/* ---------------------------------------------------------
+   会員モーダル
+
+   会員ページは作りません。入口は予約フォームであって、
+   「Membership」を押して登録する人はほとんどいないためです。
+   ここは「戻ってきた会員が履歴を見る場所」と
+   「予約の途中でサインインする場所」だけを担います。
+
+   マークアップを各HTMLに書くと三重管理になるので、
+   ここで組み立てて全ページに共通で入れます。
+   --------------------------------------------------------- */
+
+let MEMBER_MODE = 'signin';   /* 'signin' | 'create' */
+
+function memberModalEl() {
+  let el = $('#memberModal');
+  if (el) return el;
+  el = document.createElement('div');
+  el.className = 'modal modal--sm';
+  el.id = 'memberModal';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.innerHTML =
+    '<div class="modal__scrim" data-close></div>' +
+    '<div class="modal__panel">' +
+      '<div class="modal__head"><h3 id="memberTitle"></h3>' +
+        '<button class="modal__close" type="button" data-close aria-label="Close">\u2715</button></div>' +
+      '<div class="modal__body" id="memberBody"></div>' +
+    '</div>';
+  document.body.appendChild(el);
+  el.addEventListener('click', e => {
+    if (e.target === el || e.target.closest('[data-close]')) closeMemberModal();
+  });
+  return el;
+}
+
+function closeMemberModal() {
+  const el = $('#memberModal');
+  if (el) el.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+/** サインイン済みなら会員証、未サインインならフォーム。 */
+async function openMemberModal(mode) {
+  MEMBER_MODE = mode || (isSignedIn() ? 'card' : 'signin');
+  const el = memberModalEl();
+  el.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+  await renderMemberModal();
+}
+
+async function renderMemberModal() {
+  const body = $('#memberBody');
+  if (!body) return;
+
+  const head = $('#memberTitle');
+  if (head) head.textContent = t('account.title');
+
+  if (isSignedIn()) {
+    body.innerHTML = '<div class="empty" style="padding:40px 0">\u2026</div>';
+    const [, rsvps] = await Promise.all([loadMember(), loadMyRsvps()]);
+    body.innerHTML = memberCardHTML(rsvps);
+    wireMemberCard();
+  } else {
+    body.innerHTML = memberAuthHTML();
+    wireMemberAuth();
+  }
+}
+
+function memberCardHTML(rsvps) {
+  const profile = (MEMBER && MEMBER.profile) || {};
+  const ship = (MEMBER && MEMBER.membership) || {};
+  const tier = memberTier();
+  const since = ship.started_at
+    ? new Date(ship.started_at).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+
+  return `
+    <div class="card-member" style="margin-top:0">
+      <div class="card-member__top">
+        <img src="assets/logo.jpg" alt="" width="40" height="40">
+        <div><b>Asian Social</b><span>Rotterdam</span></div>
+      </div>
+      <div class="card-member__name">${esc(profile.name || profile.email || signedInAs())}</div>
+      <div class="card-member__meta">
+        <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>
+        ${since ? `<span>${esc(t('account.since'))} ${esc(since)}</span>` : ''}
+      </div>
+    </div>
+
+    <div class="acct-block">
+      <h2>${esc(t('account.name'))}</h2>
+      <div class="field">
+        <label for="mcName" class="sr-only">${esc(t('account.name'))}</label>
+        <input id="mcName" type="text" value="${esc(profile.name || '')}" placeholder="${esc(t('account.namePh'))}">
+      </div>
+      <button class="mini" type="button" id="mcSave" style="margin-top:14px">${esc(t('account.save'))}</button>
+    </div>
+
+    <div class="acct-block">
+      <h2>${esc(t('account.bookings'))}</h2>
+      ${rsvps.length ? `
+      <ul class="acct-list">
+        ${rsvps.map(r => `
+        <li><b>${esc(r.event_title || '\u2014')}</b>
+          <span>${esc(r.event_date ? new Date(r.event_date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' }) : '')}
+            \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span></li>`).join('')}
+      </ul>` : `<p style="color:var(--muted)">${esc(t('account.noBookings'))}</p>`}
+    </div>
+
+    <div class="acct-foot">
+      <button class="mini" type="button" id="mcSignOut">${esc(t('account.signout'))}</button>
+    </div>`;
+}
+
+function memberAuthHTML() {
+  const creating = MEMBER_MODE === 'create';
+  return `
+    <h2 style="font-size:1.3rem;font-weight:500;margin:0 0 22px">
+      ${esc(t(creating ? 'account.create' : 'account.signin.title'))}</h2>
+
+    ${creating ? `
+    <div class="field">
+      <label for="mmName">${esc(t('account.name'))}</label>
+      <input id="mmName" type="text" autocomplete="name">
+    </div>` : ''}
+
+    <div class="field">
+      <label for="mmEmail">${esc(t('rsvp.email'))}</label>
+      <input id="mmEmail" type="email" autocomplete="email" inputmode="email">
+    </div>
+
+    <div class="field">
+      <label for="mmPass">${esc(t('account.password'))}</label>
+      <input id="mmPass" type="password" autocomplete="${creating ? 'new-password' : 'current-password'}"
+             placeholder="${creating ? esc(t('account.passwordPh')) : ''}">
+    </div>
+
+    <button class="btn btn--brand btn--block" type="button" id="mmSubmit" style="margin-top:20px">
+      ${esc(t(creating ? 'account.createBtn' : 'account.signinBtn'))}</button>
+
+    <p class="acct-swap">
+      ${esc(t(creating ? 'account.haveAccount' : 'account.noAccount'))}
+      <button type="button" class="linkish" id="mmSwap">
+        ${esc(t(creating ? 'account.toSignin' : 'account.toCreate'))}</button>
+    </p>
+    ${creating ? '' : `<p class="acct-swap">
+      <button type="button" class="linkish" id="mmForgot">${esc(t('account.forgot'))}</button></p>`}`;
+}
+
+function wireMemberAuth() {
+  const submit = async () => {
+    const btn = $('#mmSubmit'), label = btn.textContent;
+    const creating = MEMBER_MODE === 'create';
+    btn.disabled = true;
+    btn.textContent = t(creating ? 'account.creating' : 'account.signingIn');
+    try {
+      if (creating) {
+        await signUp($('#mmEmail').value, $('#mmPass').value, ($('#mmName') || {}).value);
+        toast(t('account.welcome'));
+      } else {
+        await signIn($('#mmEmail').value, $('#mmPass').value);
+      }
+      await renderMemberModal();
+      document.dispatchEvent(new CustomEvent('member:changed'));
+      return;
+    } catch (err) {
+      toast(err.message, true);
+    }
+    btn.disabled = false; btn.textContent = label;
+  };
+
+  $('#mmSubmit').addEventListener('click', submit);
+  $('#memberBody').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('input')) submit();
+  });
+  $('#mmSwap').addEventListener('click', () => {
+    MEMBER_MODE = MEMBER_MODE === 'create' ? 'signin' : 'create';
+    renderMemberModal();
+  });
+  const forgot = $('#mmForgot');
+  if (forgot) forgot.addEventListener('click', async () => {
+    try { await sendPasswordReset($('#mmEmail').value); toast(t('account.resetSent')); }
+    catch (err) { toast(err.message, true); }
+  });
+}
+
+function wireMemberCard() {
+  $('#mcSave').addEventListener('click', async () => {
+    const btn = $('#mcSave');
+    btn.disabled = true;
+    try {
+      await saveProfile({ name: $('#mcName').value.trim(), locale: currentLang() });
+      toast(t('account.saved'));
+      document.dispatchEvent(new CustomEvent('member:changed'));
+    } catch (err) { toast(err.message, true); }
+    btn.disabled = false;
+  });
+  $('#mcSignOut').addEventListener('click', async () => {
+    signOut();
+    MEMBER_MODE = 'signin';
+    await renderMemberModal();
+    document.dispatchEvent(new CustomEvent('member:changed'));
+  });
 }
 
 /* ---------------------------------------------------------
@@ -891,6 +1118,21 @@ function showNativeNotice() {
   main.prepend(bar);
 }
 
+/* ナビの Membership はページ遷移ではなくモーダルを開きます */
+function initMemberLinks() {
+  $$('[data-member]').forEach(el => {
+    if (el.dataset.memberBound) return;
+    el.dataset.memberBound = '1';
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      openMemberModal(el.dataset.member === 'create' ? 'create' : undefined);
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeMemberModal();
+  });
+}
+
 const isLocalHost = () => /^(localhost|127\.|0\.0\.0\.0|\[?::1)/.test(location.hostname) || location.protocol === 'file:';
 
 function initLangMenu() {
@@ -935,6 +1177,7 @@ function initLangMenu() {
 function initShell() {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
   initLangMenu();
+  initMemberLinks();
   keepLangOnLinks();
   applyI18n();
   showNativeNotice();

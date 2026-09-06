@@ -606,6 +606,14 @@ ul,ol{margin:0;padding:0;list-style:none}
 .toast.is-on{transform:translate(-50%,0)}
 .toast.is-err{background:var(--brand);color:#fff}
 
+/* ---------- booking as a member ---------- */
+.book-as{
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  padding:14px 0;margin-bottom:20px;font-size:.9rem;
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;
+}
+.field__hint{display:block;margin-top:8px;font-size:.75rem;color:var(--muted);line-height:1.5}
+
 /* ---------- membership page ----------
    会員ページ。上下にゆとりを取り、説明とフォームを横に並べます。 */
 .acct-hero{padding:clamp(80px,10vw,150px) 0 clamp(64px,8vw,120px)}

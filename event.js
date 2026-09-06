@@ -35,11 +35,20 @@ function bookingHTML(ev) {
         ${esc(t('cta.rsvp.button'))}</a>`;
   }
 
+  const signed = isSignedIn();
+  const who = (MEMBER && MEMBER.profile && MEMBER.profile.name) || signedInAs();
+
   return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
     <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('rsvp.title'))}</h2>
     <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
       ${esc(ev.price || 'Free')}. ${esc(t('rsvp.note'))}</p>
+
     <form id="bookForm" novalidate>
+      ${signed ? `
+      <p class="book-as">
+        ${esc(t('rsvp.asMember', { name: who }))}
+        <button type="button" class="linkish" data-member>${esc(t('rsvp.notYou'))}</button>
+      </p>` : `
       <div class="form-grid" style="grid-template-columns:1fr">
         <div class="field">
           <label for="bName">${esc(t('rsvp.name'))} <span class="req">*</span></label>
@@ -50,6 +59,15 @@ function bookingHTML(ev) {
           <input id="bEmail" type="email" autocomplete="email" required>
         </div>
         <div class="field">
+          <label for="bPass">${esc(t('account.password'))} <span class="req">*</span></label>
+          <input id="bPass" type="password" autocomplete="new-password"
+                 placeholder="${esc(t('account.passwordPh'))}" required>
+          <small class="field__hint">${esc(t('rsvp.passwordWhy'))}</small>
+        </div>
+      </div>`}
+
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field">
           <label for="bGuests">${esc(t('rsvp.guests'))}</label>
           <select id="bGuests">
             <option value="1">${esc(t('rsvp.justme'))}</option>
@@ -58,8 +76,16 @@ function bookingHTML(ev) {
           </select>
         </div>
       </div>
+
       <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
-        ${esc(t('rsvp.submit'))}</button>
+        ${esc(t(signed ? 'rsvp.submit' : 'rsvp.bookBtn'))}</button>
+
+      ${signed ? '' : `
+      <p class="acct-swap" style="margin-top:16px">
+        ${esc(t('rsvp.haveAccount'))}
+        <button type="button" class="linkish" data-member>${esc(t('account.toSignin'))}</button>
+      </p>`}
+
       <small style="display:block;margin-top:12px;color:var(--muted);font-size:.78rem">
         ${esc(t('rsvp.privacy'))}</small>
     </form>`;
@@ -153,14 +179,15 @@ function renderEvent(ev) {
     try {
       const { rsvp, mode } = await submitRsvp({
         eventId: ev.id,
-        name: $('#bName').value.trim(),
-        email: $('#bEmail').value.trim(),
-        guests: $('#bGuests').value
+        name:     ($('#bName')  || {}).value || '',
+        email:    ($('#bEmail') || {}).value || '',
+        password: ($('#bPass')  || {}).value || '',
+        guests:   $('#bGuests').value
       });
       location.href = bookedUrl(rsvp, mode);
     } catch (err) {
       toast(err.message, true);
-      btn.disabled = false; btn.textContent = t('rsvp.submit');
+      btn.disabled = false; btn.textContent = t(isSignedIn() ? 'rsvp.submit' : 'rsvp.bookBtn');
     }
   });
 
@@ -174,6 +201,13 @@ function loadingState() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
+
+  /* モーダルでサインインしたら、予約欄を「名前で予約」に差し替えます */
+  document.addEventListener('member:changed', () => {
+    const ev = EV_ID ? findEvent(EV_ID) : null;
+    if (ev) { renderEvent(ev); closeMemberModal(); }
+  });
+
   bootstrapContent(() => {
     const ev = EV_ID ? findEvent(EV_ID) : null;
     if (ev) renderEvent(ev);
