@@ -60,7 +60,12 @@ function listHTML() {
     <ul class="ci__list" id="ciList">
       ${CI_TICKETS.length ? CI_TICKETS.map(rowHTML).join('')
                           : '<li class="ci__empty">No bookings for this event yet.</li>'}
-    </ul>`);
+    </ul>
+
+    <div class="ci__foot">
+      <a class="btn btn--line" href="index.html">Done</a>
+      <p class="ci__saved" id="ciSaved">Every tick is saved straight away. You can close this page at any time.</p>
+    </div>`);
 }
 
 function rowHTML(t) {
@@ -96,6 +101,19 @@ function paintRows() {
   const total   = CI_TICKETS.reduce((n, r) => n + (r.quantity || 1), 0);
   if ($('#ciIn'))    $('#ciIn').textContent = inCount;
   if ($('#ciTotal')) $('#ciTotal').textContent = total;
+}
+
+/* 保存ボタンが無いので、保存されたことは見せないと不安になります */
+function flashSaved() {
+  const el = $('#ciSaved');
+  if (!el) return;
+  el.textContent = 'Saved';
+  el.classList.add('is-on');
+  clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(() => {
+    el.classList.remove('is-on');
+    el.textContent = 'Every tick is saved straight away. You can close this page at any time.';
+  }, 1600);
 }
 
 function applyFilter(q) {
@@ -164,6 +182,7 @@ function wireList() {
       const hit = CI_TICKETS.find(t => t.id === id);
       if (hit) { hit.status = on ? 'used' : 'valid'; hit.checked_in_at = on ? new Date().toISOString() : null; }
       paintRows();
+      flashSaved();
     } catch (err) {
       toast(err.message, true);
       box.checked = !on;

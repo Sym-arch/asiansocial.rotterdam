@@ -627,6 +627,12 @@ ul,ol{margin:0;padding:0;list-style:none}
 .ci__row.is-in{background:linear-gradient(90deg,rgba(21,128,61,.09),transparent 65%)}
 .ci__row.is-in .ci__who b{opacity:.5;text-decoration:line-through}
 .ci__empty{padding:26px 0;color:var(--muted)}
+.ci__foot{
+  margin-top:32px;padding-top:22px;border-top:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px;
+}
+.ci__saved{font-size:.8rem;color:var(--muted);transition:color .2s ease}
+.ci__saved.is-on{color:#15803d;font-weight:600}
 @media (max-width:640px){ .ci__controls{grid-template-columns:1fr} }
 
 /* ---------- ticket ----------
