@@ -182,10 +182,23 @@ async function boot() {
   }
   await loadMember();
 
-  let admin = false;
+  let admin = false, failed = '';
   try {
-    admin = (await sbSelect('admins', 'user_id=eq.' + encodeURIComponent(SESSION.user_id))).length > 0;
-  } catch (err) { admin = false; }
+    admin = await isAdminUser();
+  } catch (err) { failed = err.message; }
+
+  if (failed) {
+    /* 「管理者ではない」と「確認できなかった」は別物です。
+       混ぜると原因が分からなくなります。 */
+    clearInterval(CI_TIMER);
+    $('#checkinMain').innerHTML = ciShell(`
+      <h1 class="ci__h1">Door check-in</h1>
+      <p class="ci__lead">Could not check this account: ${esc(failed)}</p>
+      <button class="mini" type="button" id="ciOut">Sign out and try again</button>`);
+    $('#ciOut').addEventListener('click', () => { signOut(); boot(); });
+    initShell();
+    return;
+  }
 
   if (!admin) {
     clearInterval(CI_TIMER);

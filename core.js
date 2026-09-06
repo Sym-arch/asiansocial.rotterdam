@@ -903,10 +903,45 @@ function wireMemberCard() {
    --------------------------------------------------------- */
 let MEMBER = null;   /* { profile, membership } */
 
+/**
+ * 古いセッションには user_id が入っていません。
+ * 保存する前に作られたものが localStorage に残っているためで、
+ * その状態で user_id を使うと問い合わせが空振りします。
+ * 足りなければ取り直して保存し直します。
+ */
+async function ensureUserId() {
+  if (!SESSION) return '';
+  if (SESSION.user_id) return SESSION.user_id;
+  try {
+    const res = await fetch(authBase() + '/user', {
+      headers: { apikey: CONFIG.supabase.anonKey, Authorization: 'Bearer ' + SESSION.access_token }
+    });
+    if (!res.ok) return '';
+    const u = await res.json();
+    SESSION.user_id = u.id || '';
+    SESSION.email   = u.email || SESSION.email;
+    DB.set('session', SESSION);
+    return SESSION.user_id;
+  } catch (err) {
+    return '';
+  }
+}
+
+/** いまサインインしている人が管理者か。 */
+async function isAdminUser() {
+  if (!(await ensureSession())) return false;
+  const id = await ensureUserId();
+  if (!id) return false;
+  const rows = await sbSelect('admins', 'user_id=eq.' + encodeURIComponent(id));
+  return rows.length > 0;
+}
+
 /** サインイン中の会員のプロフィールと会員ランクを読む。 */
 async function loadMember() {
-  if (!(await ensureSession()) || !SESSION.user_id) { MEMBER = null; return null; }
-  const id = encodeURIComponent(SESSION.user_id);
+  if (!(await ensureSession())) { MEMBER = null; return null; }
+  const uid = await ensureUserId();
+  if (!uid) { MEMBER = null; return null; }
+  const id = encodeURIComponent(uid);
   try {
     const [profiles, memberships] = await Promise.all([
       sbSelect('profiles', 'id=eq.' + id),
@@ -929,7 +964,8 @@ function memberTier() {
 /** 名前と言語だけ更新できます（他の列はDB側で拒否されます）。 */
 async function saveProfile(fields) {
   if (!(await ensureSession())) throw new Error('Not signed in.');
-  const res = await fetch(sbUrl('profiles', 'id=eq.' + encodeURIComponent(SESSION.user_id)), {
+  const uid = await ensureUserId();
+  const res = await fetch(sbUrl('profiles', 'id=eq.' + encodeURIComponent(uid)), {
     method: 'PATCH',
     headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
     body: JSON.stringify(fields)
