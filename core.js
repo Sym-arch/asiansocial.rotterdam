@@ -137,7 +137,7 @@ function eventCardHTML(ev) {
     <p>${teaser}</p>
     <span class="ev-card__foot">
       <span>${esc(ev.venue)}</span>
-      <b>${done ? 'Finished' : esc(ev.price || 'Free')}</b>
+      <b>${done ? 'Finished' : esc(priceFor(ev).label)}</b>
     </span>
   </a>`;
 }
@@ -260,7 +260,7 @@ function eventDetailsText(ev) {
     '',
     'Venue: ' + ev.venue,
     ev.address ? 'Address: ' + ev.address : '',
-    'Price: ' + (ev.price || 'Free'),
+    'Price: ' + priceFor(ev).label,
     '',
     'Hosted by ' + CONFIG.orgName + ' · ' + CONFIG.contactEmail
   ].filter(Boolean).join('\n');
@@ -346,7 +346,7 @@ You're booked for:
   ${fmtLong(ev)}
   ${fmtTime(ev)} (${CONFIG.timezone})
   ${ev.venue}${ev.address ? ', ' + ev.address : ''}
-  ${ev.price || 'Free'} · ${rsvp.guests} ${rsvp.guests > 1 ? 'people' : 'person'}
+  ${priceFor(ev).label} · ${rsvp.guests} ${rsvp.guests > 1 ? 'people' : 'person'}
 
 Add it to your calendar:
 ${googleCalendarUrl(ev)}
@@ -427,7 +427,7 @@ async function submitRsvp(input) {
       event_date: fmtLong(ev),
       event_time: fmtTime(ev),
       event_venue: [ev.venue, ev.address].filter(Boolean).join(', '),
-      event_price: ev.price || 'Free',
+      event_price: priceFor(ev).label,
       calendar_link: googleCalendarUrl(ev),
       /* absolute URLs so the confirmation email can link and show images */
       first_name: rsvp.name.split(' ')[0],
@@ -1054,12 +1054,91 @@ async function sbDelete(table, id) {
 /* "start" and "end" are reserved words in SQL, so the columns are named differently */
 const evFromRow = r => ({
   id: r.id, title: r.title, date: r.date, start: r.start_time, end: r.end_time,
-  venue: r.venue, address: r.address, price: r.price, image: r.image, description: r.description
+  venue: r.venue, address: r.address, price: r.price, image: r.image, description: r.description,
+  brand: r.brand || 'asian-social',
+  priceCents:       r.price_cents || 0,
+  currency:         r.currency || 'EUR',
+  memberDiscount:   !!r.member_discount,
+  priceMemberCents: r.price_member_cents,
+  earlyBird:        !!r.early_bird,
+  priceEarlyCents:  r.price_early_cents,
+  earlyBirdUntil:   r.early_bird_until,
+  capacity:         r.capacity
 });
 const evToRow = e => ({
   id: e.id, title: e.title, date: e.date, start_time: e.start, end_time: e.end,
-  venue: e.venue, address: e.address, price: e.price, image: e.image, description: e.description
+  venue: e.venue, address: e.address, image: e.image, description: e.description,
+  /* price は表示用の自由入力だった列。金額の計算は price_cents 側で行い、
+     price には整形した文字列を入れて古い表示との互換を保ちます。 */
+  price: priceLabel(e.priceCents || 0, e.currency || 'EUR'),
+  price_cents:        e.priceCents || 0,
+  currency:           e.currency || 'EUR',
+  member_discount:    !!e.memberDiscount,
+  price_member_cents: e.memberDiscount ? (e.priceMemberCents ?? null) : null,
+  early_bird:         !!e.earlyBird,
+  price_early_cents:  e.earlyBird ? (e.priceEarlyCents ?? null) : null,
+  early_bird_until:   e.earlyBird ? (e.earlyBirdUntil || null) : null
 });
+
+/* ---------------------------------------------------------
+   価格
+
+   金額はセントの整数で持ちます。表示するときだけ割ります。
+   --------------------------------------------------------- */
+
+const CURRENCY_SIGN = { EUR: '\u20ac', USD: '$', GBP: '\u00a3', JPY: '\u00a5' };
+
+/** 1250 → "€12.50" / 0 → "Free" */
+function priceLabel(cents, currency) {
+  const n = Number(cents) || 0;
+  if (n <= 0) return 'Free';
+  const sign = CURRENCY_SIGN[currency || 'EUR'] || (currency || '') + ' ';
+  const s = (n / 100).toFixed(2).replace(/\.00$/, '');
+  return sign + s;
+}
+
+/** Admin の入力欄用。1250 → "12.50" */
+const centsToInput = cents =>
+  (cents === null || cents === undefined || cents === '') ? '' : String(Number(cents) / 100);
+
+/** "12.50" → 1250。四捨五入するので 12.505 のような入力でもずれません。 */
+const inputToCents = v => Math.max(0, Math.round((parseFloat(String(v).replace(',', '.')) || 0) * 100));
+
+/** 早割が今日まだ有効か。 */
+function earlyBirdActive(ev) {
+  if (!ev || !ev.earlyBird || !ev.earlyBirdUntil) return false;
+  const [y, m, d] = String(ev.earlyBirdUntil).split('-').map(Number);
+  /* その日の終わりまで有効にします。締切当日に買えないのは不親切なので */
+  return Date.now() <= new Date(y, (m || 1) - 1, d || 1, 23, 59, 59).getTime();
+}
+
+/**
+ * その訪問者に適用される価格を決めます。
+ * 割引が重なったときは一番安いものを採ります。会員なのに高い、が起きないためです。
+ * @returns {{cents:number, label:string, base:number, baseLabel:string, reason:string}}
+ */
+function priceFor(ev, tier) {
+  const cur  = (ev && ev.currency) || 'EUR';
+  const base = (ev && ev.priceCents) || 0;
+  const who  = tier || (typeof memberTier === 'function' ? memberTier() : 'guest');
+
+  const options = [{ cents: base, reason: '' }];
+  if (ev && ev.memberDiscount && ev.priceMemberCents != null && who !== 'guest') {
+    options.push({ cents: ev.priceMemberCents, reason: 'member' });
+  }
+  if (earlyBirdActive(ev) && ev.priceEarlyCents != null) {
+    options.push({ cents: ev.priceEarlyCents, reason: 'early' });
+  }
+  const best = options.reduce((a, b) => (b.cents < a.cents ? b : a));
+
+  return {
+    cents: best.cents,
+    label: priceLabel(best.cents, cur),
+    base: base,
+    baseLabel: priceLabel(base, cur),
+    reason: best.cents < base ? best.reason : ''
+  };
+}
 const noteFromRow = r => ({
   id: r.id, title: r.title, url: r.url, date: r.date,
   tag: r.tag, image: r.image, description: r.description

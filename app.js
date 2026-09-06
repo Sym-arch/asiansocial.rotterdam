@@ -349,6 +349,13 @@ function renderAdmin() {
     </tr>`).join('')}</tbody>` : '<tbody><tr><td><div class="empty">No messages yet.</div></td></tr></tbody>';
 }
 
+/* チェックが外れている項目の入力欄は出しません。
+   使わない欄が並んでいると、入れるべきか迷わせるためです。 */
+function syncPriceOptions() {
+  $('#aeMemberWrap').hidden = !$('#aeMemberOn').checked;
+  $('#aeEarlyWrap').hidden  = !$('#aeEarlyOn').checked;
+}
+
 function eventFormFill(ev) {
   $('#aeId').value = ev ? ev.id : '';
   $('#aeTitle').value = ev ? ev.title : '';
@@ -357,7 +364,13 @@ function eventFormFill(ev) {
   $('#aeEnd').value = ev ? (ev.end || '') : '22:00';
   $('#aeVenue').value = ev ? ev.venue : '';
   $('#aeAddr').value = ev ? (ev.address || '') : '';
-  $('#aePrice').value = ev ? (ev.price || 'Free') : 'Free';
+  $('#aePrice').value       = ev ? centsToInput(ev.priceCents) : '0';
+  $('#aeMemberOn').checked  = !!(ev && ev.memberDiscount);
+  $('#aeMemberPrice').value = ev ? centsToInput(ev.priceMemberCents) : '';
+  $('#aeEarlyOn').checked   = !!(ev && ev.earlyBird);
+  $('#aeEarlyPrice').value  = ev ? centsToInput(ev.priceEarlyCents) : '';
+  $('#aeEarlyUntil').value  = (ev && ev.earlyBirdUntil) || '';
+  syncPriceOptions();
   $('#aeDesc').value = ev ? ev.description : '';
   $('#aeFile').value = '';
   $('#aeImgClear').checked = false;
@@ -583,11 +596,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin: event form */
   $('#adminEventReset').addEventListener('click', () => eventFormFill(null));
+  $('#aeMemberOn').addEventListener('change', syncPriceOptions);
+  $('#aeEarlyOn').addEventListener('change', syncPriceOptions);
   $('#adminEventForm').addEventListener('submit', async e => {
     e.preventDefault();
     const required = ['#aeTitle', '#aeDate', '#aeStart', '#aeVenue', '#aeDesc'];
     if (required.some(sel => !$(sel).value.trim()))
       return toast('Fill in title, date, start time, venue and description.', true);
+
+    /* チェックが入っているのに金額が空だと、表示側でどう出すか決められません */
+    if ($('#aeMemberOn').checked && !$('#aeMemberPrice').value.trim())
+      return toast('Member discount is ticked — fill in the member price.', true);
+    if ($('#aeEarlyOn').checked && (!$('#aeEarlyPrice').value.trim() || !$('#aeEarlyUntil').value))
+      return toast('Early bird is ticked — fill in the price and the last day.', true);
 
     const id = $('#aeId').value;
     const existing = EVENTS.find(x => x.id === id);
@@ -610,7 +631,13 @@ document.addEventListener('DOMContentLoaded', () => {
       end: $('#aeEnd').value,
       venue: $('#aeVenue').value.trim(),
       address: $('#aeAddr').value.trim(),
-      price: $('#aePrice').value.trim() || 'Free',
+      priceCents:       inputToCents($('#aePrice').value),
+      currency:         'EUR',
+      memberDiscount:   $('#aeMemberOn').checked,
+      priceMemberCents: $('#aeMemberOn').checked ? inputToCents($('#aeMemberPrice').value) : null,
+      earlyBird:        $('#aeEarlyOn').checked,
+      priceEarlyCents:  $('#aeEarlyOn').checked ? inputToCents($('#aeEarlyPrice').value) : null,
+      earlyBirdUntil:   $('#aeEarlyOn').checked ? ($('#aeEarlyUntil').value || null) : null,
       image,
       description: $('#aeDesc').value.trim()
     };
@@ -671,7 +698,7 @@ A quick reminder about ${ev.title}.
   ${fmtLong(ev)}
   ${fmtTime(ev)} (${CONFIG.timezone})
   ${ev.venue}${ev.address ? ', ' + ev.address : ''}
-  ${ev.price || 'Free'}
+  ${priceFor(ev).label}
 
 Add it to your calendar: ${googleCalendarUrl(ev)}
 

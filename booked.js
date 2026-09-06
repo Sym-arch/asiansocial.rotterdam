@@ -49,7 +49,7 @@ function render(rsvp, ev) {
               <li><span class="lbl">${esc(t('meta.date'))}</span>${esc(fmtLong(ev))}</li>
               <li><span class="lbl">${esc(t('meta.time'))}</span>${esc(fmtTime(ev))} (${esc(CONFIG.timezone)})</li>
               <li><span class="lbl">${esc(t('meta.venue'))}</span>${esc(ev.venue)}${ev.address ? ', ' + esc(ev.address) : ''}</li>
-              <li><span class="lbl">${esc(t('meta.tickets'))}</span>${esc(ev.price || 'Free')} · ${esc(rsvp.guests)} ${esc(t(rsvp.guests > 1 ? 'meta.people' : 'meta.person'))}</li>
+              <li><span class="lbl">${esc(t('meta.tickets'))}</span>${esc(priceFor(ev).label)} · ${esc(rsvp.guests)} ${esc(t(rsvp.guests > 1 ? 'meta.people' : 'meta.person'))}</li>
               <li><span class="lbl">${esc(t('meta.email'))}</span>${esc(rsvp.email)}</li>
             </ul>
           </div>

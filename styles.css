@@ -667,6 +667,21 @@ ul,ol{margin:0;padding:0;list-style:none}
 .tk__msg{font-size:clamp(1.5rem,5vw,2.2rem);margin-bottom:24px}
 .tk--used .tk__name{opacity:.45}
 
+/* ---------- price ----------
+   割引が効いているときだけ元の値段を並べます。
+   効いていないのに二つ出すと、かえって分かりにくくなります。 */
+.price-was{display:block;font-size:.8rem;color:var(--muted);margin-top:2px}
+.price-was em{font-style:normal;color:var(--brand);font-weight:600}
+.price-tag{font-style:normal;color:var(--brand);font-weight:600;font-size:.82rem}
+
+/* Admin の価格オプション */
+.price-opt{border-top:1px solid var(--rule-soft);padding-top:16px}
+.check{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.92rem}
+.check input{width:18px;height:18px;accent-color:var(--brand);cursor:pointer}
+.price-opt__body{margin-top:14px;padding-left:28px}
+.price-opt__row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:600px){ .price-opt__row{grid-template-columns:1fr} }
+
 /* ---------- booking as a member ---------- */
 .book-as{
   border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);

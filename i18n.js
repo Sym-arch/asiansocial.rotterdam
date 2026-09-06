@@ -142,6 +142,10 @@ const I18N = {
     'booked.ticketBody':  'Open it on your phone at the door. It is also in your confirmation email.',
     'booked.ticketBtn':   'Open my ticket',
 
+    'price.member':     'member price',
+    'price.early':      'early bird',
+    'price.memberHint': 'Members pay {price}. Booking makes you a member — it is free.',
+
     'meta.date':           'Date',
     'meta.time':           'Time',
     'meta.venue':          'Venue',
@@ -275,6 +279,10 @@ const I18N = {
     'booked.ticketTitle': 'Je ticket',
     'booked.ticketBody':  'Open het op je telefoon bij de deur. Het staat ook in je bevestigingsmail.',
     'booked.ticketBtn':   'Open mijn ticket',
+
+    'price.member':     'ledenprijs',
+    'price.early':      'vroegboek',
+    'price.memberHint': 'Leden betalen {price}. Door te boeken word je lid — gratis.',
 
     'meta.date':           'Datum',
     'meta.time':           'Tijd',
@@ -410,6 +418,10 @@ const I18N = {
     'booked.ticketBody':  '当日はスマホでこの画面を開いてください。確認メールにも入っています。',
     'booked.ticketBtn':   'チケットを開く',
 
+    'price.member':     '会員価格',
+    'price.early':      '早割',
+    'price.memberHint': '会員は {price} です。予約すればその場で会員になります（無料）。',
+
     'meta.date':           '日付',
     'meta.time':           '時間',
     'meta.venue':          '会場',
@@ -543,6 +555,10 @@ const I18N = {
     'booked.ticketTitle': '你的票',
     'booked.ticketBody':  '当天请用手机打开此页面。确认邮件中也有。',
     'booked.ticketBtn':   '打开我的票',
+
+    'price.member':     '会员价',
+    'price.early':      '早鸟优惠',
+    'price.memberHint': '会员仅需 {price}。预订即成为会员，免费。',
 
     'meta.date':           '日期',
     'meta.time':           '时间',
@@ -678,6 +694,10 @@ const I18N = {
     'booked.ticketBody':  '當天請用手機打開此頁面。確認信中也有。',
     'booked.ticketBtn':   '打開我的票券',
 
+    'price.member':     '會員價',
+    'price.early':      '早鳥優惠',
+    'price.memberHint': '會員僅需 {price}。預約即成為會員，免費。',
+
     'meta.date':           '日期',
     'meta.time':           '時間',
     'meta.venue':          '場地',
@@ -811,6 +831,10 @@ const I18N = {
     'booked.ticketTitle': '티켓',
     'booked.ticketBody':  '당일 휴대폰으로 이 화면을 열어주세요. 확인 메일에도 들어 있습니다.',
     'booked.ticketBtn':   '내 티켓 열기',
+
+    'price.member':     '회원가',
+    'price.early':      '얼리버드',
+    'price.memberHint': '회원은 {price}입니다. 예약하면 바로 회원이 됩니다(무료).',
 
     'meta.date':           '날짜',
     'meta.time':           '시간',
@@ -946,6 +970,10 @@ const I18N = {
     'booked.ticketBody':  'วันงานเปิดหน้านี้บนมือถือ อยู่ในอีเมลยืนยันด้วย',
     'booked.ticketBtn':   'เปิดบัตรของฉัน',
 
+    'price.member':     'ราคาสมาชิก',
+    'price.early':      'จองล่วงหน้า',
+    'price.memberHint': 'สมาชิกจ่าย {price} จองแล้วเป็นสมาชิกทันที ฟรี',
+
     'meta.date':           'วันที่',
     'meta.time':           'เวลา',
     'meta.venue':          'สถานที่',
@@ -1079,6 +1107,10 @@ const I18N = {
     'booked.ticketTitle': 'Tiketmu',
     'booked.ticketBody':  'Buka di ponselmu saat datang. Ada juga di email konfirmasimu.',
     'booked.ticketBtn':   'Buka tiketku',
+
+    'price.member':     'harga anggota',
+    'price.early':      'early bird',
+    'price.memberHint': 'Anggota membayar {price}. Memesan langsung membuatmu jadi anggota — gratis.',
 
     'meta.date':           'Tanggal',
     'meta.time':           'Waktu',

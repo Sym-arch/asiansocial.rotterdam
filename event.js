@@ -5,6 +5,24 @@
 
 const EV_ID = new URLSearchParams(location.search).get('id');
 
+/* 割引が効いているときだけ、元の値段に取り消し線を引きます。
+   効いていないときに二つ並べると、かえって分かりにくくなります。 */
+function priceBlockHTML(ev) {
+  const p = priceFor(ev);
+  if (!p.reason) return `<b>${esc(p.label)}</b>`;
+  return `<b>${esc(p.label)}</b>
+    <span class="price-was">${esc(p.baseLabel)}
+      <em>${esc(t(p.reason === 'member' ? 'price.member' : 'price.early'))}</em></span>`;
+}
+
+function priceInlineHTML(ev) {
+  const p = priceFor(ev);
+  if (!p.reason) return esc(p.label) + '.';
+  return `<b>${esc(p.label)}</b> <s>${esc(p.baseLabel)}</s>
+    <em class="price-tag">${esc(t(p.reason === 'member' ? 'price.member' : 'price.early'))}</em>.`;
+}
+
+/* サインインするとその人の価格に変わるので、会員状態が動いたら描き直します */
 function notFound() {
   $('#eventMain').innerHTML = `
     <div class="wrap" style="padding:90px 0 60px">
@@ -41,7 +59,7 @@ function bookingHTML(ev) {
   return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
     <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('rsvp.title'))}</h2>
     <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
-      ${esc(ev.price || 'Free')}. ${esc(t('rsvp.note'))}</p>
+      ${priceInlineHTML(ev)} ${esc(t('rsvp.note'))}</p>
 
     <form id="bookForm" novalidate>
       ${signed ? `
@@ -113,7 +131,7 @@ function renderEvent(ev) {
           <div class="ev-facts">
             <div><span class="lbl">Date</span><div><b>${esc(fmtLong(ev))}</b><span>${esc(fmtTime(ev))} · ${esc(CONFIG.timezone)}</span></div></div>
             <div><span class="lbl">Venue</span><div><b>${esc(ev.venue)}</b><span>${esc(ev.address || 'Rotterdam')}</span></div></div>
-            <div><span class="lbl">Tickets</span><div><b>${esc(ev.price || 'Free')}</b>${done ? '<span>This event has finished</span>' : ''}</div></div>
+            <div><span class="lbl">Tickets</span><div>${priceBlockHTML(ev)}${done ? '<span>This event has finished</span>' : ''}</div></div>
           </div>
 
           <div class="hero__cta">
