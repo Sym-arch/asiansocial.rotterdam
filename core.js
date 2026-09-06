@@ -404,6 +404,15 @@ async function submitRsvp(input) {
       id: rsvp.id, event_id: ev.id, event_title: ev.title, event_date: ev.date,
       name: rsvp.name, email: rsvp.email, guests
     }).catch(err => console.warn('rsvp not stored:', err.message));
+
+    /* 発券も同じく「失敗しても予約は通す」扱いにします。
+       チケットが出なくても受付の名簿で入場できるためです。 */
+    try {
+      const issued = await issueTicket(ev, rsvp);
+      rsvp.ticketSecret = issued.secret;
+    } catch (err) {
+      console.warn('ticket not issued:', err.message);
+    }
   }
 
   let mode = 'manual';
@@ -438,7 +447,8 @@ async function submitRsvp(input) {
 const bookedUrl = (rsvp, mode) => {
   const lang = uiLang();
   return 'booked.html?id=' + encodeURIComponent(rsvp.id) + '&m=' + mode +
-         (lang === 'en' ? '' : '&lang=' + lang);
+         (lang === 'en' ? '' : '&lang=' + lang) +
+         (rsvp.ticketSecret ? '&t=' + encodeURIComponent(rsvp.ticketSecret) : '');
 };
 
 /* ---------------------------------------------------------
@@ -561,6 +571,141 @@ async function sendPasswordReset(email) {
     body: JSON.stringify({ email: email.trim() })
   }).catch(() => {});
   return true;
+}
+
+/* ---------------------------------------------------------
+   注文とチケット
+
+   まだお金は扱いません。無料イベントだけで
+   発券 → 表示 → 入場 まで通しきります。
+
+   チケットのURLに入る secret は、知っている人だけが
+   開ける鍵です。当日の入口でログインを求めるのは
+   現実的ではないので、メールのリンクだけで開けます。
+   --------------------------------------------------------- */
+
+/** 推測できない長い乱数。URLを総当たりされても当たらない長さにします。 */
+function newSecret() {
+  const a = new Uint8Array(24);
+  crypto.getRandomValues(a);
+  return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+const ticketUrl = (secret) => {
+  const u = new URL('ticket.html', location.href);
+  u.searchParams.set('t', secret);
+  const lang = uiLang();
+  if (lang !== 'en') u.searchParams.set('lang', lang);
+  return u.href;
+};
+
+/**
+ * 予約から注文と1枚のチケットを作ります。
+ * 失敗しても予約自体は成立させます（呼び出し側で catch）。
+ */
+async function issueTicket(ev, rsvp) {
+  const secret = newSecret();
+  const orderId = 'o' + rsvp.id;
+
+  await sbInsert('orders', {
+    id: orderId,
+    user_id: (SESSION && SESSION.user_id) || null,
+    email: rsvp.email,
+    name: rsvp.name,
+    event_id: ev.id,
+    event_title: ev.title,
+    event_date: ev.date,
+    quantity: rsvp.guests,
+    unit_price_cents: 0,
+    total_cents: 0,
+    tier_at_purchase: memberTier(),
+    status: 'paid'
+  });
+
+  await sbInsert('tickets', {
+    id: 't' + rsvp.id,
+    order_id: orderId,
+    user_id: (SESSION && SESSION.user_id) || null,
+    email: rsvp.email,
+    event_id: ev.id,
+    event_title: ev.title,
+    event_date: ev.date,
+    holder_name: rsvp.name,
+    quantity: rsvp.guests,
+    secret: secret,
+    status: 'valid'
+  });
+
+  return { secret, url: ticketUrl(secret) };
+}
+
+/** secret だけでチケットを読みます（ログイン不要）。 */
+async function fetchTicket(secret) {
+  const res = await fetch(sbUrl('rpc/get_ticket'), {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_secret: secret })
+  });
+  if (!res.ok) throw new Error('ticket read failed (' + res.status + ')');
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+/**
+ * 入場の消し込み。
+ * 判定と更新をDB側の1文にまとめているので、
+ * 2台で同時に押しても必ず片方だけが通ります。
+ */
+async function checkInTicket(secret) {
+  const res = await fetch(sbUrl('rpc/check_in_ticket'), {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_secret: secret })
+  });
+  if (!res.ok) throw new Error('check-in failed (' + res.status + ')');
+  const rows = await res.json();
+  return rows[0] || { ok: false, reason: 'unknown' };
+}
+
+/* --- 受付（管理者のみ） ------------------------------------------------
+   secret は列の権限から外してあるので、管理者でも取り出せません。
+   受付は名簿から手で通す形になります（それで十分で、かつ安全です）。 */
+
+/* secret は権限から外してあるので、列を明示して取ります */
+const TICKET_COLS = 'id,order_id,user_id,email,event_id,event_title,event_date,' +
+                    'holder_name,quantity,status,checked_in_at,created_at';
+
+async function adminListTickets(eventId) {
+  if (!(await ensureSession())) throw new Error('Not signed in.');
+  return sbSelect('tickets',
+    'select=' + TICKET_COLS +
+    '&event_id=eq.' + encodeURIComponent(eventId) + '&order=holder_name.asc');
+}
+
+/**
+ * 受付から手で通します。
+ * 「使用済みだが通す」も残せるようにしているのは、転送された画面が
+ * 先にスライドされたとき、本物の人を弾いたままにしないためです。
+ */
+async function adminCheckIn(ticketId, override) {
+  if (!(await ensureSession())) throw new Error('Not signed in.');
+  const res = await fetch(sbUrl('tickets', 'id=eq.' + encodeURIComponent(ticketId)), {
+    method: 'PATCH',
+    headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
+    body: JSON.stringify({
+      status: 'used',
+      checked_in_at: new Date().toISOString(),
+      checked_in_by: signedInAs()
+    })
+  });
+  if (!res.ok) throw new Error('check-in failed (' + res.status + ')');
+
+  sbInsert('ticket_history', {
+    ticket_id: ticketId,
+    action: override ? 'override' : 'checked_in',
+    by_email: signedInAs(),
+    detail: { source: 'door' }
+  }).catch(() => {});
 }
 
 /* ---------------------------------------------------------
@@ -850,7 +995,12 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
    (which a request for a table that does not exist triggers), so one retry
    keeps an unrelated table from being taken down with it. */
 async function sbSelect(table, query, attempt = 0) {
-  const res = await fetch(sbUrl(table, 'select=*' + (query ? '&' + query : '')), { headers: sbHeaders() });
+  /* 呼び出し側が select= を指定していればそれを使います。
+     tickets は列単位で権限を絞っているため、select=* だと
+     secret まで要求したことになって 403 になります。 */
+  const hasSelect = query && /(^|&)select=/.test(query);
+  const q = hasSelect ? query : ('select=*' + (query ? '&' + query : ''));
+  const res = await fetch(sbUrl(table, q), { headers: sbHeaders() });
   if (res.ok) return res.json();
   if (attempt < 2 && (res.status === 404 || res.status >= 500)) {
     await wait(600 * (attempt + 1));

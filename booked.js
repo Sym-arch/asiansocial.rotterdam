@@ -5,6 +5,7 @@
 
 const Q = new URLSearchParams(location.search);
 const MODE = Q.get('m') || 'manual';
+const TICKET_SECRET = Q.get('t') || '';
 
 function noBooking() {
   $('#bookedMain').innerHTML = `
@@ -58,6 +59,12 @@ function render(rsvp, ev) {
         <a class="btn btn--brand btn--block booked__primary" href="${esc(organiserMail)}">
           ${esc(t('booked.manualBtn'))}</a>
         <p class="booked__hint">${esc(t('booked.manualHint'))}</p>` : ''}
+
+        ${TICKET_SECRET ? `
+        <h3 class="booked__sub">${esc(t('booked.ticketTitle'))}</h3>
+        <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.ticketBody'))}</p>
+        <a class="btn btn--brand" href="ticket.html?t=${encodeURIComponent(TICKET_SECRET)}">
+          ${esc(t('booked.ticketBtn'))}</a>` : ''}
 
         <h3 class="booked__sub">${esc(t('booked.calendar'))}</h3>
         <div class="booked__actions">
