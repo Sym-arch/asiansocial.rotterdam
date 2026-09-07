@@ -21,9 +21,14 @@
   --on-night:#ece8f5;
   --on-night-muted:rgba(236,232,245,.62);
   --rule-night:rgba(236,232,245,.18);
+  /* 写真の上にかける覆い。ここを固定色にすると、暗い設定のときだけ
+     明るい覆いの上に明るい文字が乗って読めなくなります。 */
+  --veil-1:rgba(250,247,242,.90);
+  --veil-2:rgba(250,247,242,.68);
+  --veil-3:rgba(250,247,242,.95);
 
   --max:1240px;
-  --gutter:clamp(20px,5vw,64px);
+  --gutter:clamp(28px,5vw,64px);   /* 電話では 28px。20px だとカードが画面の端に貼りついて見えます */
   --header-h:70px;
   --display:"Bricolage Grotesque","Plus Jakarta Sans",Georgia,sans-serif;
   --body:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",Roboto,sans-serif;
@@ -38,6 +43,9 @@
     --paper-2:#171223;
     --rule:rgba(242,238,248,.16);
     --rule-soft:rgba(242,238,248,.08);
+    --veil-1:rgba(16,12,24,.92);
+    --veil-2:rgba(16,12,24,.72);
+    --veil-3:rgba(16,12,24,.96);
   }
 }
 :root[data-theme="dark"]{
@@ -48,6 +56,9 @@
   --paper-2:#171223;
   --rule:rgba(242,238,248,.16);
   --rule-soft:rgba(242,238,248,.08);
+  --veil-1:rgba(16,12,24,.92);
+  --veil-2:rgba(16,12,24,.72);
+  --veil-3:rgba(16,12,24,.96);
 }
 
 *,*::before,*::after{box-sizing:border-box}
@@ -189,7 +200,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* daylight variant: same photographic band, read as light */
 .band--day{background:var(--paper);color:var(--ink)}
 .band--day::after{
-  background:linear-gradient(180deg,rgba(250,247,242,.90),rgba(250,247,242,.68) 42%,rgba(250,247,242,.95));
+  background:linear-gradient(180deg,var(--veil-1),var(--veil-2) 42%,var(--veil-3));
 }
 .band--day .band__bg{filter:saturate(.92)}
 .band--day h1,.band--day h2,.band--day h3,.band--day h4{color:var(--ink)}
@@ -788,6 +799,12 @@ ul,ol{margin:0;padding:0;list-style:none}
   .nav.is-open{display:flex}
   .nav a{padding:14px 0;font-size:1rem;border-bottom:1px solid var(--rule-soft)}
   .nav a::after{display:none}
+  /* ログインは他の項目と役割が違うので、メニューの最後にボタンとして置きます。
+     並べただけだと、たどり着く前に閉じられます。 */
+  .nav__acc{
+    margin-top:14px;border-bottom:0!important;text-align:center;
+    background:var(--brand);color:#fff!important;font-weight:700;
+  }
   .header .btn{margin:14px 0 0}
   .lang{margin-left:auto}
   .burger{display:flex;margin-left:0}

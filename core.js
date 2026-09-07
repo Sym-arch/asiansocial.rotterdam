@@ -1272,15 +1272,12 @@ function bootstrapContent(render) {
    Google's translation proxy, so event text written in the Admin panel
    gets translated too — nothing has to be maintained per language.
    --------------------------------------------------------- */
+/* 既定は英語です。増やすときは i18n.js に同じキーを足してから足してください。
+   訳の無い言語を並べると、選んだのに英語のまま、という見え方になります。 */
 const LANGS = [
-  { code: 'en',    label: 'English',            short: 'EN' },
-  { code: 'nl',    label: 'Nederlands',         short: 'NL' },
-  { code: 'ja',    label: '日本語', short: 'JA' },
-  { code: 'zh-CN', label: '简体中文', short: 'ZH' },
-  { code: 'zh-TW', label: '繁體中文（台灣）', short: 'TW' },
-  { code: 'ko',    label: '한국어', short: 'KO' },
-  { code: 'th',    label: 'ไทย', short: 'TH' },
-  { code: 'id',    label: 'Bahasa Indonesia',   short: 'ID' }
+  { code: 'en', label: 'English',    short: 'EN' },
+  { code: 'ja', label: '日本語',      short: 'JA' },
+  { code: 'nl', label: 'Nederlands', short: 'NL' }
 ];
 
 const TRANSLATE_HOST = '.translate.goog';
@@ -1398,6 +1395,21 @@ function showNativeNotice() {
 }
 
 /* ナビの Membership はページ遷移ではなくモーダルを開きます */
+/**
+ * 同じ登録を二度しないための札。
+ *
+ * initShell() は内容を描き直すたびに呼ばれます（キャッシュで一度、
+ * Supabase から届いてもう一度）。素直に addEventListener すると
+ * リスナーが積み上がり、開いてすぐ閉じる＝押しても何も起きない、
+ * という形で壊れます。ハンバーガーと言語メニューが実際にそうなっていました。
+ */
+const BOUND = new Set();
+function bindOnce(key, fn) {
+  if (BOUND.has(key)) return;
+  BOUND.add(key);
+  fn();
+}
+
 function initMemberLinks() {
   $$('[data-member]').forEach(el => {
     if (el.dataset.memberBound) return;
@@ -1407,12 +1419,28 @@ function initMemberLinks() {
       openMemberModal(el.dataset.member === 'create' ? 'create' : undefined);
     });
   });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeMemberModal();
+  bindOnce('member-esc', () => {
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeMemberModal();
+    });
   });
 }
 
 const isLocalHost = () => /^(localhost|127\.|0\.0\.0\.0|\[?::1)/.test(location.hostname) || location.protocol === 'file:';
+
+/**
+ * ヘッダーの会員リンクの文字を、いまの状態に合わせます。
+ * 「Membership」だけだと、入る場所なのか自分の情報なのか分かりません。
+ */
+function syncAccountLink() {
+  $$('[data-member]').forEach(el => {
+    if (el.dataset.member === 'create') return;   /* 「登録する」ボタンは固定文言 */
+    el.textContent = isSignedIn() ? t('account.mine') : t('account.signin');
+    el.removeAttribute('data-i18n');              /* ここで入れた文字を消させません */
+  });
+}
+
+document.addEventListener('member:changed', syncAccountLink);
 
 function initLangMenu() {
   const box = $('#lang'), btn = $('#langBtn'), menu = $('#langMenu');
@@ -1431,12 +1459,14 @@ function initLangMenu() {
   const open  = () => { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); };
   close();
 
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    menu.hidden ? open() : close();
+  bindOnce('lang-menu', () => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      menu.hidden ? open() : close();
+    });
+    document.addEventListener('click', e => { if (!box.contains(e.target)) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   });
-  document.addEventListener('click', e => { if (!box.contains(e.target)) close(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   /* the proxy cannot reach a machine that is not on the public internet */
   if (isLocalHost()) {
@@ -1463,12 +1493,15 @@ function initShell() {
 
   const nav = $('#nav'), burger = $('#burger');
   if (nav && burger) {
-    burger.addEventListener('click', () => {
-      const open = nav.classList.toggle('is-open');
-      burger.setAttribute('aria-expanded', String(open));
+    bindOnce('burger', () => {
+      burger.addEventListener('click', () => {
+        const open = nav.classList.toggle('is-open');
+        burger.setAttribute('aria-expanded', String(open));
+      });
+      nav.addEventListener('click', e => { if (e.target.tagName === 'A') nav.classList.remove('is-open'); });
     });
-    nav.addEventListener('click', e => { if (e.target.tagName === 'A') nav.classList.remove('is-open'); });
   }
+  syncAccountLink();
 
   const rev = new IntersectionObserver((entries, obs) => {
     entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); obs.unobserve(en.target); } });
