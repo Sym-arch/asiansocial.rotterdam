@@ -120,6 +120,27 @@ async function fulfil(session) {
     });
   }
 
+  /* 予約そのものも作ります。管理画面の受付名簿と、会員証の「予約一覧」は
+     orders ではなく rsvps を見ています。ここを書かないと、支払いは通ったのに
+     どこにも予約が無い、という状態になります。 */
+  const rsvpId = 'r_' + session.id.slice(-24);
+  const rsvps  = await sb('rsvps?select=id&id=eq.' + encodeURIComponent(rsvpId));
+  if (!rsvps.length) {
+    await sb('rsvps', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        id: rsvpId,
+        event_id: eventId,
+        event_title: ev.title || '',
+        event_date: ev.date || null,
+        name: name || email,
+        email,
+        guests: quantity
+      })
+    });
+  }
+
   const tickets = await sb('tickets?select=id,secret&id=eq.' + encodeURIComponent(ticketId));
   if (tickets.length) return;               /* 発券済み。メールも送信済みです */
 
