@@ -13,7 +13,8 @@
   --paper-2:#f2ece3;
   --night:#141020;
   --night-2:#1e1830;
-  --brand:#c10e2e;
+  --brand:#c10e2e;         /* 面（ボタンなど）に敷く赤。白文字が乗ります */
+  --brand-text:#c10e2e;    /* 文字に使う赤。暗い設定では明るい側へ振ります */
   --ember:#f97316;
   --violet:#5b4bd6;
   --rule:rgba(14,11,20,.14);
@@ -45,6 +46,7 @@
     --rule-soft:rgba(242,238,248,.08);
     --veil-1:rgba(16,12,24,.92);
     --veil-2:rgba(16,12,24,.72);
+    --brand-text:#ff6b81;
     --veil-3:rgba(16,12,24,.96);
   }
 }
@@ -58,6 +60,7 @@
   --rule-soft:rgba(242,238,248,.08);
   --veil-1:rgba(16,12,24,.92);
   --veil-2:rgba(16,12,24,.72);
+  --brand-text:#ff6b81;
   --veil-3:rgba(16,12,24,.96);
 }
 
@@ -85,7 +88,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   font-size:.68rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
   color:var(--muted);font-family:var(--body);
 }
-.label--brand{color:var(--brand)}
+.label--brand{color:var(--brand-text)}
 .label--on-night{color:var(--on-night-muted)}
 
 .sec__head{
@@ -135,7 +138,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .brand img{width:38px;height:38px;border-radius:50%}
 .brand__txt{display:flex;flex-direction:column;line-height:1.1}
 .brand__txt b{font-family:var(--display);font-size:.98rem;font-weight:600;letter-spacing:-.01em}
-.brand__txt span{font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--brand)}
+.brand__txt span{font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--brand-text)}
 .nav{margin-left:auto;display:flex;align-items:center;gap:2px}
 .nav a{
   text-decoration:none;font-size:.86rem;font-weight:600;color:var(--ink-2);
@@ -146,7 +149,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .22s ease;
 }
 .nav a:hover::after,.nav a.is-active::after{transform:scaleX(1)}
-.nav a.is-active{color:var(--brand)}
+.nav a.is-active{color:var(--brand-text)}
 .header .btn{margin-left:10px}
 .burger{
   display:none;margin-left:auto;width:42px;height:42px;
@@ -180,7 +183,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   transition:background .12s ease,color .12s ease;
 }
 .lang__menu li a:hover{background:var(--ink);color:var(--paper)}
-.lang__menu li a.is-on{color:var(--brand);font-weight:700}
+.lang__menu li a.is-on{color:var(--brand-text);font-weight:700}
 
 /* ---------- full-bleed photo bands ---------- */
 .band{position:relative;isolation:isolate;overflow:hidden;background:var(--night);color:var(--on-night)}
@@ -205,7 +208,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .band--day .band__bg{filter:saturate(.92)}
 .band--day h1,.band--day h2,.band--day h3,.band--day h4{color:var(--ink)}
 .band--day p{color:var(--muted)}
-.band--day .label{color:var(--brand)}
+.band--day .label{color:var(--brand-text)}
 .band--day .pillar p{color:var(--muted)}
 
 /* a band whose photo stays fixed behind a very tall section (the timeline).
@@ -229,7 +232,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   font-size:clamp(2.3rem,6.4vw,5.4rem);line-height:.98;letter-spacing:-.035em;
   max-width:18ch;
 }
-.hero h1 em{font-style:normal;color:var(--brand)}
+.hero h1 em{font-style:normal;color:var(--brand-text)}
 .hero__lead{
   margin-top:28px;max-width:54ch;font-size:clamp(1rem,1.5vw,1.16rem);
   color:var(--on-night-muted);
@@ -255,7 +258,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   width:56px;aspect-ratio:1;overflow:hidden;background:var(--night-2);
 }
 .next-item__img img{width:100%;height:100%;object-fit:cover;display:block}
-.next-item time{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand)}
+.next-item time{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-text)}
 .next-item strong{font-family:var(--display);font-size:1.05rem;font-weight:500}
 .next-item__meta{font-size:.82rem;color:var(--on-night-muted)}
 
@@ -278,7 +281,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   display:grid;grid-template-columns:34px 1fr;gap:14px;
   padding:18px 0;border-bottom:1px solid var(--rule);font-size:.95rem;color:var(--ink-2);
 }
-.mission li i{font-style:normal;font-family:var(--display);color:var(--brand);font-size:.9rem;padding-top:2px}
+.mission li i{font-style:normal;font-family:var(--display);color:var(--brand-text);font-size:.9rem;padding-top:2px}
 .mission li b{font-weight:700;color:var(--ink)}
 
 /* ---------- horizontal rails ---------- */
@@ -310,7 +313,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .ev-card__date{
   display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   padding:16px 0 12px;border-bottom:1px solid var(--rule);
-  font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);
+  font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-text);
 }
 .ev-card__date span:last-child{color:var(--muted)}
 .ev-card h3{font-size:1.14rem;margin:14px 0 8px;font-weight:500;text-wrap:balance}
@@ -409,7 +412,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .cal__cell.is-out{opacity:.28}
 .cal__cell.is-today{background:color-mix(in srgb,var(--brand) 6%,transparent)}
 .cal__num{font-size:.74rem;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
-.cal__cell.is-today .cal__num{color:var(--brand)}
+.cal__cell.is-today .cal__num{color:var(--brand-text)}
 .cal__ev{
   text-decoration:none;font-size:.68rem;font-weight:600;line-height:1.3;
   padding:5px 7px;background:var(--brand);color:#fff;
@@ -426,7 +429,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .field{display:flex;flex-direction:column;gap:6px}
 .field--full{grid-column:1/-1}
 .field label{font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-.field label .req{color:var(--brand)}
+.field label .req{color:var(--brand-text)}
 .field input,.field select,.field textarea{
   font:inherit;font-size:.98rem;color:var(--ink);
   background:transparent;border:0;border-bottom:1px solid var(--rule);
@@ -641,7 +644,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 .tk__admits{
   font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--brand);
+  color:var(--brand-text);
 }
 .tk__event{
   border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);
@@ -669,8 +672,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 .price-was{display:block;font-size:.8rem;color:var(--muted);margin:0 0 1px}
 /* 線は元の値段だけに引きます。「member price」まで消すと読めなくなります */
 .price-was s{text-decoration:line-through;text-decoration-thickness:1px}
-.price-was em{font-style:normal;color:var(--brand);font-weight:600}
-.price-tag{font-style:normal;color:var(--brand);font-weight:600;font-size:.82rem}
+.price-was em{font-style:normal;color:var(--brand-text);font-weight:600}
+.price-tag{font-style:normal;color:var(--brand-text);font-weight:600;font-size:.82rem}
 
 /* Admin の価格オプション */
 .price-opt{border-top:1px solid var(--rule-soft);padding-top:16px}
@@ -704,7 +707,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .perks__group{margin-bottom:38px}
 .perks__when{
   font-size:.66rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--brand);margin-bottom:12px;
+  color:var(--brand-text);margin-bottom:12px;
 }
 .perks .ticks li{color:var(--ink-2)}
 
@@ -713,7 +716,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 .acct-swap{margin-top:18px;font-size:.84rem;color:var(--muted)}
 .linkish{
   background:none;border:0;padding:0;font:inherit;cursor:pointer;
-  color:var(--brand);border-bottom:1px solid currentColor;
+  color:var(--brand-text);border-bottom:1px solid currentColor;
 }
 .linkish:hover{opacity:.72}
 
@@ -735,14 +738,14 @@ ul,ol{margin:0;padding:0;list-style:none}
 .card-member__top b{display:block;font-size:1rem;letter-spacing:-.2px}
 .card-member__top span{
   display:block;font-size:.66rem;font-weight:700;letter-spacing:.22em;
-  text-transform:uppercase;color:var(--brand);
+  text-transform:uppercase;color:var(--brand-text);
 }
 .card-member__name{
   font-family:var(--display);font-size:clamp(1.7rem,4.5vw,2.5rem);
   line-height:1.1;letter-spacing:-.02em;margin-bottom:16px;
 }
 .card-member__meta{display:flex;flex-wrap:wrap;gap:8px 26px;font-size:.82rem;color:var(--muted)}
-.card-member__meta span:first-child{color:var(--brand);font-weight:600}
+.card-member__meta span:first-child{color:var(--brand-text);font-weight:600}
 .card-member__note{margin-top:22px;font-size:.78rem;color:var(--muted);max-width:44ch}
 
 .acct-block{border-top:1px solid var(--rule);padding-top:24px;margin-bottom:38px}
@@ -771,7 +774,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;
   padding:11px 0;font-size:.84rem;color:var(--muted);
 }
-.langnote a{color:var(--brand);text-decoration:none;border-bottom:1px solid currentColor}
+.langnote a{color:var(--brand-text);text-decoration:none;border-bottom:1px solid currentColor}
 .langnote a:hover{opacity:.75}
 
 /* ---------- reveal ---------- */
