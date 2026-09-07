@@ -298,7 +298,9 @@ function renderAdmin() {
   $('#adminEventList').innerHTML = evs.length ? evs.map(ev => `
     <div class="admin-row">
       <div class="admin-row__main">
-        <strong>${esc(ev.title)} ${isPast(ev) ? '<span class="pill">past</span>' : ''}</strong>
+        <strong>${esc(ev.title)}
+          ${ev.brand === 'en' ? '<span class="pill">En.</span>' : ''}
+          ${isPast(ev) ? '<span class="pill">past</span>' : ''}</strong>
         <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)} · ${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} RSVPs</span>
       </div>
       <div class="admin-row__act">
@@ -357,6 +359,7 @@ function eventFormFill(ev) {
   $('#aeEnd').value = ev ? (ev.end || '') : '22:00';
   $('#aeVenue').value = ev ? ev.venue : '';
   $('#aeAddr').value = ev ? (ev.address || '') : '';
+  $('#aeEnOn').checked      = !!(ev && ev.brand === 'en');
   $('#aePrice').value       = ev ? centsToInput(ev.priceCents) : '0';
   $('#aeMemberOn').checked  = !!(ev && ev.memberDiscount);
   $('#aeMemberPrice').value = ev ? centsToInput(ev.priceMemberCents) : '';
@@ -589,6 +592,8 @@ document.addEventListener('DOMContentLoaded', () => {
       end: $('#aeEnd').value,
       venue: $('#aeVenue').value.trim(),
       address: $('#aeAddr').value.trim(),
+      /* En. の回かどうか。ホームの En. セクションはここを見ています */
+      brand:            $('#aeEnOn').checked ? 'en' : 'asian-social',
       priceCents:       inputToCents($('#aePrice').value),
       currency:         'EUR',
       memberDiscount:   $('#aeMemberOn').checked,

@@ -1173,6 +1173,7 @@ const evFromRow = r => ({
 const evToRow = e => ({
   id: e.id, title: e.title, date: e.date, start_time: e.start, end_time: e.end,
   venue: e.venue, address: e.address, image: e.image, description: e.description,
+  brand: e.brand || 'asian-social',
   /* price は表示用の自由入力だった列。金額の計算は price_cents 側で行い、
      price には整形した文字列を入れて古い表示との互換を保ちます。 */
   price: priceLabel(e.priceCents || 0, e.currency || 'EUR'),
