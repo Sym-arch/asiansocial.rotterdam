@@ -635,9 +635,10 @@ function newSecret() {
 
 const ticketUrl = (secret) => {
   const u = new URL('ticket.html', location.href);
-  u.searchParams.set('t', secret);
   const lang = uiLang();
   if (lang !== 'en') u.searchParams.set('lang', lang);
+  /* 鍵はハッシュで渡します。理由は ticket.js の先頭に書いてあります */
+  u.hash = secret;
   return u.href;
 };
 

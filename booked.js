@@ -63,7 +63,7 @@ function render(rsvp, ev) {
         ${TICKET_SECRET ? `
         <h3 class="booked__sub">${esc(t('booked.ticketTitle'))}</h3>
         <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.ticketBody'))}</p>
-        <a class="btn btn--brand" href="ticket.html?t=${encodeURIComponent(TICKET_SECRET)}">
+        <a class="btn btn--brand" href="ticket.html#${encodeURIComponent(TICKET_SECRET)}">
           ${esc(t('booked.ticketBtn'))}</a>` : ''}
 
         <h3 class="booked__sub">${esc(t('booked.calendar'))}</h3>
@@ -136,7 +136,7 @@ async function renderPaid(sessionId) {
     ${data.ticketSecret ? `
     <h3 class="booked__sub">${esc(t('booked.ticketTitle'))}</h3>
     <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.ticketBody'))}</p>
-    <a class="btn btn--brand" href="ticket.html?t=${encodeURIComponent(data.ticketSecret)}">
+    <a class="btn btn--brand" href="ticket.html#${encodeURIComponent(data.ticketSecret)}">
       ${esc(t('booked.ticketBtn'))}</a>` : ''}
 
     ${ev ? `

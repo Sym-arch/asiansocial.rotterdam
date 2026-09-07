@@ -11,7 +11,12 @@
    「名前・人数・イベント」がはっきり読めることだけが要件です。
    ========================================================= */
 
-const T_SECRET = new URLSearchParams(location.search).get('t') || '';
+/* 鍵は「?t=」ではなく「#」で渡します。メールの本文は quoted-printable で
+   運ばれるので、「?」や「=」を含む URL はデコードの甘いメールアプリで
+   壊れます（?t=3D... のまま開かれる）。「#」だけなら壊れようがありません。
+   すでに送ってしまった「?t=」形式のリンクも読めるようにしておきます。 */
+const T_SECRET = decodeURIComponent(location.hash.slice(1)) ||
+                 new URLSearchParams(location.search).get('t') || '';
 
 function ticketShell(inner, cls) {
   return `<section class="tk ${cls || ''}"><div class="wrap tk__inner">${inner}</div></section>`;
@@ -63,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
 
   /* 翻訳プロキシで開かれると当日ここで詰まるので、自前ドメインへ送ります */
-  if (onProxy()) { location.href = nativeUrl(currentLang()); return; }
+  if (onProxy()) { location.href = nativeUrl(currentLang(), T_SECRET); return; }
 
   if (!T_SECRET) { render(null); return; }
 

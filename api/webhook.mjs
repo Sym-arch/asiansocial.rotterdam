@@ -218,11 +218,13 @@ function confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, 
       </td></tr>
 
       <tr><td style="padding:26px 32px 0">
-        <a href="${origin}/ticket.html?t=${esc(secret)}"
+        <a href="${origin}/ticket.html#${esc(secret)}"
            style="display:inline-block;padding:15px 30px;background:#c10e2e;color:#fff;
                   text-decoration:none;font-size:14px;font-weight:bold">Open my ticket</a>
         <p style="margin:14px 0 0;font-size:13px;color:#7a7288">
           Show this at the door. Keep this email &mdash; the link works on your phone.</p>
+        <p style="margin:10px 0 0;font-size:12px;line-height:1.5;color:#9a93a6;word-break:break-all">
+          If the button does nothing, open this:<br>${origin}/ticket.html#${esc(secret)}</p>
       </td></tr>
 
       <tr><td style="padding:30px 32px 34px">
