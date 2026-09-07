@@ -82,7 +82,10 @@ export async function sb(path, init = {}) {
     const detail = await res.text().catch(() => '');
     throw new Error('supabase ' + path + ' → ' + res.status + ' ' + detail.slice(0, 200));
   }
-  return res.status === 204 ? null : res.json();
+  /* return=minimal のときは 201 でも本文が空です。空に json() を掛けると
+     そこで例外になり、成功した書き込みが失敗に見えます。 */
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 /** ブラウザから届いたトークンが本物か、Supabase に確かめます。 */

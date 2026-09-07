@@ -80,11 +80,7 @@ export default async function handler(req, res) {
 async function fulfil(session) {
   const meta    = session.metadata || {};
   const orderId = 'o_' + session.id.slice(-24);
-
-  /* Stripe は同じ通知を複数回送ることがあります。
-     すでに作ってあれば、そこで終わりにします。 */
-  const existing = await sb('orders?select=id&id=eq.' + encodeURIComponent(orderId));
-  if (existing.length) return;
+  const ticketId = 't_' + session.id.slice(-24);
 
   const eventId = meta.event_id || '';
   const events  = await sb('events?select=*&id=eq.' + encodeURIComponent(eventId));
@@ -97,34 +93,42 @@ async function fulfil(session) {
   const name     = details.name || '';
   const currency = (session.currency || 'eur').toUpperCase();
 
-  await sb('orders', {
-    method: 'POST',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({
-      id: orderId,
-      user_id: meta.user_id || null,
-      email,
-      name,
-      event_id: eventId,
-      event_title: ev.title || '',
-      event_date: ev.date || null,
-      quantity,
-      unit_price_cents: unit,
-      total_cents: session.amount_total == null ? unit * quantity : session.amount_total,
-      currency,
-      tier_at_purchase: meta.tier || 'free',
-      status: 'paid',
-      stripe_checkout_session_id: session.id,
-      stripe_payment_intent_id: session.payment_intent || null
-    })
-  });
+  /* Stripe は同じ通知を複数回送ります。工程ごとに「もう有るか」を見ます。
+     注文だけ作れて発券で落ちた回があっても、次の通知で発券だけやり直せます。 */
+  const orders = await sb('orders?select=id&id=eq.' + encodeURIComponent(orderId));
+  if (!orders.length) {
+    await sb('orders', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        id: orderId,
+        user_id: meta.user_id || null,
+        email,
+        name,
+        event_id: eventId,
+        event_title: ev.title || '',
+        event_date: ev.date || null,
+        quantity,
+        unit_price_cents: unit,
+        total_cents: session.amount_total == null ? unit * quantity : session.amount_total,
+        currency,
+        tier_at_purchase: meta.tier || 'free',
+        status: 'paid',
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id: session.payment_intent || null
+      })
+    });
+  }
+
+  const tickets = await sb('tickets?select=id,secret&id=eq.' + encodeURIComponent(ticketId));
+  if (tickets.length) return;               /* 発券済み。メールも送信済みです */
 
   const secret = randomHex(24);
   await sb('tickets', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({
-      id: 't_' + session.id.slice(-24),
+      id: ticketId,
       order_id: orderId,
       user_id: meta.user_id || null,
       email,
@@ -138,7 +142,7 @@ async function fulfil(session) {
     })
   });
 
-  /* メールは発券の後です。送信に失敗しても注文は残ります */
+  /* メールは発券の後です。送信に失敗しても、チケットは残ります */
   const origin = env('SITE_URL') || 'https://www.symarch-llc.com';
   try {
     await sendMail({
