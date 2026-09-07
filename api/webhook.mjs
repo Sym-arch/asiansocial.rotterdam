@@ -9,31 +9,33 @@
    ========================================================= */
 
 import {
-  json, env, sb, priceLabel, randomHex, sendMail, verifyStripeSignature
+  send, env, sb, priceLabel, randomHex, sendMail, verifyStripeSignature, readRaw
 } from './_lib.mjs';
 
 const WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET');
 
-export default async function handler(req) {
-  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-  if (!WEBHOOK_SECRET) return json({ error: 'not_configured', missing: ['STRIPE_WEBHOOK_SECRET'] }, 500);
+/* 署名は生の本文に対して計算されるので、Vercel にパースさせません */
+export const config = { api: { bodyParser: false } };
 
-  /* 署名は生の本文に対して計算されるので、パースする前に読みます */
-  const raw = await req.text();
-  const ok = await verifyStripeSignature(raw, req.headers.get('stripe-signature'), WEBHOOK_SECRET);
-  if (!ok) return json({ error: 'bad_signature' }, 400);
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });
+  if (!WEBHOOK_SECRET) return send(res, 500, { error: 'not_configured', missing: ['STRIPE_WEBHOOK_SECRET'] });
+
+  const raw = await readRaw(req);
+  const ok = await verifyStripeSignature(raw, req.headers['stripe-signature'], WEBHOOK_SECRET);
+  if (!ok) return send(res, 400, { error: 'bad_signature' });
 
   let event;
   try { event = JSON.parse(raw); }
-  catch { return json({ error: 'bad_json' }, 400); }
+  catch { return send(res, 400, { error: 'bad_json' }); }
 
   if (event.type !== 'checkout.session.completed') {
-    return json({ received: true, ignored: event.type });
+    return send(res, 200, { received: true, ignored: event.type });
   }
 
   const session = event.data.object;
   if (session.payment_status !== 'paid') {
-    return json({ received: true, ignored: 'not_paid' });
+    return send(res, 200, { received: true, ignored: 'not_paid' });
   }
 
   try {
@@ -41,14 +43,14 @@ export default async function handler(req) {
   } catch (err) {
     /* 500 を返すと Stripe が再送してくれます。握り潰すと注文が消えます */
     console.error('fulfil failed:', err.message);
-    return json({ error: 'fulfil_failed', message: err.message }, 500);
+    return send(res, 500, { error: 'fulfil_failed', message: err.message });
   }
-  return json({ received: true });
+  return send(res, 200, { received: true });
 }
 
 async function fulfil(session) {
-  const meta     = session.metadata || {};
-  const orderId  = 'o_' + session.id.slice(-24);
+  const meta    = session.metadata || {};
+  const orderId = 'o_' + session.id.slice(-24);
 
   /* Stripe は同じ通知を複数回送ることがあります。
      すでに作ってあれば、そこで終わりにします。 */
@@ -61,8 +63,9 @@ async function fulfil(session) {
 
   const quantity = parseInt(meta.quantity, 10) || 1;
   const unit     = parseInt(meta.unit_amount, 10) || 0;
-  const email    = session.customer_details?.email || session.customer_email || '';
-  const name     = session.customer_details?.name || '';
+  const details  = session.customer_details || {};
+  const email    = details.email || session.customer_email || '';
+  const name     = details.name || '';
   const currency = (session.currency || 'eur').toUpperCase();
 
   await sb('orders', {
@@ -78,7 +81,7 @@ async function fulfil(session) {
       event_date: ev.date || null,
       quantity,
       unit_price_cents: unit,
-      total_cents: session.amount_total ?? unit * quantity,
+      total_cents: session.amount_total == null ? unit * quantity : session.amount_total,
       currency,
       tier_at_purchase: meta.tier || 'free',
       status: 'paid',
@@ -111,7 +114,7 @@ async function fulfil(session) {
   try {
     await sendMail({
       to: email,
-      subject: `You're in — ${ev.title || 'Asian Social Rotterdam'}`,
+      subject: 'You’re in — ' + (ev.title || 'Asian Social Rotterdam'),
       html: confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, meta })
     });
   } catch (err) {
@@ -140,7 +143,7 @@ function confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, 
           Booking confirmed</div>
         <h1 style="margin:16px 0 0;font-size:34px;line-height:1.1;color:#0e0b14">You're in, ${esc(first)}.</h1>
         <p style="margin:18px 0 0;font-size:16px;line-height:1.6;color:#3a3348">
-          Thank you for booking — we are really glad you are coming.</p>
+          Thank you for booking &mdash; we are really glad you are coming.</p>
       </td></tr>
 
       <tr><td style="padding:26px 32px 0">
@@ -156,7 +159,7 @@ function confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, 
           <tr><td style="padding:11px 0;border-top:1px solid #ddd5c8;border-bottom:1px solid #ddd5c8;
                          font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#7a7288">Paid</td>
               <td style="padding:11px 0;border-top:1px solid #ddd5c8;border-bottom:1px solid #ddd5c8">
-                ${esc(quantity)} × ${esc(priceLabel(unit, currency))}${esc(tag)}</td></tr>
+                ${esc(quantity)} &times; ${esc(priceLabel(unit, currency))}${esc(tag)}</td></tr>
         </table>
       </td></tr>
 
@@ -165,12 +168,12 @@ function confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, 
            style="display:inline-block;padding:15px 30px;background:#c10e2e;color:#fff;
                   text-decoration:none;font-size:14px;font-weight:bold">Open my ticket</a>
         <p style="margin:14px 0 0;font-size:13px;color:#7a7288">
-          Show this at the door. Keep this email — the link works on your phone.</p>
+          Show this at the door. Keep this email &mdash; the link works on your phone.</p>
       </td></tr>
 
       <tr><td style="padding:30px 32px 34px">
         <p style="margin:0;font-size:16px;line-height:1.6;color:#3a3348">
-          Bring a friend if you like — just reply to this email so we can keep the numbers right.</p>
+          Bring a friend if you like &mdash; just reply to this email so we can keep the numbers right.</p>
         <p style="margin:22px 0 0;font-size:16px;color:#3a3348">
           See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Social Rotterdam</strong></p>
       </td></tr>

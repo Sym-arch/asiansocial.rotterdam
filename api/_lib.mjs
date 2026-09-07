@@ -25,11 +25,33 @@ export const RESEND_KEY   = env('RESEND_API_KEY');
 export const FROM_EMAIL   = env('MAIL_FROM')     || 'Asian Social Rotterdam <noreply@symarch-llc.com>';
 export const REPLY_TO     = env('MAIL_REPLY_TO') || 'info@sym-arch.com';
 
-export const json = (body, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+/* Vercel の Node ランタイムは (req, res) 形のハンドラを期待します。
+   Web の Response を返す形にすると、呼ばれても応答せず固まります。 */
+export function send(res, status, body) {
+  res.statusCode = status;
+  res.setHeader('content-type', 'application/json; charset=utf-8');
+  res.setHeader('cache-control', 'no-store');
+  res.end(JSON.stringify(body));
+}
+
+/** 本文をそのまま読みます。webhook の署名は生の本文に対して計算されるため。 */
+export function readRaw(req) {
+  if (typeof req.body === 'string') return Promise.resolve(req.body);
+  if (req.body && Buffer.isBuffer(req.body)) return Promise.resolve(req.body.toString('utf8'));
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.setEncoding('utf8');
+    req.on('data', c => { data += c; });
+    req.on('end', () => resolve(data));
+    req.on('error', reject);
   });
+}
+
+export async function readJson(req) {
+  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) return req.body;
+  const raw = await readRaw(req);
+  return raw ? JSON.parse(raw) : {};
+}
 
 /** 設定漏れは起動時に気づきたいので、足りないものを名指しで返します。 */
 export function missingEnv(...required) {
