@@ -123,7 +123,7 @@ function eventCardHTML(ev) {
   return `<a class="ev-card${done ? ' is-past' : ''}" href="${esc(eventUrl(ev.id))}">
     <span class="ev-card__img">
       ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}" loading="lazy">` : ''}
-      ${done ? '<span class="ev-card__tag">Past</span>' : ''}
+      ${done ? `<span class="ev-card__tag">${esc(t('card.past'))}</span>` : ''}
     </span>
     <span class="ev-card__date">
       <span>${esc(fmtDate(ev, { weekday: 'short', day: 'numeric', month: 'short' }))}</span>
@@ -133,7 +133,7 @@ function eventCardHTML(ev) {
     <p>${teaser}</p>
     <span class="ev-card__foot">
       <span>${esc(ev.venue)}</span>
-      <b>${done ? 'Finished' : esc(priceFor(ev).label)}</b>
+      <b>${done ? esc(t('card.finished')) : esc(priceFor(ev).label)}</b>
     </span>
   </a>`;
 }
@@ -1197,7 +1197,7 @@ const CURRENCY_SIGN = { EUR: '\u20ac', USD: '$', GBP: '\u00a3', JPY: '\u00a5' };
 /** 1250 → "€12.50" / 0 → "Free" */
 function priceLabel(cents, currency) {
   const n = Number(cents) || 0;
-  if (n <= 0) return 'Free';
+  if (n <= 0) return t('price.free');
   const sign = CURRENCY_SIGN[currency || 'EUR'] || (currency || '') + ' ';
   const s = (n / 100).toFixed(2).replace(/\.00$/, '');
   return sign + s;
@@ -1403,13 +1403,19 @@ function keepLangOnLinks(root) {
 }
 
 /* Same page, read through Google Translate in the chosen language. */
+/**
+ * 言語メニューの行き先。
+ *
+ * 以前は Google 翻訳のプロキシへ飛ばしていました。やめた理由は、
+ * このサイトの中身の多くが JavaScript で後から描かれるからです。
+ * プロキシは最初に届いた HTML を訳す作りなので後の文字を取りこぼし、
+ * 実測では本文が英語のまま、日付だけ日本語という状態になっていました。
+ * 訳しきれない翻訳は、訳さないより読みにくくなります。
+ *
+ * いまは自前の訳を ?lang= で出します。訳はすべて i18n.js にあります。
+ */
 function translatedUrl(code) {
-  const u = new URL(originalUrl());
-  if (code === 'en') return u.href;
-  const host = u.hostname.replace(/-/g, '--').replace(/\./g, '-') + TRANSLATE_HOST;
-  const p = new URLSearchParams(u.search);
-  p.set('_x_tr_sl', 'en'); p.set('_x_tr_tl', code); p.set('_x_tr_hl', code);
-  return 'https://' + host + u.pathname + '?' + p.toString() + u.hash;
+  return nativeUrl(code, location.hash.slice(1));
 }
 
 /**
@@ -1420,25 +1426,11 @@ function applyI18n(root) {
   if (onProxy() || uiLang() === 'en') return;
   const box = root || document;
   $$('[data-i18n]', box).forEach(el => { el.textContent = t(el.dataset.i18n); });
+  /* <br> や <em> を含む見出し用。訳は自分たちで書いたものだけです */
+  $$('[data-i18n-html]', box).forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
   $$('[data-i18n-ph]', box).forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
 }
 
-/**
- * 自前ドメインを ?lang=xx で開いている人への一言。
- * 本文は英語のままフォームだけ母語、という状態を説明し、
- * 読むだけなら翻訳ページへ戻れるようにします。
- */
-function showNativeNotice() {
-  const code = uiLang();
-  if (onProxy() || code === 'en' || $('.langnote')) return;
-  const main = document.querySelector('main');
-  if (!main) return;
-  const bar = document.createElement('div');
-  bar.className = 'langnote';
-  bar.innerHTML = `<div class="wrap"><span>${esc(t('native.notice'))}</span>
-    <a href="${esc(translatedUrl(code))}">${esc(t('native.back'))}</a></div>`;
-  main.prepend(bar);
-}
 
 /* ナビの Membership はページ遷移ではなくモーダルを開きます */
 /**
@@ -1534,7 +1526,6 @@ function initShell() {
   initMemberLinks();
   keepLangOnLinks();
   applyI18n();
-  showNativeNotice();
 
   const nav = $('#nav'), burger = $('#burger');
   if (nav && burger) {

@@ -12,7 +12,7 @@ function renderHeroNext() {
   const box = $('#heroNext');
   const list = upcoming().slice(0, 3);
   if (!list.length) {
-    box.innerHTML = '<p class="upnext__none">Nothing scheduled right now — the next one will appear here.</p>';
+    box.innerHTML = `<p class="upnext__none">${esc(t('upnext.none'))}</p>`;
     return;
   }
   /* 写真が無い回もあります。そのときも同じ幅の枠を置きます。
@@ -39,8 +39,8 @@ function renderEventRail() {
   track.innerHTML = all.length
     ? all.map(eventCardHTML).join('')
     : `<div class="empty empty--rail">
-         <b>Nothing on the calendar yet.</b>
-         <span>The next gathering will show up here — check back soon, or write to
+         <b>${esc(t('events.none'))}</b>
+         <span>${esc(t('events.noneBody'))}
            <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a>.</span>
        </div>`;
 
@@ -50,7 +50,7 @@ function renderEventRail() {
   const count = $('#eventsCount');
   if (count) {
     count.textContent = next.length
-      ? `${next.length} upcoming · ${fmtDate(next[0], { month: 'long' })} – ${fmtDate(next[next.length - 1], { month: 'long', year: 'numeric' })}`
+      ? `${t('events.upcoming', { n: next.length })} · ${fmtDate(next[0], { month: 'long' })} – ${fmtDate(next[next.length - 1], { month: 'long', year: 'numeric' })}`
       : '';
   }
 }
