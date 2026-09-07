@@ -201,6 +201,9 @@ ul,ol{margin:0;padding:0;list-style:none}
 .band p{color:var(--on-night-muted)}
 /* 明るい地の上で引いた細い線は、写真の帯の上ではほぼ消えます */
 .band .perks,.band .perk,.band .join{border-color:var(--rule-night)}
+/* .perk p / .join p は .band p より詳しいので、明るい地の色が勝ちます。
+   そのままだと写真の上でコントラストが 3.43 しかありません（基準 4.5）。 */
+.band .perk p,.band .join p{color:var(--on-night-muted)}
 
 /* daylight variant: same photographic band, read as light */
 .band--day{background:var(--paper);color:var(--ink)}
