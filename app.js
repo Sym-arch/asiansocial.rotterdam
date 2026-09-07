@@ -171,48 +171,6 @@ function renderCalendar() {
 /* ---------------------------------------------------------
    Contact + partner forms
    --------------------------------------------------------- */
-async function handleMessage(e, kind) {
-  e.preventDefault();
-  const f = e.target;
-  const get = id => (($(id) || {}).value || '').trim();
-
-  const data = kind === 'partner'
-    ? { name: get('#pName'), email: get('#pEmail'), company: get('#pCompany'),
-        topic: get('#pType'), website: get('#pSite'), message: get('#pMsg') }
-    : { name: get('#cName'), email: get('#cEmail'), topic: get('#cTopic'), message: get('#cMsg') };
-
-  if (!data.name || !data.email || !data.message) return toast(t('partner.err.required'), true);
-  if (!isEmail(data.email)) return toast(t('partner.err.email'), true);
-
-  MSGS.push(Object.assign({ id: uid(), kind, createdAt: new Date().toISOString() }, data));
-  saveMsgs();
-
-  const btn = f.querySelector('button[type=submit]');
-  const label = btn.textContent;
-  btn.disabled = true; btn.textContent = t('partner.sending');
-
-  const subject = kind === 'partner'
-    ? `[Partner inquiry] ${data.company} — ${data.topic}`
-    : `[Contact] ${data.topic} — ${data.name}`;
-  const body = Object.entries(data).map(([k, v]) => k.replace(/^\w/, c => c.toUpperCase()) + ': ' + (v || '—')).join('\n');
-
-  let mode = 'manual';
-  try {
-    mode = await deliver(kind, Object.assign({ type: kind, subject, to_email: CONFIG.contactEmail, reply_to: data.email }, data));
-  } catch (err) { console.warn('Email delivery failed:', err); mode = 'manual'; }
-
-  btn.disabled = false; btn.textContent = label;
-
-  if (mode === 'manual') {
-    window.location.href = mailtoUrl(CONFIG.contactEmail, subject, body);
-    toast('Opening your mail app to send the message to ' + CONFIG.contactEmail);
-  } else {
-    f.reset();
-    toast(t('partner.sent'));
-  }
-  renderAdmin();
-}
-
 /* ---------------------------------------------------------
    Modals (admin)
    --------------------------------------------------------- */
@@ -415,20 +373,8 @@ function refreshPublic() {
  * プロキシは <input> にフォーカスが入ると警告を出して入力を止めるので、
  * 母語の案内と「自前ドメイン ＋ ?lang=xx」へのボタンだけを見せます。
  */
-function swapPartnerFormForCta() {
-  const box = $('#partnerBox');
-  if (!box || !onProxy()) return;
-  box.innerHTML =
-    `<p class="label label--brand">${esc(t('partner.label'))}</p>
-     <h3 style="font-size:1.6rem;margin:16px 0 18px">${esc(t('cta.partner.title'))}</h3>
-     <p style="color:var(--muted);max-width:46ch;margin-bottom:26px">${esc(t('cta.partner.body'))}</p>
-     <a class="btn btn--brand" href="${esc(nativeUrl(currentLang(), '#partners'))}">
-       ${esc(t('cta.partner.button'))}</a>`;
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   initShell();
-  swapPartnerFormForCta();
   renderDow();
 
   createRail('#eventsRail', '#eventsTrack', '#eventsProgress');
@@ -458,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* Scroll-spy */
-  ['home', 'about', 'events', 'partners'].forEach(id => {
+  ['home', 'events', 'en', 'membership'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     new IntersectionObserver(entries => {
@@ -531,11 +477,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') $$('.modal.is-open').forEach(closeModal);
   });
-
-  /* Forms */
-  /* 翻訳ページでは案内に差し替え済みなので、フォームが無いことがあります */
-  const pf = $('#partnerForm');
-  if (pf) pf.addEventListener('submit', e => handleMessage(e, 'partner'));
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);

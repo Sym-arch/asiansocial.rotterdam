@@ -801,8 +801,8 @@ async function renderMemberModal() {
 
   if (isSignedIn()) {
     body.innerHTML = '<div class="empty" style="padding:40px 0">\u2026</div>';
-    const [, rsvps] = await Promise.all([loadMember(), loadMyRsvps()]);
-    body.innerHTML = memberCardHTML(rsvps);
+    const [, rsvps, tickets] = await Promise.all([loadMember(), loadMyRsvps(), loadMyTickets()]);
+    body.innerHTML = memberCardHTML(rsvps, tickets);
     wireMemberCard();
   } else {
     body.innerHTML = memberAuthHTML();
@@ -810,25 +810,55 @@ async function renderMemberModal() {
   }
 }
 
-function memberCardHTML(rsvps) {
+/**
+ * 会員証。
+ *
+ * 画面上のカードなので、紙のカードに見えるところまで作ります。
+ * 和紙の地、筆書きの名前、押した印、そして影。ここを素っ気ない箱に
+ * すると「登録して何が手に入るのか」が伝わりません。
+ *
+ * @param rsvps   予約の一覧
+ * @param tickets 自分のチケット（secret 込み）。予約と event_id で突き合わせます
+ */
+function memberCardHTML(rsvps, tickets) {
   const profile = (MEMBER && MEMBER.profile) || {};
   const ship = (MEMBER && MEMBER.membership) || {};
   const tier = memberTier();
   const since = ship.started_at
     ? new Date(ship.started_at).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
     : '';
+  const name = profile.name || profile.email || signedInAs();
+
+  const byEvent = new Map();
+  (tickets || []).forEach(tk => { if (!byEvent.has(tk.event_id)) byEvent.set(tk.event_id, tk); });
+
+  const bookingRow = r => {
+    const tk = byEvent.get(r.event_id);
+    const when = r.event_date
+      ? new Date(r.event_date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
+      : '';
+    return `<li>
+      <b>${esc(r.event_title || '\u2014')}</b>
+      <span>${esc(when)} \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span>
+      ${tk ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
+                ${esc(t('account.openTicket'))}</a>` : ''}
+    </li>`;
+  };
 
   return `
-    <div class="card-member" style="margin-top:0">
-      <div class="card-member__top">
-        <img src="assets/logo.jpg" alt="" width="40" height="40">
+    <div class="washi">
+      <div class="washi__grain" aria-hidden="true"></div>
+      <div class="washi__head">
+        <img src="assets/logo.jpg" alt="" width="34" height="34">
         <div><b>Asian Social</b><span>Rotterdam</span></div>
       </div>
-      <div class="card-member__name">${esc(profile.name || profile.email || signedInAs())}</div>
-      <div class="card-member__meta">
+      <p class="washi__label">${esc(t('account.card'))}</p>
+      <div class="washi__name">${esc(name)}</div>
+      <div class="washi__meta">
         <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>
         ${since ? `<span>${esc(t('account.since'))} ${esc(since)}</span>` : ''}
       </div>
+      <span class="washi__seal" aria-hidden="true">縁</span>
     </div>
 
     <div class="acct-block">
@@ -842,13 +872,9 @@ function memberCardHTML(rsvps) {
 
     <div class="acct-block">
       <h2>${esc(t('account.bookings'))}</h2>
-      ${rsvps.length ? `
-      <ul class="acct-list">
-        ${rsvps.map(r => `
-        <li><b>${esc(r.event_title || '\u2014')}</b>
-          <span>${esc(r.event_date ? new Date(r.event_date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' }) : '')}
-            \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span></li>`).join('')}
-      </ul>` : `<p style="color:var(--muted)">${esc(t('account.noBookings'))}</p>`}
+      ${rsvps.length
+        ? `<ul class="acct-list">${rsvps.map(bookingRow).join('')}</ul>`
+        : `<p style="color:var(--muted)">${esc(t('account.noBookings'))}</p>`}
     </div>
 
     <div class="acct-foot">
@@ -1025,6 +1051,26 @@ async function saveProfile(fields) {
  * 自分の予約。メールアドレスで突き合わせるので、
  * アカウントを作る前にした予約も出てきます。
  */
+/**
+ * 自分のチケット（secret 込み）。
+ * secret は列の権限から外してあるので、素の select では取れません。
+ * 自分の分だけを返す関数をサーバに置いてあります（07-my-tickets.sql）。
+ */
+async function loadMyTickets() {
+  if (!(await ensureSession())) return [];
+  try {
+    const res = await fetch(sbUrl('rpc/my_tickets'), {
+      method: 'POST', headers: sbHeaders(), body: '{}'
+    });
+    if (!res.ok) throw new Error('my_tickets → ' + res.status);
+    return await res.json();
+  } catch (err) {
+    /* 関数がまだ無い環境でも会員証は出したいので、黙って空にします */
+    console.warn('tickets load failed:', err.message);
+    return [];
+  }
+}
+
 async function loadMyRsvps() {
   if (!(await ensureSession())) return [];
   try {
@@ -1433,8 +1479,7 @@ const isLocalHost = () => /^(localhost|127\.|0\.0\.0\.0|\[?::1)/.test(location.h
  * 「Membership」だけだと、入る場所なのか自分の情報なのか分かりません。
  */
 function syncAccountLink() {
-  $$('[data-member]').forEach(el => {
-    if (el.dataset.member === 'create') return;   /* 「登録する」ボタンは固定文言 */
+  $$('.nav__acc').forEach(el => {
     el.textContent = isSignedIn() ? t('account.mine') : t('account.signin');
     el.removeAttribute('data-i18n');              /* ここで入れた文字を消させません */
   });

@@ -831,3 +831,310 @@ ul,ol{margin:0;padding:0;list-style:none}
   *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
   .reveal{opacity:1;transform:none}
 }
+
+
+/* =========================================================
+   ページ見出し（about / profile など、下層ページの入口）
+   ========================================================= */
+.pagehead{padding:clamp(96px,11vw,150px) 0 clamp(30px,4vw,54px)}
+.pagehead h1{
+  font-family:var(--display);font-weight:500;letter-spacing:-.03em;line-height:1.04;
+  font-size:clamp(2.1rem,5.2vw,3.6rem);margin:18px 0 0;text-wrap:balance;
+}
+.pagehead .lead{margin-top:20px;max-width:54ch;color:var(--muted);font-size:1.04rem}
+
+.acct-h1{
+  font-family:var(--display);font-weight:500;letter-spacing:-.03em;
+  font-size:clamp(1.9rem,4.6vw,3rem);margin:16px 0 40px;
+}
+.acct-page{max-width:560px}
+
+/* 会員になる導線。並べた特典のあとに、押す場所を1つだけ置きます */
+.join{
+  margin-top:clamp(34px,4vw,54px);padding-top:28px;border-top:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;
+}
+.join p{font-size:.88rem;color:var(--muted);max-width:46ch;margin:0}
+
+/* =========================================================
+   会員証 — 和紙のカード
+
+   画面の中のカードなので、紙に見えるところまで作ります。
+   地の繊維、筆で書いた名前、押した印、そして影。
+   ここを素っ気ない箱にすると、登録して何が手に入るのかが伝わりません。
+   ========================================================= */
+.washi{
+  position:relative;overflow:hidden;isolation:isolate;
+  padding:30px 30px 34px;margin-bottom:38px;
+  color:#2b2118;
+  background:
+    radial-gradient(120% 90% at 12% 0%, #fffdf7 0%, #f6efe0 46%, #efe5d2 100%);
+  border:1px solid rgba(120,96,60,.28);
+  border-radius:3px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.9) inset,
+    0 10px 24px -12px rgba(30,20,10,.42),
+    0 30px 60px -34px rgba(30,20,10,.5);
+}
+/* 和紙の繊維。細い線を薄く重ねるだけで、平らな面が紙に見えます */
+.washi__grain{
+  position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background:
+    repeating-linear-gradient(97deg, rgba(150,120,70,.09) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(4deg,  rgba(150,120,70,.07) 0 1px, transparent 1px 11px),
+    radial-gradient(60% 40% at 80% 90%, rgba(160,130,80,.12), transparent 70%);
+}
+.washi__head{display:flex;align-items:center;gap:12px}
+.washi__head img{border-radius:50%}
+.washi__head b{display:block;font-size:.94rem;letter-spacing:-.2px}
+.washi__head span{
+  display:block;font-size:.58rem;font-weight:700;letter-spacing:.2em;
+  text-transform:uppercase;color:rgba(43,33,24,.6);
+}
+.washi__label{
+  margin-top:26px;font-size:.6rem;font-weight:700;letter-spacing:.24em;
+  text-transform:uppercase;color:rgba(43,33,24,.55);
+}
+.washi__name{
+  font-family:"Yuji Syuku",var(--display),serif;
+  font-size:clamp(1.9rem,6vw,2.5rem);line-height:1.15;margin:6px 0 20px;
+  padding-right:76px;                       /* 印と重ならないように空けます */
+  text-shadow:0 1px 0 rgba(255,255,255,.7);
+  word-break:break-word;
+}
+.washi__meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:.78rem;color:rgba(43,33,24,.62)}
+.washi__meta span:first-child{color:#9b1c1c;font-weight:700}
+/* 落款。丸い朱の印を少し傾けて置きます */
+.washi__seal{
+  position:absolute;right:26px;bottom:26px;
+  width:60px;height:60px;display:grid;place-items:center;
+  border-radius:50%;background:#a01823;color:#fff8ef;
+  font-family:"Yuji Syuku",serif;font-size:1.5rem;line-height:1;
+  transform:rotate(-7deg);opacity:.92;
+  box-shadow:0 6px 14px -8px rgba(90,10,16,.8);
+}
+@media (max-width:520px){
+  .washi__seal{width:50px;height:50px;font-size:1.25rem;right:20px;bottom:20px}
+  .washi__name{padding-right:62px}
+}
+
+/* 予約からチケットを開く */
+.acct-ticket{
+  display:inline-block;margin-top:8px;font-size:.76rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--brand-text);
+  text-decoration:none;border-bottom:1px solid currentColor;
+}
+
+/* =========================================================
+   En. Japanese Social Club
+
+   本体（Asian Social）は紙の白、En. は濃い臙脂。
+   ロゴの地の色に合わせています。骨格・余白・文字の調子は
+   そのままなので、別サイトには見えません。
+   ========================================================= */
+.en-page{
+  --en-bg:#4a0d10;
+  --en-bg-deep:#380a0c;
+  --en-ink:#f8f1e7;
+  --en-muted:rgba(248,241,231,.66);
+  --en-rule:rgba(248,241,231,.2);
+  background:var(--en-bg);color:var(--en-ink);
+}
+.en-page h1,.en-page h2,.en-page h3{color:var(--en-ink)}
+
+.en-band{background:var(--en-bg);padding:clamp(64px,8vw,120px) 0}
+.en-band--deep{background:var(--en-bg-deep)}
+
+.en-kicker{
+  font-size:.68rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--en-muted);
+}
+.en-kicker i{font-style:normal;color:#ff8f9c;padding:0 4px}
+
+.en-num{
+  font-size:.66rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;
+  color:#ff8f9c;margin-bottom:16px;
+}
+
+.en-head{max-width:62ch;margin-bottom:clamp(34px,4vw,58px)}
+.en-head h2{
+  font-family:var(--display);font-weight:500;letter-spacing:-.03em;line-height:1.08;
+  font-size:clamp(1.7rem,4.2vw,2.9rem);text-wrap:balance;
+}
+.en-display{
+  font-family:var(--display);font-weight:500;letter-spacing:-.035em;line-height:1.02;
+  font-size:clamp(2.2rem,6.4vw,4.4rem);text-wrap:balance;
+}
+.en-body{color:var(--en-muted);font-size:1.02rem;line-height:1.7;max-width:52ch;margin-top:16px}
+.en-body b{color:var(--en-ink);font-weight:700}
+.en-body [lang=ja],.en-page [lang=ja]{font-size:.95em}
+
+/* ヒーロー */
+.en-hero{position:relative;padding:clamp(120px,15vw,190px) 0 clamp(64px,8vw,110px);overflow:hidden}
+.en-hero__bg{
+  position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:.22;filter:saturate(.5) contrast(1.05);
+}
+.en-hero::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(74,13,16,.82),rgba(74,13,16,.9) 55%,var(--en-bg));
+}
+.en-hero__inner{position:relative;z-index:1;max-width:760px}
+.en-hero h1{
+  font-family:var(--display);font-weight:500;letter-spacing:-.035em;line-height:1.02;
+  font-size:clamp(2.4rem,7.4vw,5rem);margin:0 0 8px;text-wrap:balance;
+}
+.en-lead{color:var(--en-muted);font-size:1.06rem;line-height:1.7;max-width:50ch;margin-top:20px}
+.en-lead span{display:block;margin-top:6px}
+
+/* ロゴ。画像が無い環境では文字の代わりを出します */
+.en-mark{margin:26px 0 34px}
+.en-mark img{display:block;width:clamp(180px,26vw,260px);height:auto}
+.en-mark__text{display:none}
+.en-mark--fallback img{display:none}
+.en-mark--fallback .en-mark__text{
+  display:block;font-family:var(--display);font-weight:700;letter-spacing:-.06em;
+  font-size:clamp(3.4rem,11vw,5.6rem);line-height:.9;color:var(--en-ink);
+}
+.en-mark--fallback .en-mark__text em{
+  display:block;font-style:normal;font-family:var(--body);font-weight:700;
+  font-size:.16em;letter-spacing:.2em;text-transform:uppercase;margin-top:12px;
+  color:var(--en-muted);
+}
+
+.en-triad{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:26px;
+  font-size:.72rem;font-weight:700;letter-spacing:.26em;text-transform:uppercase;
+}
+.en-triad i{font-style:normal;color:#ff8f9c}
+.en-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.btn--ghost{--bg:transparent;--fg:var(--en-ink);--bd:var(--en-rule)}
+.en-under{margin-top:26px;font-size:.8rem;color:var(--en-muted)}
+.en-under a{color:var(--en-ink)}
+
+/* 二段組の読み物 */
+.en-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,72px)}
+.en-steps{list-style:none;counter-reset:s;display:grid;gap:0;margin:0;padding:0}
+.en-steps li{
+  counter-increment:s;border-top:1px solid var(--en-rule);padding:20px 0 20px 46px;position:relative;
+}
+.en-steps li:last-child{border-bottom:1px solid var(--en-rule)}
+.en-steps li::before{
+  content:counter(s,decimal-leading-zero);position:absolute;left:0;top:22px;
+  font-size:.68rem;font-weight:700;letter-spacing:.16em;color:#ff8f9c;
+}
+.en-steps span{display:block;font-size:1.02rem}
+.en-steps i{display:block;font-style:normal;margin-top:6px;font-size:.88rem;color:var(--en-muted)}
+
+/* 写真を背にした一枚もの */
+.en-figure{position:relative;padding:clamp(90px,12vw,170px) 0;overflow:hidden}
+.en-figure__bg{
+  position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:.3;filter:saturate(.55);
+}
+.en-figure::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,var(--en-bg),rgba(74,13,16,.72) 45%,var(--en-bg));
+}
+.en-figure__inner{position:relative;z-index:1;max-width:680px}
+
+/* SPORTS / MEAT / CULTURE */
+.en-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--en-rule)}
+.en-pillar{padding:30px 30px 30px 0;border-right:1px solid var(--en-rule)}
+.en-pillar:last-child{border-right:0}
+.en-pillar:not(:first-child){padding-left:30px}
+.en-pillar__tag{
+  display:inline-block;margin-bottom:16px;
+  font-size:.62rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#ff8f9c;
+}
+.en-pillar h3{font-size:1.24rem;font-weight:500;margin-bottom:10px}
+.en-pillar p{color:var(--en-muted);font-size:.92rem;line-height:1.6;margin-top:6px}
+
+.en-quote{
+  margin:clamp(44px,6vw,78px) 0 0;padding:34px 0 0;border-top:1px solid var(--en-rule);
+  font-family:var(--display);font-weight:500;letter-spacing:-.02em;
+  font-size:clamp(1.5rem,3.6vw,2.3rem);line-height:1.2;max-width:22ch;
+}
+.en-quote cite{
+  display:block;margin-top:18px;font:inherit;font-family:var(--body);font-style:normal;
+  font-size:.9rem;line-height:1.6;color:var(--en-muted);max-width:44ch;
+}
+
+/* 5つの価値観 */
+.en-values{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:0}
+.en-value{padding:30px 34px 34px 0;border-top:1px solid var(--en-rule)}
+.en-value:nth-child(odd){border-right:1px solid var(--en-rule)}
+.en-value:nth-child(even){padding-left:34px}
+.en-value__no{
+  display:block;font-size:.66rem;font-weight:700;letter-spacing:.22em;color:#ff8f9c;margin-bottom:14px;
+}
+.en-value h3{font-size:1.3rem;font-weight:500;letter-spacing:-.01em}
+.en-value p{color:var(--en-muted);font-size:.94rem;line-height:1.65;margin-top:8px}
+.en-value p em{font-style:normal;color:var(--en-ink)}
+
+/* En. の回 */
+.en-events{display:grid;gap:0;border-top:1px solid var(--en-rule)}
+.en-event{
+  display:grid;grid-template-columns:88px 1fr auto;gap:22px;align-items:center;
+  padding:18px 0;border-bottom:1px solid var(--en-rule);
+  text-decoration:none;color:inherit;transition:padding-left .22s ease;
+}
+.en-event:hover{padding-left:10px}
+.en-event__img{width:88px;aspect-ratio:1;overflow:hidden;background:var(--en-bg-deep)}
+.en-event__img img{width:100%;height:100%;object-fit:cover;display:block}
+.en-event__date{
+  display:block;font-size:.68rem;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:#ff8f9c;margin-bottom:6px;
+}
+.en-event__body b{font-family:var(--display);font-size:1.1rem;font-weight:500;display:block}
+.en-event__meta{display:block;font-size:.82rem;color:var(--en-muted);margin-top:4px}
+.en-event__price{font-size:.86rem;font-weight:700}
+.en-page .empty{color:var(--en-muted);border-color:var(--en-rule)}
+.en-page .empty b{color:var(--en-ink)}
+
+.en-final{max-width:640px}
+
+/* ホームに置く En. の紹介 */
+.en-teaser{
+  position:relative;overflow:hidden;color:#f8f1e7;
+  background:#4a0d10;padding:clamp(64px,8vw,116px) 0;
+}
+.en-teaser__bg{
+  position:absolute;inset:0;background-size:cover;background-position:center;
+  opacity:.2;filter:saturate(.5);
+}
+.en-teaser::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(74,13,16,.86),rgba(74,13,16,.94));
+}
+.en-teaser__inner{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);
+  gap:clamp(30px,5vw,70px);align-items:center;
+}
+.en-teaser h2{color:#f8f1e7}
+.en-teaser .en-kicker,.en-teaser .en-body{color:rgba(248,241,231,.68)}
+.en-teaser .en-body b{color:#f8f1e7}
+.en-teaser__mark{display:flex;justify-content:flex-end}
+.en-teaser .en-mark{margin:0}
+.en-teaser .en-mark img{width:min(300px,100%)}
+.en-teaser .en-mark--fallback .en-mark__text{color:#f8f1e7}
+
+@media (max-width:900px){
+  .en-two{grid-template-columns:1fr}
+  .en-pillars{grid-template-columns:1fr}
+  .en-pillar{padding:26px 0;border-right:0;border-top:1px solid var(--en-rule)}
+  .en-pillar:first-child{border-top:0}
+  .en-pillar:not(:first-child){padding-left:0}
+  .en-values{grid-template-columns:1fr}
+  .en-value{padding:26px 0 30px}
+  .en-value:nth-child(odd){border-right:0}
+  .en-value:nth-child(even){padding-left:0}
+  .en-teaser__inner{grid-template-columns:1fr}
+  .en-teaser__mark{justify-content:flex-start}
+}
+@media (max-width:600px){
+  .en-event{grid-template-columns:64px 1fr;gap:16px}
+  .en-event__img{width:64px}
+  .en-event__price{grid-column:2;font-size:.8rem}
+}
