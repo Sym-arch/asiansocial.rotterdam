@@ -55,6 +55,28 @@ function renderEventRail() {
   }
 }
 
+/* En. の回だけを並べます。events の brand 列で見分けます。
+   1件も無いときは枠ごと隠します。空の枠は場所を取るだけです。 */
+function renderEnEvents() {
+  const box = $('#enEvents');
+  if (!box) return;
+  const list = upcoming().filter(ev => ev.brand === 'en');
+  box.hidden = !list.length;
+  if (!list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = list.slice(0, 3).map(ev => `
+    <a class="en-event" href="${esc(eventUrl(ev.id))}">
+      <span class="en-event__img">
+        ${ev.image ? `<img src="${esc(ev.image)}" alt="" loading="lazy">` : ''}
+      </span>
+      <span class="en-event__body">
+        <span class="en-event__date">${esc(fmtDate(ev, { weekday: 'short', day: 'numeric', month: 'short' }))}</span>
+        <b>${esc(ev.title)}</b>
+        <span class="en-event__meta">${esc(fmtTime(ev))} \u00b7 ${esc(ev.venue)}</span>
+      </span>
+      <span class="en-event__price">${esc(priceFor(ev).label)}</span>
+    </a>`).join('');
+}
+
 /* ---------------------------------------------------------
    Scroll-driven horizontal rails
    Scrolling down through a pinned section moves the track right.
@@ -383,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const drawAll = () => {
     if (!calTouched) calCursor = initialCalMonth();
-    renderCalendar(); renderEventRail(); renderHeroNext();
+    renderCalendar(); renderEventRail(); renderHeroNext(); renderEnEvents();
     fillReminderSelect(); renderAdmin();
     keepLangOnLinks();   /* カードは後から描かれるので、描くたびに ?lang= を付け直す */
     requestAnimationFrame(measureRails);

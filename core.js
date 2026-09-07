@@ -858,7 +858,6 @@ function memberCardHTML(rsvps, tickets) {
         <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>
         ${since ? `<span>${esc(t('account.since'))} ${esc(since)}</span>` : ''}
       </div>
-      <span class="washi__seal" aria-hidden="true">縁</span>
     </div>
 
     <div class="acct-block">

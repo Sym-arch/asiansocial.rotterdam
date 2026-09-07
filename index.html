@@ -63,7 +63,7 @@
 
     <nav class="nav" id="nav">
       <a href="index.html#home">Home</a>
-      <a href="en.html">En.</a>
+      <a href="index.html#en">En.</a>
       <a href="about.html">About</a>
       <a class="nav__acc" href="profile.html" data-i18n="account.link">Membership</a>
       <button class="btn btn--line btn--sm" id="adminOpen" type="button" hidden>Admin</button>
@@ -113,11 +113,10 @@
 </section>
 
 <!-- ============ EVENTS ============ -->
-<section class="sec sec--flush band band--sticky" id="events">
-  <div class="band__bg band__bg--sticky" style="background-image:url(assets/bg-club.jpg)"></div>
+<section class="sec sec--flush" id="events">
   <div class="wrap events__intro">
     <div class="sec__head reveal">
-      <p class="label label--on-night">Events</p>
+      <p class="label label--brand">Events</p>
       <div>
         <h2>What's coming up</h2>
         <p>We meet whenever there is something worth gathering for — there is no fixed
@@ -165,34 +164,39 @@
 
 <!-- ============ EN. — 日本コミュニティ ============ -->
 <section class="sec en-teaser" id="en">
-  <div class="en-teaser__bg" style="background-image:url(assets/bg-club.jpg)"></div>
-  <div class="wrap en-teaser__inner">
-    <div>
-      <p class="en-kicker">Japan <i>×</i> Rotterdam</p>
-      <h2 class="en-display">Different languages.<br>One table.</h2>
-      <p class="en-body">
-        <b>En.</b> is our Japanese social club — sports, meat and culture, with Japan as the
-        excuse to meet someone new. You don't come to study Japanese. You come because it
-        looks fun.
-      </p>
-      <p class="en-triad"><span>Sports</span><i>·</i><span>Meat</span><i>·</i><span>Culture</span></p>
-      <a class="btn btn--brand" href="en.html">Meet En.</a>
-    </div>
-    <div class="en-teaser__mark">
-      <div class="en-mark">
-        <img src="assets/en-logo.png" alt="En. — Japanese Social Club"
-             onerror="this.closest('.en-mark').classList.add('en-mark--fallback')">
-        <span class="en-mark__text" aria-hidden="true">En.<em>Japanese Social Club</em></span>
+  <div class="en-teaser__bg" style="background-image:url(assets/bg-crowd.jpg)"></div>
+  <div class="wrap">
+    <div class="en-teaser__inner">
+      <div>
+        <p class="en-kicker">Japan <i>×</i> Rotterdam</p>
+        <h2 class="en-display">Different languages.<br>One table.</h2>
+        <p class="en-body">
+          <b>En.</b> is our Japanese social club — sports, meat and culture, with Japan as
+          the excuse to meet someone new. You don't come to study Japanese. You come
+          because it looks fun.
+        </p>
+        <p class="en-triad"><span>Sports</span><i>·</i><span>Meat</span><i>·</i><span>Culture</span></p>
+      </div>
+      <div class="en-teaser__mark">
+        <div class="en-mark">
+          <img src="assets/en-logo.png" alt="En. — Japanese Social Club"
+               onerror="this.closest('.en-mark').classList.add('en-mark--fallback')">
+          <span class="en-mark__text" aria-hidden="true">En.<em>Japanese Social Club</em></span>
+        </div>
       </div>
     </div>
+
+    <!-- En. の回。無いときは何も出しません（空の枠は場所を取るだけです） -->
+    <div class="en-teaser__events" id="enEvents" hidden></div>
   </div>
 </section>
 
 <!-- ============ MEMBERSHIP ============ -->
-<section class="sec" id="membership">
+<section class="sec band" id="membership">
+  <div class="band__bg" style="background-image:url(assets/bg-club.jpg)"></div>
   <div class="wrap">
     <div class="sec__head reveal">
-      <p class="label label--brand">Membership · Free</p>
+      <p class="label label--on-night">Membership</p>
       <div>
         <h2>Members get in earlier, and cheaper</h2>
         <p>There is no fee and never will be. Booking any event already makes you one —
@@ -249,7 +253,7 @@
         <h4>Explore</h4>
         <ul>
           <li><a href="index.html#events">Events</a></li>
-          <li><a href="en.html">En. Japanese Social Club</a></li>
+          <li><a href="index.html#en">En. Japanese Social Club</a></li>
           <li><a href="about.html">About &amp; mission</a></li>
           <li><a href="about.html#partners">For partners</a></li>
         </ul>
