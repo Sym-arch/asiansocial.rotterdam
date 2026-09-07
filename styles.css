@@ -95,7 +95,7 @@ ul,ol{margin:0;padding:0;list-style:none}
   display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);
   gap:clamp(20px,4vw,56px);align-items:start;margin-bottom:clamp(34px,5vw,60px);
 }
-.sec__head h2{font-size:clamp(2rem,4.6vw,3.4rem);text-wrap:balance}
+.sec__head h1,.sec__head h2{font-size:clamp(2rem,4.6vw,3.4rem);text-wrap:balance}
 /* only the description paragraph, so the .label utility keeps its own colour */
 .sec__head > div p{color:var(--muted);max-width:62ch;margin-top:16px;font-size:1.02rem}
 
@@ -557,7 +557,14 @@ ul,ol{margin:0;padding:0;list-style:none}
   position:relative;margin:4vh auto;width:min(100% - 24px,1000px);max-height:92vh;overflow:auto;
   background:var(--paper);border:1px solid var(--rule);
 }
-.modal--sm .modal__panel{width:min(100% - 24px,460px);margin:14vh auto}
+/* 上から 14vh だけ空ける置き方だと、画面の高さや中身の量で位置がずれます。
+   置き場所を計算するのではなく、入れ物の中央に置きます。 */
+.modal--sm.is-open{
+  display:flex;align-items:center;justify-content:center;padding:24px 12px;
+}
+.modal--sm .modal__panel{
+  width:min(100%,460px);margin:0;max-height:calc(100dvh - 48px);
+}
 .modal__head{
   position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:14px;
   padding:18px var(--gutter);border-bottom:1px solid var(--rule);background:var(--paper);
@@ -831,6 +838,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   .cal__cell{min-height:66px;padding:6px 4px}
   .cal__ev{font-size:0;padding:0;height:6px}
   .modal__panel{margin:0;min-height:100vh;max-height:100vh;border:0}
+  /* 電話では画面いっぱいに開きます。中央に寄せる余白は要りません */
+  .modal--sm.is-open{padding:0}
+  .modal--sm .modal__panel{width:100%;max-height:100dvh;min-height:100dvh}
   .admin-row{grid-template-columns:1fr}
   .booked__meta li{flex-direction:column;gap:2px}
   .booked__meta .lbl{width:auto}
@@ -845,11 +855,6 @@ ul,ol{margin:0;padding:0;list-style:none}
    ページ見出し（about / profile など、下層ページの入口）
    ========================================================= */
 .pagehead{padding:clamp(96px,11vw,150px) 0 clamp(30px,4vw,54px)}
-.pagehead h1{
-  font-family:var(--display);font-weight:500;letter-spacing:-.03em;line-height:1.04;
-  font-size:clamp(2.1rem,5.2vw,3.6rem);margin:18px 0 0;text-wrap:balance;
-}
-.pagehead .lead{margin-top:20px;max-width:54ch;color:var(--muted);font-size:1.04rem}
 
 .acct-h1{
   font-family:var(--display);font-weight:500;letter-spacing:-.03em;
