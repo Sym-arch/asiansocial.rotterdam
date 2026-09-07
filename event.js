@@ -247,6 +247,10 @@ function loadingState() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
+  /* ヘッダーは中身が何であれ動かします。「見つかりません」や読み込み中に
+     ここを通らないと、ハンバーガーも言語切替も効かなくなります。
+     二重登録は bindOnce が防ぎます。 */
+  initShell();
 
   /* モーダルでサインインしたら、予約欄を「名前で予約」に差し替えます */
   document.addEventListener('member:changed', () => {

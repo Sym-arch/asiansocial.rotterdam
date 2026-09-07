@@ -802,8 +802,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   /* ログインは他の項目と役割が違うので、メニューの最後にボタンとして置きます。
      並べただけだと、たどり着く前に閉じられます。 */
   .nav__acc{
-    margin-top:14px;border-bottom:0!important;text-align:center;
-    background:var(--brand);color:#fff!important;font-weight:700;
+    margin-top:14px;border-bottom:0!important;text-align:center;font-weight:700;
+    /* RSVP と同じ赤にすると、どちらが本命か分かりません。枠線にとどめます */
+    border:1px solid var(--rule)!important;color:var(--ink)!important;
   }
   .header .btn{margin:14px 0 0}
   .lang{margin-left:auto}
