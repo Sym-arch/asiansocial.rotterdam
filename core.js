@@ -603,6 +603,31 @@ async function startCheckout(eventId, quantity) {
   return data.url;
 }
 
+/**
+ * そのイベントの予約者へリマインダーを送ります（主催者のみ）。
+ * 宛先はサーバが名簿から作ります。ここからは渡しません。
+ * @returns {Promise<{sent:number, recipients:number}>}
+ */
+async function sendEventReminder(eventId) {
+  await ensureSession();
+  const res = await fetch('/api/reminder', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + (SESSION ? SESSION.access_token : '')
+    },
+    body: JSON.stringify({ eventId })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.error === 'not_an_organiser')  throw new Error('You are not an organiser on this site.');
+    if (data.error === 'sign_in_required')  throw new Error('Please sign in again.');
+    if (data.error === 'not_configured')    throw new Error('Email sending is not set up yet.');
+    throw new Error(data.message || data.error || 'Could not send the reminder.');
+  }
+  return data;
+}
+
 /** 決済から戻ってきたとき、発券を待ちます。 */
 async function fetchOrderBySession(sessionId, tries = 8) {
   for (let i = 0; i < tries; i++) {

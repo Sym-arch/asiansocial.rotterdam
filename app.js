@@ -277,11 +277,20 @@ async function refreshRsvps() {
   }
 }
 
+/* 選び直したイベントは、作り直しても保ちます。
+   イベントを保存するたびに先頭へ戻ると、名簿を見ている途中で飛ばされます。 */
 function fillReminderSelect() {
-  const rem = $('#reminderEvent');
-  if (rem) rem.innerHTML = EVENTS.slice().sort(byDate).reverse()
-    .map(e => `<option value="${esc(e.id)}">${esc(fmtDate(e, { day: 'numeric', month: 'short' }))} — ${esc(e.title)}</option>`).join('');
+  const rem = $('#rsvpEvent');
+  if (!rem) return;
+  const keep = rem.value;
+  rem.innerHTML = '<option value="">All events</option>' +
+    EVENTS.slice().sort(byDate).reverse()
+      .map(e => `<option value="${esc(e.id)}">${esc(fmtDate(e, { day: 'numeric', month: 'short' }))} — ${esc(e.title)}</option>`).join('');
+  if (keep && EVENTS.some(e => e.id === keep)) rem.value = keep;
 }
+
+/** 表とリマインダーが見ているイベント。空文字は「すべて」です。 */
+const rsvpFilter = () => (($('#rsvpEvent') || {}).value || '');
 
 function renderAdmin() {
   if (!isAdmin) return;
@@ -324,12 +333,20 @@ function renderAdmin() {
       </div>
     </div>`).join('') : '<div class="empty">No articles yet.</div>';
 
-  const rs = ADMIN_RSVPS.slice();
+  const pick = rsvpFilter();
+  const rs = pick ? ADMIN_RSVPS.filter(r => r.eventId === pick) : ADMIN_RSVPS.slice();
+  const cnt = $('#rsvpCount');
+  if (cnt) {
+    const heads = rs.reduce((n, r) => n + (Number(r.guests) || 1), 0);
+    cnt.textContent = rs.length
+      ? rs.length + (pick ? '' : ' total') + ' · ' + heads + (heads > 1 ? ' people' : ' person')
+      : 'none';
+  }
   $('#rsvpTable').innerHTML = rs.length ? `
-    <thead><tr><th>Received</th><th>Event</th><th>Name</th><th>Email</th><th>Pax</th><th></th></tr></thead>
+    <thead><tr><th>Received</th>${pick ? '' : '<th>Event</th>'}<th>Name</th><th>Email</th><th>Pax</th><th></th></tr></thead>
     <tbody>${rs.map(r => `<tr>
       <td>${esc(new Date(r.createdAt).toLocaleDateString('en-GB'))}</td>
-      <td>${esc(r.eventTitle)}<br><span class="pill">${esc(r.eventDate)}</span></td>
+      ${pick ? '' : `<td>${esc(r.eventTitle)}<br><span class="pill">${esc(r.eventDate)}</span></td>`}
       <td>${esc(r.name)}</td>
       <td><a href="mailto:${esc(r.email)}">${esc(r.email)}</a></td>
       <td>${esc(r.guests)}</td>
@@ -684,41 +701,36 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* Admin: reminders + exports */
-  $('#sendReminder').addEventListener('click', () => {
-    const ev = findEvent($('#reminderEvent').value);
+  /* 実際に参加者へ届くので、押した瞬間には送りません。
+     何人に送るのかを見せてから送ります。 */
+  $('#sendReminder').addEventListener('click', async (e) => {
+    const ev = findEvent(rsvpFilter());
     if (!ev) return toast('Pick an event first.', true);
     const list = ADMIN_RSVPS.filter(r => r.eventId === ev.id);
-    if (!list.length) return toast('Nobody has booked this event yet.', true);
-    const bcc = [...new Set(list.map(r => r.email))].join(',');
-    const body =
-`Hi everyone,
+    const heads = new Set(list.map(r => String(r.email || '').toLowerCase())).size;
+    if (!heads) return toast('Nobody has booked this event yet.', true);
 
-A quick reminder about ${ev.title}.
+    const ask = `Send a reminder for "${ev.title}" to ${heads} ${heads > 1 ? 'people' : 'person'}?
 
-  ${fmtLong(ev)}
-  ${fmtTime(ev)} (${CONFIG.timezone})
-  ${ev.venue}${ev.address ? ', ' + ev.address : ''}
-  ${priceFor(ev).label}
+They receive it straight away.`;
+    if (!confirm(ask)) return;
 
-Add it to your calendar: ${googleCalendarUrl(ev)}
-
-${ev.description}
-
-Can't make it any more? Just reply to this email so we can free up your spot.
-
-See you soon,
-${CONFIG.orgName}
-${CONFIG.contactEmail}`;
-    window.open(gmailComposeUrl({
-      to: CONFIG.contactEmail, bcc,
-      subject: `Reminder: ${ev.title} — ${fmtDate(ev, { day: 'numeric', month: 'long' })}`,
-      body
-    }), '_blank', 'noopener');
-    toast(`Gmail draft opened for ${list.length} attendee(s).`);
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const was = btn.textContent;
+    btn.textContent = 'Sending…';
+    try {
+      const out = await sendEventReminder(ev.id);
+      toast('Reminder sent to ' + (out.recipients || heads) + ' attendee(s).');
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = was;
+    }
   });
 
   $('#copyEmails').addEventListener('click', async () => {
-    const ev = findEvent($('#reminderEvent').value);
+    const ev = findEvent(rsvpFilter());
     const list = ev ? ADMIN_RSVPS.filter(r => r.eventId === ev.id) : [];
     const emails = [...new Set(list.map(r => r.email))].join(', ');
     if (!emails) return toast('No addresses for that event.', true);
@@ -726,9 +738,16 @@ ${CONFIG.contactEmail}`;
     catch { prompt('Copy the addresses:', emails); }
   });
 
+  /* 表を絞ったら CSV も同じ範囲にします。見えているものと出るものが違うと
+     気づかないまま配ってしまいます */
+  $('#rsvpEvent').addEventListener('change', renderAdmin);
+
   $('#exportRsvp').addEventListener('click', () => {
-    if (!ADMIN_RSVPS.length) return toast('Nothing to export.', true);
-    download('asr-rsvps.csv', toCsv(ADMIN_RSVPS), 'text/csv;charset=utf-8');
+    const ev   = findEvent(rsvpFilter());
+    const rows = ev ? ADMIN_RSVPS.filter(r => r.eventId === ev.id) : ADMIN_RSVPS;
+    if (!rows.length) return toast('Nothing to export.', true);
+    const slug = ev ? '-' + String(ev.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) : '';
+    download('asr-rsvps' + slug + '.csv', toCsv(rows), 'text/csv;charset=utf-8');
   });
   $('#exportMsg').addEventListener('click', () => {
     if (!MSGS.length) return toast('Nothing to export.', true);

@@ -562,16 +562,19 @@
       <!-- INBOX TAB -->
       <section class="tabpane" data-pane="inbox">
         <div class="notice">
-          Submissions are logged in this browser and (when email delivery is configured)
-          forwarded to info@sym-arch.com. Use <b>Send reminder</b> to open a pre-filled
-          Gmail draft addressed to everyone who booked an event.
+          Pick an event above to narrow the list. <b>Send reminder</b> emails everyone
+          who booked that event, with an <b>Add to Google Calendar</b> button — it goes
+          out immediately, so you are asked to confirm first.
         </div>
 
         <div class="admin-head" style="margin-top:0">
-          <h4>RSVPs</h4>
+          <h4>RSVPs <span id="rsvpCount" class="pill"></span></h4>
           <div class="admin-row__act">
-            <select id="reminderEvent" style="font:inherit;font-size:.78rem;padding:6px 8px;border:1px solid var(--rule);background:transparent"></select>
-            <button class="mini" type="button" id="sendReminder">Send reminder via Gmail</button>
+            <!-- このセレクトは表の絞り込みも兼ねます。表と送信先が食い違うと事故になるので、
+                 選ぶ場所は1つにしてあります -->
+            <select id="rsvpEvent" aria-label="Filter by event"
+                    style="font:inherit;font-size:.78rem;padding:6px 8px;border:1px solid var(--rule);background:transparent"></select>
+            <button class="mini" type="button" id="sendReminder">Send reminder</button>
             <button class="mini" type="button" id="copyEmails">Copy emails</button>
             <button class="mini" type="button" id="exportRsvp">Export CSV</button>
             <!-- 当日の受付。別ページなので、ここから辿れないと見つけられません -->

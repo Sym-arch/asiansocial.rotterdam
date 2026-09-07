@@ -206,6 +206,41 @@ export async function sendMail({ to, subject, html, replyTo }) {
   return res.json();
 }
 
+/**
+ * 複数人へ一度に送ります。1通ずつ送ると人数分の往復になり、
+ * 関数の実行時間を使い切って途中までしか届きません。
+ * Resend の一括送信は1回で100通までです。
+ * @param {{to:string, subject:string, html:string}[]} messages
+ */
+export async function sendMailBatch(messages) {
+  if (!RESEND_KEY) return { skipped: 'no RESEND_API_KEY' };
+  if (!messages.length) return { sent: 0 };
+
+  let sent = 0;
+  for (let i = 0; i < messages.length; i += 100) {
+    const chunk = messages.slice(i, i + 100).map(m => ({
+      from: FROM_EMAIL,
+      to: [m.to],
+      reply_to: REPLY_TO,
+      subject: m.subject,
+      html: m.html
+    }));
+    const res = await fetch('https://api.resend.com/emails/batch', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(chunk)
+    });
+    if (!res.ok) {
+      /* 何通目まで届いたかを添えます。全部送り直すと二重に届くためです */
+      throw new Error('resend batch → ' + res.status + ' ' +
+                      (await res.text()).slice(0, 200) + ' (sent ' + sent + ')');
+    }
+    await res.json().catch(() => null);
+    sent += chunk.length;
+  }
+  return { sent };
+}
+
 export const randomHex = (bytes = 24) => {
   const a = new Uint8Array(bytes);
   crypto.getRandomValues(a);

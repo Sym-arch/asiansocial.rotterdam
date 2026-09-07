@@ -6,12 +6,15 @@
 const EV_ID = new URLSearchParams(location.search).get('id');
 
 /* 割引が効いているときだけ、元の値段に取り消し線を引きます。
-   効いていないときに二つ並べると、かえって分かりにくくなります。 */
+   効いていないときに二つ並べると、かえって分かりにくくなります。
+
+   線を引かないと、二つ並んだ数字のどちらを払うのか読み取れません。
+   実際に払う額を少し大きく、元の額に線を引いて、一目で決まるようにします。 */
 function priceBlockHTML(ev) {
   const p = priceFor(ev);
-  if (!p.reason) return `<b>${esc(p.label)}</b>`;
-  return `<b>${esc(p.label)}</b>
-    <span class="price-was">${esc(p.baseLabel)}
+  if (!p.reason) return `<b class="price-now">${esc(p.label)}</b>`;
+  return `<b class="price-now">${esc(p.label)}</b>
+    <span class="price-was"><s>${esc(p.baseLabel)}</s>
       <em>${esc(t(p.reason === 'member' ? 'price.member' : 'price.early'))}</em></span>`;
 }
 

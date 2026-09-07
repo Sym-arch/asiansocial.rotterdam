@@ -670,7 +670,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* ---------- price ----------
    割引が効いているときだけ元の値段を並べます。
    効いていないのに二つ出すと、かえって分かりにくくなります。 */
-.price-was{display:block;font-size:.8rem;color:var(--muted);margin-top:2px}
+.price-now{font-size:1.22em;line-height:1.15}
+.price-was{display:block;font-size:.8rem;color:var(--muted);margin-top:3px}
+/* 線は元の値段だけに引きます。「member price」まで消すと読めなくなります */
+.price-was s{text-decoration:line-through;text-decoration-thickness:1px}
 .price-was em{font-style:normal;color:var(--brand);font-weight:600}
 .price-tag{font-style:normal;color:var(--brand);font-weight:600;font-size:.82rem}
 
