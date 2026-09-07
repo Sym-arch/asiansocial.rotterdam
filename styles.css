@@ -355,6 +355,9 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 .rail-hint i{display:block;width:44px;height:1px;background:var(--rule);font-style:normal}
 
+/* 見出しの上は events__intro が自前で空けます。section 側でも空けると
+   二重になります（実測 56px + 52px = 108px）。 */
+#events{padding-top:0}
 .events__intro{padding:clamp(52px,7vw,104px) 0 0}
 .events__intro .sec__head{margin-bottom:clamp(26px,3vw,38px)}
 .events__intro .toolbar{margin-bottom:0}
@@ -927,17 +930,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   --en-ink:#f8f1e7;
   --en-muted:rgba(248,241,231,.68);
   --en-rule:rgba(248,241,231,.2);
-  position:relative;overflow:hidden;isolation:isolate;
+  /* ロゴの地と同じ色です。写真を敷かないぶん、ロゴがそのまま面になります */
   background:#4a0d10;color:var(--en-ink);
   padding:clamp(64px,8vw,116px) 0;
-}
-.en-teaser__bg{
-  position:absolute;inset:0;z-index:-2;
-  background-size:cover;background-position:center;opacity:.2;filter:saturate(.5);
-}
-.en-teaser::after{
-  content:"";position:absolute;inset:0;z-index:-1;
-  background:linear-gradient(180deg,rgba(74,13,16,.86),rgba(74,13,16,.94));
 }
 .en-teaser h2{color:var(--en-ink)}
 

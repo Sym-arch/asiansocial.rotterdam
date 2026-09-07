@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* Scroll-spy */
-  ['home', 'events', 'en', 'membership'].forEach(id => {
+  ['home', 'events', 'membership', 'en'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     new IntersectionObserver(entries => {
