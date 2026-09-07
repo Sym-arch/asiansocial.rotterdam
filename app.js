@@ -15,11 +15,16 @@ function renderHeroNext() {
     box.innerHTML = '<p class="upnext__none">Nothing scheduled right now — the next one will appear here.</p>';
     return;
   }
+  /* 写真が無い回もあります。そのときも同じ幅の枠を置きます。
+     置かないと、その行だけ文字の始まりがずれます。 */
   box.innerHTML = list.map(ev => `
     <a class="next-item" href="${esc(eventUrl(ev.id))}">
+      <span class="next-item__img">
+        ${ev.image ? `<img src="${esc(ev.image)}" alt="" loading="lazy">` : ''}
+      </span>
       <time>${esc(fmtDate(ev, { day: 'numeric', month: 'short' }))}</time>
       <strong>${esc(ev.title)}</strong>
-      <span>${esc(fmtTime(ev))} · ${esc(ev.venue)}</span>
+      <span class="next-item__meta">${esc(fmtTime(ev))} · ${esc(ev.venue)}</span>
     </a>`).join('');
 }
 
@@ -51,22 +56,6 @@ function renderEventRail() {
 }
 
 /* ---------------------------------------------------------
-   Note — the blog, its own rail
-   --------------------------------------------------------- */
-function renderNotes() {
-  const track = $('#noteTrack');
-  const list = NOTES.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  track.innerHTML = list.length
-    ? list.map(noteCardHTML).join('')
-    : `<div class="empty empty--rail">
-         <b>No articles yet.</b>
-         <span>The first posts are being written.</span>
-       </div>`;
-  const hint = $('#noteHint');
-  if (hint) hint.hidden = !list.length;
-}
-
-/* ---------------------------------------------------------
    Scroll-driven horizontal rails
    Scrolling down through a pinned section moves the track right.
    Falls back to a plain swipe track on small screens.
@@ -84,7 +73,7 @@ function createRail(railSel, trackSel, barSel) {
   }
 
   function measure() {
-    const hasCards = track.querySelector('.ev-card, .note-card');
+    const hasCards = track.querySelector('.ev-card');
     if (!hasCards || isStatic() || rail.offsetParent === null) {
       rail.classList.add('is-static');
       rail.style.height = '';
@@ -239,8 +228,19 @@ function closeModal(el) {
 /* ---------------------------------------------------------
    Admin
    --------------------------------------------------------- */
-let isAdmin = isSignedIn();
+/* 「サインインしている」は「管理者である」ではありません。
+   会員も同じ仕組みでサインインするようになったので、ここを取り違えると
+   予約したお客さん全員に管理画面が開いてしまいます。
+   admins テーブルに載っているかをサーバに聞いて決めます。 */
+let isAdmin = false;
 let ADMIN_RSVPS = [];   // every booking, read from Supabase once signed in
+
+async function refreshAdminFlag() {
+  if (!isSignedIn()) { isAdmin = false; return false; }
+  try { isAdmin = await isAdminUser(); }
+  catch { isAdmin = false; }          /* 確かめられないときは開けません */
+  return isAdmin;
+}
 
 /* The Admin button is hidden for everyone. It only appears on a browser that
    has signed in here before (remembered on this device), or when the page is
@@ -257,13 +257,24 @@ function revealAdminEntry() {
   const btn = $('#adminOpen');
   if (btn) btn.hidden = false;
 }
+function hideAdminEntry() {
+  const btn = $('#adminOpen');
+  if (btn) btn.hidden = true;
+}
 
-function requireAdmin() {
+async function requireAdmin() {
   /* Admin もフォームの塊なので、翻訳ページでは警告に阻まれます。
      開かずに、そのまま英語の本来のページへ送ります。 */
   if (onProxy()) { location.href = nativeUrl('en', '#admin'); return; }
-  if (isAdmin) { renderAdmin(); openModal('#adminModal'); refreshRsvps(); }
-  else { openModal('#loginModal'); setTimeout(() => $('#adminEmail').focus(), 60); }
+
+  if (!isAdmin && isSignedIn()) await refreshAdminFlag();
+  if (isAdmin) { renderAdmin(); openModal('#adminModal'); refreshRsvps(); return; }
+
+  /* 会員としてサインイン済みの人には、なぜ開かないのかを言います。
+     黙ってログイン画面を出すと、入れているのに弾かれたように見えます。 */
+  if (isSignedIn()) toast('That account is not an organiser.', true);
+  openModal('#loginModal');
+  setTimeout(() => $('#adminEmail').focus(), 60);
 }
 
 /** Pull the booking list; without a valid session RLS returns nothing. */
@@ -300,8 +311,7 @@ function renderAdmin() {
     <div><b>${upcoming().length}</b><span>Upcoming events</span></div>
     <div><b>${ADMIN_RSVPS.length}</b><span>RSVPs</span></div>
     <div><b>${seatsBooked}</b><span>Seats booked</span></div>
-    <div><b>${MSGS.length}</b><span>Messages</span></div>
-    <div><b>${NOTES.length}</b><span>Note articles</span></div>`;
+    <div><b>${MSGS.length}</b><span>Messages</span></div>`;
 
   $('#aeCount').textContent = EVENTS.length;
   const evs = EVENTS.slice().sort(byDate).reverse();
@@ -318,20 +328,6 @@ function renderAdmin() {
         <button class="mini mini--danger" type="button" data-del-ev="${esc(ev.id)}">Delete</button>
       </div>
     </div>`).join('') : '<div class="empty">No events yet.</div>';
-
-  $('#anCount').textContent = NOTES.length;
-  const ns = NOTES.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
-  $('#adminNoteList').innerHTML = ns.length ? ns.map(n => `
-    <div class="admin-row">
-      <div class="admin-row__main">
-        <strong>${esc(n.title)}</strong>
-        <span>${esc(n.date || '—')} · ${esc(n.tag || 'note')} · ${esc(n.url)}</span>
-      </div>
-      <div class="admin-row__act">
-        <button class="mini" type="button" data-edit-note="${esc(n.id)}">Edit</button>
-        <button class="mini mini--danger" type="button" data-del-note="${esc(n.id)}">Delete</button>
-      </div>
-    </div>`).join('') : '<div class="empty">No articles yet.</div>';
 
   const pick = rsvpFilter();
   const rs = pick ? ADMIN_RSVPS.filter(r => r.eventId === pick) : ADMIN_RSVPS.slice();
@@ -399,23 +395,6 @@ function eventFormFill(ev) {
   $('#aeSubmit').textContent = ev ? 'Save changes' : 'Publish event';
 }
 
-function noteFormFill(n) {
-  $('#anId').value = n ? n.id : '';
-  $('#anTitle').value = n ? n.title : '';
-  $('#anUrl').value = n ? n.url : '';
-  $('#anDate').value = n ? (n.date || '') : '';
-  $('#anTag').value = n ? (n.tag || '') : '';
-  $('#anDesc').value = n ? n.description : '';
-  $('#anFile').value = '';
-  $('#anImgClear').checked = false;
-  $('#anImgClearWrap').hidden = !(n && n.image);
-  $('#anImgState').textContent = n && n.image
-    ? 'A thumbnail is attached. Pick a new file to replace it.'
-    : (supabaseReady() ? 'Uploaded to your Supabase bucket.' : 'Kept in this browser until Supabase is configured.');
-  $('#adminNoteFormTitle').textContent = n ? 'Edit article' : 'Add a note article';
-  $('#anSubmit').textContent = n ? 'Save changes' : 'Publish article';
-}
-
 function toCsv(rows) {
   if (!rows.length) return '';
   const cols = Object.keys(rows[0]);
@@ -453,13 +432,12 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDow();
 
   createRail('#eventsRail', '#eventsTrack', '#eventsProgress');
-  createRail('#noteRail', '#noteTrack', '#noteProgress');
   bindRailScroll();
   window.addEventListener('load', measureRails);
 
   const drawAll = () => {
     if (!calTouched) calCursor = initialCalMonth();
-    renderCalendar(); renderEventRail(); renderHeroNext(); renderNotes();
+    renderCalendar(); renderEventRail(); renderHeroNext();
     fillReminderSelect(); renderAdmin();
     keepLangOnLinks();   /* カードは後から描かれるので、描くたびに ?lang= を付け直す */
     requestAnimationFrame(measureRails);
@@ -472,15 +450,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loadContent()
       .then(() => syncLocalToSupabase())
       .then(r => {
-        if (!r.events && !r.notes) return;
-        toast(`Uploaded ${r.events} event(s) and ${r.notes} article(s) to Supabase.`);
+        if (!r.events) return;
+        toast(`Uploaded ${r.events} event(s) to Supabase.`);
         return loadContent().then(drawAll);
       })
       .catch(err => console.warn('sync skipped:', err));
   }
 
   /* Scroll-spy */
-  ['home', 'about', 'events', 'note', 'partners'].forEach(id => {
+  ['home', 'about', 'events', 'partners'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     new IntersectionObserver(entries => {
@@ -507,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-close],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-edit-note],[data-del-note],[data-del-rsvp],[data-del-msg]');
+    const t = e.target.closest('[data-close],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-msg]');
     if (!t) return;
 
     if (t.hasAttribute('data-close')) { closeModal(t.closest('.modal')); return; }
@@ -533,19 +511,6 @@ document.addEventListener('DOMContentLoaded', () => {
       EVENTS = EVENTS.filter(x => x.id !== gone); saveEvents(); refreshPublic(); renderAdmin();
       dropEvent(gone).catch(err => toast(err.message, true));
       toast('Event deleted.');
-      return;
-    }
-    if (t.dataset.editNote) {
-      noteFormFill(NOTES.find(x => x.id === t.dataset.editNote));
-      $('#adminNoteForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    if (t.dataset.delNote) {
-      if (!confirm('Delete this article?')) return;
-      const goneNote = t.dataset.delNote;
-      NOTES = NOTES.filter(x => x.id !== goneNote); saveNotes(); renderNotes(); renderAdmin();
-      dropNote(goneNote).catch(err => toast(err.message, true));
-      requestAnimationFrame(measureRails);
       return;
     }
     if (t.dataset.delRsvp) {
@@ -574,8 +539,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);
-  if (isAdminDevice() || isSignedIn()) revealAdminEntry();
-  if (isSignedIn()) refreshRsvps();
+  if (isAdminDevice()) revealAdminEntry();
+  refreshAdminFlag().then(ok => {
+    if (ok) { revealAdminEntry(); refreshRsvps(); }
+    /* 会員として入っているだけの人には入口も出しません */
+    else if (isSignedIn()) hideAdminEntry();
+  });
   /* opening the site with #admin lets you get in on a new browser */
   if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
   window.addEventListener('hashchange', () => {
@@ -588,9 +557,16 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.disabled = true; btn.textContent = 'Signing in…';
     try {
       await signIn($('#adminEmail').value.trim(), $('#adminPass').value);
-      isAdmin = true;
-      rememberAdminDevice(); revealAdminEntry();
       $('#adminPass').value = '';
+      /* 入れたことと、主催者であることは別です */
+      if (!(await refreshAdminFlag())) {
+        hideAdminEntry();
+        closeModal($('#loginModal'));
+        toast('Signed in — but this account is not an organiser.', true);
+        btn.disabled = false; btn.textContent = label;
+        return;
+      }
+      rememberAdminDevice(); revealAdminEntry();
       closeModal($('#loginModal'));
       renderAdmin(); openModal('#adminModal');
       toast('Signed in as ' + signedInAs());
@@ -602,7 +578,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('#adminLogout').addEventListener('click', () => {
     signOut(); isAdmin = false; ADMIN_RSVPS = [];
-    closeModal($('#adminModal')); toast('Signed out.');
+    closeModal($('#adminModal'));
+    /* もう見られない画面を開いたままにしません。最初の画面へ戻します */
+    location.href = homeUrl();
   });
 
   /* Admin tabs */
@@ -662,42 +640,6 @@ document.addEventListener('DOMContentLoaded', () => {
     saveEvents(); eventFormFill(null); refreshPublic(); renderAdmin();
     try { await pushEvent(rec); } catch (err) { return toast(err.message, true); }
     toast(existing ? 'Event updated' : 'Event published');
-  });
-
-  /* Admin: note form */
-  $('#adminNoteReset').addEventListener('click', () => noteFormFill(null));
-  $('#adminNoteForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    if (!$('#anTitle').value.trim() || !$('#anUrl').value.trim() || !$('#anDesc').value.trim())
-      return toast('Title, URL and summary are required.', true);
-
-    const id = $('#anId').value;
-    const existing = NOTES.find(x => x.id === id);
-    const btn = $('#anSubmit'), label = btn.textContent;
-    const file = $('#anFile').files[0];
-
-    let image = $('#anImgClear').checked ? '' : (existing ? existing.image : '');
-    if (file) {
-      btn.disabled = true; btn.textContent = 'Uploading photo…';
-      try { image = await uploadImage(file); }
-      catch (err) { btn.disabled = false; btn.textContent = label; return toast(err.message, true); }
-      btn.disabled = false; btn.textContent = label;
-    }
-
-    const rec = {
-      id: id || uid(),
-      title: $('#anTitle').value.trim(),
-      url: $('#anUrl').value.trim(),
-      date: $('#anDate').value || new Date().toISOString().slice(0, 10),
-      tag: $('#anTag').value.trim(),
-      image,
-      description: $('#anDesc').value.trim()
-    };
-    if (existing) Object.assign(existing, rec); else NOTES.push(rec);
-    saveNotes(); noteFormFill(null); renderNotes(); renderAdmin();
-    requestAnimationFrame(measureRails);
-    try { await pushNote(rec); } catch (err) { return toast(err.message, true); }
-    toast(existing ? 'Article updated' : 'Article published');
   });
 
   /* Admin: reminders + exports */
@@ -760,8 +702,8 @@ They receive it straight away.`;
       const r = await syncLocalToSupabase();
       await loadContent(); drawAll();
       toast(r.failed
-        ? `Uploaded ${r.events + r.notes}, ${r.failed} failed — check the table policies.`
-        : `Uploaded ${r.events} event(s) and ${r.notes} article(s).`, Boolean(r.failed));
+        ? `Uploaded ${r.events}, ${r.failed} failed — check the table policies.`
+        : `Uploaded ${r.events} event(s).`, Boolean(r.failed));
     } catch (err) {
       toast(err.message, true);
     }
@@ -769,5 +711,5 @@ They receive it straight away.`;
   });
 
 
-  eventFormFill(null); noteFormFill(null);
+  eventFormFill(null);
 });

@@ -20,6 +20,8 @@ create table if not exists events (
   created_at  timestamptz default now()
 );
 
+-- ここから notes は廃止しました。06-drop-notes.sql で落としています。
+-- このファイルを頭から流し直すと作り直されるので、その場合は 06 を最後に実行してください。
 create table if not exists notes (
   id          text primary key,
   title       text not null,

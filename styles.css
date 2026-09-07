@@ -233,14 +233,20 @@ ul,ol{margin:0;padding:0;list-style:none}
 .upnext__head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:6px}
 .next-list{display:grid}
 .next-item{
-  display:grid;grid-template-columns:96px 1fr auto;gap:18px;align-items:baseline;
+  display:grid;grid-template-columns:56px 96px 1fr auto;gap:18px;align-items:baseline;
   padding:16px 0;border-bottom:1px solid var(--rule-night);
   text-decoration:none;color:inherit;transition:padding-left .22s ease;
 }
 .next-item:hover{padding-left:10px}
+/* 写真は全ての行にまたがります。行が増える幅でも、文字の始まりが揃います */
+.next-item__img{
+  grid-row:1 / -1;align-self:center;
+  width:56px;aspect-ratio:1;overflow:hidden;background:var(--night-2);
+}
+.next-item__img img{width:100%;height:100%;object-fit:cover;display:block}
 .next-item time{font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--brand)}
 .next-item strong{font-family:var(--display);font-size:1.05rem;font-weight:500}
-.next-item span{font-size:.82rem;color:var(--on-night-muted)}
+.next-item__meta{font-size:.82rem;color:var(--on-night-muted)}
 
 /* ---------- about ---------- */
 .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--rule)}
@@ -309,42 +315,20 @@ ul,ol{margin:0;padding:0;list-style:none}
 .ev-card__foot b{font-weight:700;color:var(--ink)}
 .ev-card.is-past{opacity:.5}
 
-/* note card — landscape, on the night band, deliberately unlike the events */
-.rail--note .rail__track{align-items:center}
-.note-card{
-  flex:0 0 clamp(272px,32vw,420px);display:flex;flex-direction:column;
-  text-decoration:none;color:var(--on-night);
-  padding-top:20px;border-top:1px solid var(--rule-night);
-}
-.note-card__img{aspect-ratio:16/9;overflow:hidden;background:var(--night-2);margin-bottom:20px}
-.note-card__img img{width:100%;height:100%;object-fit:cover;opacity:.86;transition:opacity .4s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
-.note-card:hover .note-card__img img{opacity:1;transform:scale(1.04)}
-.note-card__meta{
-  display:flex;align-items:center;gap:10px;margin-bottom:12px;
-  font-size:.64rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ember);
-}
-.note-card__meta span{color:var(--on-night-muted)}
-.note-card h3{font-size:1.22rem;font-weight:500;margin-bottom:10px;text-wrap:balance}
-.note-card p{
-  font-size:.88rem;color:var(--on-night-muted);flex:1;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
-}
-.note-card__more{
-  margin-top:18px;font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
-  display:inline-flex;gap:8px;align-items:center;transition:gap .2s ease;
-}
-.note-card:hover .note-card__more{gap:14px}
-
 /* rail fallback: plain swipe track */
 .rail.is-static{height:auto!important}
 .rail.is-static .rail__vp{
   position:static;height:auto;overflow-x:auto;overflow-y:hidden;
   scroll-snap-type:x proximity;padding-bottom:18px;
   scrollbar-width:none;-ms-overflow-style:none;
+  /* 吸着の基準を、余白のぶんだけ内側にずらします。
+     ずらさないと、一番左のカードが余白を飲み込んで画面の端に貼りつき、
+     切れているように見えます。track の padding と同じ値です。 */
+  scroll-padding-inline:max(var(--gutter),calc((100vw - var(--max)) / 2));
 }
 .rail.is-static .rail__vp::-webkit-scrollbar{display:none}
 .rail.is-static .rail__track{transform:none!important}
-.rail.is-static .ev-card,.rail.is-static .note-card{scroll-snap-align:start}
+.rail.is-static .ev-card{scroll-snap-align:start}
 
 .rail-hint{
   display:flex;align-items:center;gap:12px;margin-top:22px;
@@ -670,8 +654,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* ---------- price ----------
    割引が効いているときだけ元の値段を並べます。
    効いていないのに二つ出すと、かえって分かりにくくなります。 */
-.price-now{font-size:1.22em;line-height:1.15}
-.price-was{display:block;font-size:.8rem;color:var(--muted);margin-top:3px}
+.price-now{display:block;font-size:1.22em;line-height:1.15}
+.price-was{display:block;font-size:.8rem;color:var(--muted);margin:0 0 1px}
 /* 線は元の値段だけに引きます。「member price」まで消すと読めなくなります */
 .price-was s{text-decoration:line-through;text-decoration-thickness:1px}
 .price-was em{font-style:normal;color:var(--brand);font-weight:600}
@@ -807,8 +791,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   .header .btn{margin:14px 0 0}
   .lang{margin-left:auto}
   .burger{display:flex;margin-left:0}
-  .next-item{grid-template-columns:74px 1fr;gap:12px}
-  .next-item span{grid-column:2}
+  .next-item{grid-template-columns:48px 74px 1fr;gap:14px}
+  .next-item__img{width:48px}
+  .next-item__meta{grid-column:3}
   .form-grid{grid-template-columns:1fr}
   .steps li{grid-template-columns:1fr;gap:4px}
   .footer__grid{grid-template-columns:1fr}

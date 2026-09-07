@@ -78,6 +78,8 @@ create policy "admin update events" on events
 create policy "admin delete events" on events
   for delete to authenticated using ( is_admin() );
 
+-- notes は廃止済みです（06-drop-notes.sql）。テーブルが無い状態でここを流すと
+-- エラーになります。その場合はこの notes の塊を飛ばしてください。
 drop policy if exists "anon write notes"   on notes;
 drop policy if exists "anon update notes"  on notes;
 drop policy if exists "anon delete notes"  on notes;

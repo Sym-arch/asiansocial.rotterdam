@@ -13,9 +13,11 @@ const EV_ID = new URLSearchParams(location.search).get('id');
 function priceBlockHTML(ev) {
   const p = priceFor(ev);
   if (!p.reason) return `<b class="price-now">${esc(p.label)}</b>`;
-  return `<b class="price-now">${esc(p.label)}</b>
-    <span class="price-was"><s>${esc(p.baseLabel)}</s>
-      <em>${esc(t(p.reason === 'member' ? 'price.member' : 'price.early'))}</em></span>`;
+  /* 元の値段が先、実際に払う額が最後です。
+     目は下から読み上げないので、最後に見た数字が残ります。 */
+  return `<span class="price-was"><s>${esc(p.baseLabel)}</s>
+      <em>${esc(t(p.reason === 'member' ? 'price.member' : 'price.early'))}</em></span>
+    <b class="price-now">${esc(p.label)}</b>`;
 }
 
 function priceInlineHTML(ev) {

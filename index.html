@@ -65,7 +65,6 @@
       <a href="#home">Home</a>
       <a href="#about">About</a>
       <a href="#events">Events</a>
-      <a href="#note">Note</a>
       <a href="#partners">For Partners</a>
       <a href="#" data-member data-i18n="account.link">Membership</a>
       <button class="btn btn--line btn--sm" id="adminOpen" type="button" hidden>Admin</button>
@@ -218,30 +217,6 @@
   </div>
 </section>
 
-<!-- ============ NOTE — the blog, deliberately its own world ============ -->
-<section class="sec sec--flush band" id="note">
-  <div class="wrap">
-    <div class="sec__head reveal">
-      <p class="label label--on-night">Journal · note.com</p>
-      <div>
-        <h2>The blog</h2>
-        <p>Long-form writing from the organiser: event recaps, guides to Asian life in
-           Rotterdam, and what running a community actually takes. Published on note.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="rail rail--note" id="noteRail">
-    <div class="rail__vp">
-      <div class="rail__track" id="noteTrack"></div>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <p class="rail-hint" id="noteHint" style="color:var(--on-night-muted)"><i style="background:var(--rule-night)"></i>Scroll to read across</p>
-  </div>
-</section>
-
 <!-- ============ PARTNERS ============ -->
 <section class="sec" id="partners">
   <div class="wrap">
@@ -268,8 +243,8 @@
         </li>
         <li class="perk">
           <h4>Media &amp; content collaborations</h4>
-          <p>Photo and video coverage of every event, plus long-form write-ups on the note
-             blog that keep working long after the night ends.</p>
+          <p>Photo and video coverage of every event, plus recaps on our channels that
+             keep working long after the night ends.</p>
         </li>
         <li class="perk">
           <h4>What you get back</h4>
@@ -342,7 +317,6 @@
         <ul>
           <li><a href="#about">About &amp; mission</a></li>
           <li><a href="#events">Events</a></li>
-          <li><a href="#note">Note blog</a></li>
           <li><a href="#partners">For partners</a></li>
         </ul>
       </div>
@@ -351,7 +325,6 @@
         <ul>
           <li><a href="https://www.meetup.com/asian-social-and-drinking-gathering/" target="_blank" rel="noopener">Meetup</a></li>
           <li><a href="https://www.instagram.com/asiansocial.rotterdam/" target="_blank" rel="noopener">Instagram</a></li>
-          <li><a href="https://note.com/" target="_blank" rel="noopener">note</a></li>
           <li><a href="mailto:info@sym-arch.com">info@sym-arch.com</a></li>
         </ul>
       </div>
@@ -408,7 +381,6 @@
 
       <div class="tabs" role="tablist">
         <button type="button" class="is-on" data-tab="events">Events</button>
-        <button type="button" data-tab="notes">Note articles</button>
         <button type="button" data-tab="inbox">RSVPs &amp; messages</button>
       </div>
 
@@ -509,54 +481,6 @@
           </div>
         </div>
         <div class="admin-list" id="adminEventList"></div>
-      </section>
-
-      <!-- NOTES TAB -->
-      <section class="tabpane" data-pane="notes">
-        <form class="admin-form" id="adminNoteForm">
-          <div class="admin-head" style="margin-top:0">
-            <h4 id="adminNoteFormTitle">Add a note article</h4>
-            <button class="mini" type="button" id="adminNoteReset">Clear form</button>
-          </div>
-          <input type="hidden" id="anId">
-          <div class="form-grid">
-            <div class="field field--full">
-              <label for="anTitle">Title <span class="req">*</span></label>
-              <input id="anTitle" type="text" required placeholder="How our first 100-person meetup happened">
-            </div>
-            <div class="field field--full">
-              <label for="anUrl">note article URL <span class="req">*</span></label>
-              <input id="anUrl" type="url" required placeholder="https://note.com/your_account/n/xxxxxxxx">
-            </div>
-            <div class="field">
-              <label for="anDate">Published on</label>
-              <input id="anDate" type="date">
-            </div>
-            <div class="field">
-              <label for="anTag">Tag</label>
-              <input id="anTag" type="text" placeholder="Event recap">
-            </div>
-            <div class="field field--full">
-              <label for="anFile">Thumbnail</label>
-              <input id="anFile" type="file" accept="image/*">
-              <small id="anImgState">Uploaded straight from this device.</small>
-            </div>
-            <div class="field field--full" id="anImgClearWrap" hidden>
-              <label class="check"><input type="checkbox" id="anImgClear">
-                <span>Remove the current thumbnail</span></label>
-            </div>
-            <div class="field field--full">
-              <label for="anDesc">Summary <span class="req">*</span></label>
-              <textarea id="anDesc" required placeholder="A short teaser shown on the card."></textarea>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn" type="submit" id="anSubmit">Publish article</button>
-          </div>
-        </form>
-
-        <div class="admin-head"><h4>Published articles</h4><span class="pill" id="anCount">0</span></div>
-        <div class="admin-list" id="adminNoteList"></div>
       </section>
 
       <!-- INBOX TAB -->

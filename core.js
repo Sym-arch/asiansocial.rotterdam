@@ -68,17 +68,13 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
    --------------------------------------------------------- */
 /* No demo content: everything is created from the Admin panel. */
 const SEED_EVENTS = [];
-const SEED_NOTES  = [];
 
 let EVENTS = DB.get('events', null) || SEED_EVENTS.slice();
-let NOTES  = DB.get('notes',  null) || SEED_NOTES.slice();
 let RSVPS  = DB.get('rsvps',  []);
 let MSGS   = DB.get('messages', []);
 if (!DB.get('events', null)) DB.set('events', EVENTS);
-if (!DB.get('notes',  null)) DB.set('notes',  NOTES);
 
 const saveEvents = () => DB.set('events', EVENTS);
-const saveNotes  = () => DB.set('notes',  NOTES);
 const saveRsvps  = () => DB.set('rsvps',  RSVPS);
 const saveMsgs   = () => DB.set('messages', MSGS);
 
@@ -139,21 +135,6 @@ function eventCardHTML(ev) {
       <span>${esc(ev.venue)}</span>
       <b>${done ? 'Finished' : esc(priceFor(ev).label)}</b>
     </span>
-  </a>`;
-}
-
-function noteCardHTML(n) {
-  const date = n.date
-    ? new Date(n.date).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
-    : '';
-  return `<a class="note-card" href="${esc(n.url)}" target="_blank" rel="noopener">
-    <span class="note-card__img">
-      ${n.image ? `<img src="${esc(n.image)}" alt="${esc(n.title)}" loading="lazy">` : ''}
-    </span>
-    <span class="note-card__meta">${esc(n.tag || 'note')}${date ? `<span>${esc(date)}</span>` : ''}</span>
-    <h3>${esc(n.title)}</h3>
-    <p>${esc(n.description)}</p>
-    <span class="note-card__more">Read on note →</span>
   </a>`;
 }
 
@@ -958,11 +939,9 @@ function wireMemberCard() {
     } catch (err) { toast(err.message, true); }
     btn.disabled = false;
   });
-  $('#mcSignOut').addEventListener('click', async () => {
+  $('#mcSignOut').addEventListener('click', () => {
     signOut();
-    MEMBER_MODE = 'signin';
-    await renderMemberModal();
-    document.dispatchEvent(new CustomEvent('member:changed'));
+    location.href = homeUrl();
   });
 }
 
@@ -1054,6 +1033,19 @@ async function loadMyRsvps() {
     console.warn('bookings load failed:', err.message);
     return [];
   }
+}
+
+/**
+ * サインアウトしたあとの行き先。
+ * その場に留まると、もう見られないものが並んだままになります。
+ * 読み込み直すので、価格や会員向けの表示も一緒に戻ります。
+ */
+function homeUrl() {
+  const u = new URL('index.html', location.href);
+  const lang = uiLang();
+  if (lang !== 'en') u.searchParams.set('lang', lang);
+  u.hash = '';
+  return u.href;
 }
 
 function signOut() {
@@ -1207,41 +1199,23 @@ function priceFor(ev, tier) {
     reason: best.cents < base ? best.reason : ''
   };
 }
-const noteFromRow = r => ({
-  id: r.id, title: r.title, url: r.url, date: r.date,
-  tag: r.tag, image: r.image, description: r.description
-});
-const noteToRow = n => ({
-  id: n.id, title: n.title, url: n.url, date: n.date || null,
-  tag: n.tag, image: n.image, description: n.description
-});
-
 let contentSource = supabaseReady() ? 'loading' : 'local';
 
 /**
- * Pull events and articles from Supabase into EVENTS / NOTES.
- * The two tables are handled independently: if one is missing or fails,
- * the other still loads and the missing one keeps its cached copy.
+ * Pull the events from Supabase into EVENTS.
+ * 読めなかったときは、この端末に残っている前回の内容をそのまま使います。
+ * 真っ白になるより、少し古いものが出ているほうがましです。
  */
 async function loadContent() {
   if (!supabaseReady()) return false;
-  const [ev, nt] = await Promise.allSettled([
-    sbSelect('events', 'order=date.asc'),
-    sbSelect('notes', 'order=date.desc')
-  ]);
   let loaded = 0;
-
-  if (ev.status === 'fulfilled') {
-    EVENTS = ev.value.map(evFromRow); DB.set('events', EVENTS); loaded++;
-  } else {
-    console.warn('events: using the cached copy —', ev.reason && ev.reason.message);
+  try {
+    EVENTS = (await sbSelect('events', 'order=date.asc')).map(evFromRow);
+    DB.set('events', EVENTS);
+    loaded++;
+  } catch (err) {
+    console.warn('events: using the cached copy —', err.message);
   }
-  if (nt.status === 'fulfilled') {
-    NOTES = nt.value.map(noteFromRow); DB.set('notes', NOTES); loaded++;
-  } else {
-    console.warn('notes: using the cached copy —', nt.reason && nt.reason.message);
-  }
-
   contentSource = loaded ? 'supabase' : 'cache';
   return loaded > 0;
 }
@@ -1250,30 +1224,20 @@ async function loadContent() {
  * Push anything that exists only in this browser up to Supabase.
  * Run from the admin device so content created before the tables existed
  * is not stranded locally.
- * @returns {Promise<{events:number, notes:number, failed:number}>}
+ * @returns {Promise<{events:number, failed:number}>}
  */
 async function syncLocalToSupabase() {
-  const out = { events: 0, notes: 0, failed: 0 };
+  const out = { events: 0, failed: 0 };
   if (!supabaseReady()) return out;
 
-  const [remoteEv, remoteNt] = await Promise.allSettled([
-    sbSelect('events'), sbSelect('notes')
-  ]);
-  const known = list => new Set(list.status === 'fulfilled' ? list.value.map(r => r.id) : null);
+  let remote;
+  try { remote = await sbSelect('events'); }
+  catch { return out; }
 
-  if (remoteEv.status === 'fulfilled') {
-    const have = known(remoteEv);
-    for (const e of EVENTS) {
-      if (have.has(e.id)) continue;
-      try { await sbUpsert('events', evToRow(e)); out.events++; } catch { out.failed++; }
-    }
-  }
-  if (remoteNt.status === 'fulfilled') {
-    const have = known(remoteNt);
-    for (const n of NOTES) {
-      if (have.has(n.id)) continue;
-      try { await sbUpsert('notes', noteToRow(n)); out.notes++; } catch { out.failed++; }
-    }
+  const have = new Set(remote.map(r => r.id));
+  for (const e of EVENTS) {
+    if (have.has(e.id)) continue;
+    try { await sbUpsert('events', evToRow(e)); out.events++; } catch { out.failed++; }
   }
   return out;
 }
@@ -1281,8 +1245,6 @@ async function syncLocalToSupabase() {
 /* Admin writes: keep the local copy and the table in step. */
 const pushEvent = rec => supabaseReady() ? sbUpsert('events', evToRow(rec)) : Promise.resolve();
 const dropEvent = id  => supabaseReady() ? sbDelete('events', id) : Promise.resolve();
-const pushNote  = rec => supabaseReady() ? sbUpsert('notes', noteToRow(rec)) : Promise.resolve();
-const dropNote  = id  => supabaseReady() ? sbDelete('notes', id) : Promise.resolve();
 
 /**
  * Draw once from the cache so the page is never blank, then redraw with
