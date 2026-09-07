@@ -38,12 +38,18 @@ export function send(res, status, body) {
 export function readRaw(req) {
   if (typeof req.body === 'string') return Promise.resolve(req.body);
   if (req.body && Buffer.isBuffer(req.body)) return Promise.resolve(req.body.toString('utf8'));
-  return new Promise((resolve, reject) => {
+  /* Vercel が先に本文を読んでしまうと、ここに来た時点でストリームは終わっています。
+     終わったストリームに 'end' は二度と来ないので、待ち続けると関数ごと固まります。
+     取れなかったことを空文字で伝え、呼び出し側に別の手を選ばせます。 */
+  if (req.readableEnded || req.complete) return Promise.resolve('');
+  return new Promise(resolve => {
     let data = '';
+    const done = () => resolve(data);
+    const timer = setTimeout(done, 3000);
     req.setEncoding('utf8');
     req.on('data', c => { data += c; });
-    req.on('end', () => resolve(data));
-    req.on('error', reject);
+    req.on('end',   () => { clearTimeout(timer); done(); });
+    req.on('error', () => { clearTimeout(timer); resolve(''); });
   });
 }
 

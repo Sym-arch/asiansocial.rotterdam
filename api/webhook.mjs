@@ -5,35 +5,64 @@
    リダイレクトはブラウザ任せなので、閉じられれば届かず、
    逆に URL を直接叩けば払わずに呼べてしまいます。
 
-   署名の確認を省くと、誰でも「支払われた」という偽の通知を送れます。
+   本物の通知かどうかは二段構えで確かめます。
+
+   1. 署名。生の本文に対して計算されるので、本文が丸ごと必要です。
+   2. 生の本文が手に入らないときは、届いた中身を信じず、
+      そこにあるセッションIDだけを取り出して Stripe に問い合わせ直します。
+      返ってきた内容が本物です。
+
+   2 が要るのは、Vercel の Node ランタイムが本文を先に読んで
+   オブジェクトにしてしまうからです。そうなると生の本文は復元できません
+   （空白や文字の書き方まで一致させないと署名は合いません）。
+   Next.js の bodyParser: false はここでは効きません。
    ========================================================= */
 
 import {
-  send, env, sb, priceLabel, randomHex, sendMail, verifyStripeSignature, readRaw
+  send, env, sb, priceLabel, randomHex, sendMail, verifyStripeSignature, readRaw, stripe
 } from './_lib.mjs';
 
 const WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET');
 
-/* 署名は生の本文に対して計算されるので、Vercel にパースさせません */
-export const config = { api: { bodyParser: false } };
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });
-  if (!WEBHOOK_SECRET) return send(res, 500, { error: 'not_configured', missing: ['STRIPE_WEBHOOK_SECRET'] });
 
   const raw = await readRaw(req);
-  const ok = await verifyStripeSignature(raw, req.headers['stripe-signature'], WEBHOOK_SECRET);
-  if (!ok) return send(res, 400, { error: 'bad_signature' });
 
-  let event;
-  try { event = JSON.parse(raw); }
-  catch { return send(res, 400, { error: 'bad_json' }); }
+  let event, verified = false;
+
+  if (raw) {
+    if (!WEBHOOK_SECRET) return send(res, 500, { error: 'not_configured', missing: ['STRIPE_WEBHOOK_SECRET'] });
+    verified = await verifyStripeSignature(raw, req.headers['stripe-signature'], WEBHOOK_SECRET);
+    if (!verified) return send(res, 400, { error: 'bad_signature' });
+    try { event = JSON.parse(raw); }
+    catch { return send(res, 400, { error: 'bad_json' }); }
+  } else {
+    /* 生の本文が取れませんでした。中身はまだ信用できません */
+    event = req.body && typeof req.body === 'object' ? req.body : null;
+    if (!event) return send(res, 400, { error: 'no_body' });
+  }
 
   if (event.type !== 'checkout.session.completed') {
     return send(res, 200, { received: true, ignored: event.type });
   }
 
-  const session = event.data.object;
+  let session = (event.data && event.data.object) || {};
+  if (!/^cs_[A-Za-z0-9_]{10,}$/.test(String(session.id || ''))) {
+    return send(res, 400, { error: 'bad_session_id' });
+  }
+
+  /* 署名で確かめられていないので、Stripe 本人に聞き直します。
+     ここから先は、届いた本文ではなく返ってきた内容だけを使います。 */
+  if (!verified) {
+    try {
+      session = await stripe('checkout/sessions/' + session.id, null, 'GET');
+    } catch (err) {
+      console.error('session lookup failed:', err.message);
+      return send(res, 400, { error: 'unknown_session' });
+    }
+  }
+
   if (session.payment_status !== 'paid') {
     return send(res, 200, { received: true, ignored: 'not_paid' });
   }
