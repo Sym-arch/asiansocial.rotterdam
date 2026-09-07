@@ -1428,6 +1428,11 @@ function applyI18n(root) {
   $$('[data-i18n]', box).forEach(el => { el.textContent = t(el.dataset.i18n); });
   /* <br> や <em> を含む見出し用。訳は自分たちで書いたものだけです */
   $$('[data-i18n-html]', box).forEach(el => { el.innerHTML = t(el.dataset.i18nHtml); });
+
+  /* タブに出る文字。共有したときに最初に見られるので、ここも訳します。
+     イベントのページだけは、あとから催しの名前で上書きされます。 */
+  const titleKey = document.body && document.body.dataset.i18nTitle;
+  if (titleKey) document.title = t(titleKey);
   $$('[data-i18n-ph]', box).forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
 }
 
