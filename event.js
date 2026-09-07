@@ -96,7 +96,8 @@ function bookingHTML(ev) {
       </div>
 
       <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
-        ${esc(t(signed ? 'rsvp.submit' : 'rsvp.bookBtn'))}</button>
+        ${esc(isPaid(ev) ? t('rsvp.payBtn', { price: priceFor(ev).label })
+                         : t(signed ? 'rsvp.submit' : 'rsvp.bookBtn'))}</button>
 
       ${signed ? '' : `
       <p class="acct-swap" style="margin-top:16px">
@@ -189,23 +190,45 @@ function renderEvent(ev) {
   </section>`;
 
   /* wiring */
+  const bookLabel = () => isPaid(ev)
+    ? t('rsvp.payBtn', { price: priceFor(ev).label })
+    : t(isSignedIn() ? 'rsvp.submit' : 'rsvp.bookBtn');
+
   const form = $('#bookForm');
   if (form) form.addEventListener('submit', async e => {
     e.preventDefault();
     const btn = $('#bSubmit');
     btn.disabled = true; btn.textContent = t('rsvp.sending');
     try {
+      const guests = $('#bGuests').value;
+
+      if (isPaid(ev)) {
+        /* 有料は先にアカウントを作ってから決済へ。
+           発券は Stripe からの通知を受けてサーバー側で行います。
+           ここで発券すると、払わずに取れてしまいます。 */
+        if (!isSignedIn()) {
+          await signUpForBooking(
+            ($('#bEmail') || {}).value || '',
+            ($('#bPass')  || {}).value || '',
+            ($('#bName')  || {}).value || ''
+          );
+        }
+        btn.textContent = t('rsvp.toPayment');
+        location.href = await startCheckout(ev.id, guests);
+        return;
+      }
+
       const { rsvp, mode } = await submitRsvp({
         eventId: ev.id,
         name:     ($('#bName')  || {}).value || '',
         email:    ($('#bEmail') || {}).value || '',
         password: ($('#bPass')  || {}).value || '',
-        guests:   $('#bGuests').value
+        guests
       });
       location.href = bookedUrl(rsvp, mode);
     } catch (err) {
       toast(err.message, true);
-      btn.disabled = false; btn.textContent = t(isSignedIn() ? 'rsvp.submit' : 'rsvp.bookBtn');
+      btn.disabled = false; btn.textContent = bookLabel();
     }
   });
 

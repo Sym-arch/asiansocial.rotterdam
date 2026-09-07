@@ -146,6 +146,13 @@ const I18N = {
     'price.early':      'early bird',
     'price.memberHint': 'Members pay {price}. Booking makes you a member — it is free.',
 
+    'rsvp.payBtn':      'Pay {price} and book',
+    'rsvp.toPayment':   'Opening payment…',
+    'rsvp.err.soldOut': 'This event is full.',
+    'booked.paidTitle': 'Payment received',
+    'booked.paidLead':  'Your payment went through and your ticket is ready.',
+    'booked.pending':   'Your payment went through. The ticket takes a few seconds to appear — check your email if it does not.',
+
     'meta.date':           'Date',
     'meta.time':           'Time',
     'meta.venue':          'Venue',
@@ -283,6 +290,13 @@ const I18N = {
     'price.member':     'ledenprijs',
     'price.early':      'vroegboek',
     'price.memberHint': 'Leden betalen {price}. Door te boeken word je lid — gratis.',
+
+    'rsvp.payBtn':      'Betaal {price} en boek',
+    'rsvp.toPayment':   'Betaling openen…',
+    'rsvp.err.soldOut': 'Dit evenement is vol.',
+    'booked.paidTitle': 'Betaling ontvangen',
+    'booked.paidLead':  'Je betaling is gelukt en je ticket staat klaar.',
+    'booked.pending':   'Je betaling is gelukt. Het ticket verschijnt zo — kijk anders in je e-mail.',
 
     'meta.date':           'Datum',
     'meta.time':           'Tijd',
@@ -422,6 +436,13 @@ const I18N = {
     'price.early':      '早割',
     'price.memberHint': '会員は {price} です。予約すればその場で会員になります（無料）。',
 
+    'rsvp.payBtn':      '{price} を支払って予約',
+    'rsvp.toPayment':   '決済画面を開いています…',
+    'rsvp.err.soldOut': 'このイベントは満席です。',
+    'booked.paidTitle': 'お支払いを受け付けました',
+    'booked.paidLead':  '決済が完了し、チケットの準備ができました。',
+    'booked.pending':   '決済は完了しています。チケットの表示に数秒かかることがあります。出なければメールをご確認ください。',
+
     'meta.date':           '日付',
     'meta.time':           '時間',
     'meta.venue':          '会場',
@@ -559,6 +580,13 @@ const I18N = {
     'price.member':     '会员价',
     'price.early':      '早鸟优惠',
     'price.memberHint': '会员仅需 {price}。预订即成为会员，免费。',
+
+    'rsvp.payBtn':      '支付 {price} 并预订',
+    'rsvp.toPayment':   '正在打开支付页面…',
+    'rsvp.err.soldOut': '此活动已满。',
+    'booked.paidTitle': '已收到付款',
+    'booked.paidLead':  '支付已完成，你的票已准备好。',
+    'booked.pending':   '支付已完成。票可能需要几秒才显示，如未出现请查看邮件。',
 
     'meta.date':           '日期',
     'meta.time':           '时间',
@@ -698,6 +726,13 @@ const I18N = {
     'price.early':      '早鳥優惠',
     'price.memberHint': '會員僅需 {price}。預約即成為會員，免費。',
 
+    'rsvp.payBtn':      '支付 {price} 並預約',
+    'rsvp.toPayment':   '正在開啟付款頁面…',
+    'rsvp.err.soldOut': '此活動已滿。',
+    'booked.paidTitle': '已收到付款',
+    'booked.paidLead':  '付款已完成，你的票已準備好。',
+    'booked.pending':   '付款已完成。票可能需要幾秒才顯示，若未出現請查看信件。',
+
     'meta.date':           '日期',
     'meta.time':           '時間',
     'meta.venue':          '場地',
@@ -835,6 +870,13 @@ const I18N = {
     'price.member':     '회원가',
     'price.early':      '얼리버드',
     'price.memberHint': '회원은 {price}입니다. 예약하면 바로 회원이 됩니다(무료).',
+
+    'rsvp.payBtn':      '{price} 결제하고 예약',
+    'rsvp.toPayment':   '결제 화면을 여는 중…',
+    'rsvp.err.soldOut': '이 이벤트는 마감되었습니다.',
+    'booked.paidTitle': '결제가 확인되었습니다',
+    'booked.paidLead':  '결제가 완료되었고 티켓이 준비되었습니다.',
+    'booked.pending':   '결제는 완료되었습니다. 티켓 표시까지 몇 초 걸릴 수 있습니다. 나타나지 않으면 이메일을 확인해 주세요.',
 
     'meta.date':           '날짜',
     'meta.time':           '시간',
@@ -974,6 +1016,13 @@ const I18N = {
     'price.early':      'จองล่วงหน้า',
     'price.memberHint': 'สมาชิกจ่าย {price} จองแล้วเป็นสมาชิกทันที ฟรี',
 
+    'rsvp.payBtn':      'จ่าย {price} และจอง',
+    'rsvp.toPayment':   'กำลังเปิดหน้าชำระเงิน…',
+    'rsvp.err.soldOut': 'กิจกรรมนี้เต็มแล้ว',
+    'booked.paidTitle': 'ได้รับการชำระเงินแล้ว',
+    'booked.paidLead':  'การชำระเงินสำเร็จ บัตรของคุณพร้อมแล้ว',
+    'booked.pending':   'การชำระเงินสำเร็จ บัตรอาจใช้เวลาสักครู่ หากไม่ขึ้นกรุณาตรวจอีเมล',
+
     'meta.date':           'วันที่',
     'meta.time':           'เวลา',
     'meta.venue':          'สถานที่',
@@ -1111,6 +1160,13 @@ const I18N = {
     'price.member':     'harga anggota',
     'price.early':      'early bird',
     'price.memberHint': 'Anggota membayar {price}. Memesan langsung membuatmu jadi anggota — gratis.',
+
+    'rsvp.payBtn':      'Bayar {price} dan pesan',
+    'rsvp.toPayment':   'Membuka pembayaran…',
+    'rsvp.err.soldOut': 'Acara ini sudah penuh.',
+    'booked.paidTitle': 'Pembayaran diterima',
+    'booked.paidLead':  'Pembayaranmu berhasil dan tiketmu sudah siap.',
+    'booked.pending':   'Pembayaranmu berhasil. Tiket butuh beberapa detik untuk muncul — cek emailmu kalau belum.',
 
     'meta.date':           'Tanggal',
     'meta.time':           'Waktu',

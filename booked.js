@@ -99,8 +99,66 @@ function render(rsvp, ev) {
   initShell();
 }
 
+/* 決済から戻ってきた場合。
+   ブラウザのリダイレクトと Stripe の通知は競争するので、
+   まだ発券されていなければ少し待ちます。 */
+async function renderPaid(sessionId) {
+  $('#bookedMain').innerHTML =
+    '<div class="wrap" style="padding:90px 0 60px"><div class="empty">\u2026</div></div>';
+
+  let data;
+  try { data = await fetchOrderBySession(sessionId); }
+  catch (err) { data = { pending: true }; }
+
+  await loadContent().catch(() => {});
+  const ev = data.order ? findEvent(data.order.eventId) : null;
+
+  $('#bookedMain').innerHTML = `
+  <section class="booked"><div class="wrap"><div class="booked__card">
+    <div class="booked__tick">${esc(t('booked.paidTitle'))}</div>
+    <h1>${esc(t('booked.title', { name: (data.order && String(data.order.name || '').split(' ')[0]) || '' }))}</h1>
+    <p class="lead">${esc(data.ticketSecret ? t('booked.paidLead') : t('booked.pending'))}</p>
+
+    ${ev ? `
+    <div class="booked__event">
+      ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">` : ''}
+      <div>
+        <h2>${esc(ev.title)}</h2>
+        <ul class="booked__meta">
+          <li><span class="lbl">${esc(t('meta.date'))}</span>${esc(fmtLong(ev))}</li>
+          <li><span class="lbl">${esc(t('meta.time'))}</span>${esc(fmtTime(ev))} (${esc(CONFIG.timezone)})</li>
+          <li><span class="lbl">${esc(t('meta.venue'))}</span>${esc(ev.venue)}</li>
+          <li><span class="lbl">${esc(t('meta.tickets'))}</span>${esc(priceLabel(data.order.totalCents, data.order.currency))} \u00b7 ${esc(data.order.quantity)} ${esc(t(data.order.quantity > 1 ? 'meta.people' : 'meta.person'))}</li>
+        </ul>
+      </div>
+    </div>` : ''}
+
+    ${data.ticketSecret ? `
+    <h3 class="booked__sub">${esc(t('booked.ticketTitle'))}</h3>
+    <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.ticketBody'))}</p>
+    <a class="btn btn--brand" href="ticket.html?t=${encodeURIComponent(data.ticketSecret)}">
+      ${esc(t('booked.ticketBtn'))}</a>` : ''}
+
+    ${ev ? `
+    <h3 class="booked__sub">${esc(t('booked.calendar'))}</h3>
+    <div class="booked__actions">
+      <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">
+        ${esc(t('booked.gcal'))}</a>
+    </div>` : ''}
+
+    <div class="booked__foot" style="margin-top:40px">
+      <a class="btn btn--line" href="index.html">${esc(t('booked.home'))}</a>
+    </div>
+  </div></div></section>`;
+  initShell();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
+
+  const session = Q.get('session');
+  if (session) { renderPaid(session); return; }
+
   bootstrapContent(() => {
     const rsvp = RSVPS.find(r => r.id === Q.get('id'));
     const ev = rsvp ? findEvent(rsvp.eventId) : null;

@@ -574,6 +574,48 @@ async function sendPasswordReset(email) {
 }
 
 /* ---------------------------------------------------------
+   有料チケット（Stripe）
+
+   ブラウザから送るのは「どのイベントか」「何名か」だけです。
+   金額はサーバー側でDBから引き直します。
+   --------------------------------------------------------- */
+
+const isPaid = ev => (ev && ev.priceCents || 0) > 0;
+
+/** 決済画面のURLを受け取ります。 */
+async function startCheckout(eventId, quantity) {
+  await ensureSession();
+  const res = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + (SESSION ? SESSION.access_token : '')
+    },
+    body: JSON.stringify({ eventId, quantity: Number(quantity) || 1, lang: uiLang() })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.error === 'sold_out')         throw new Error(t('rsvp.err.soldOut'));
+    if (data.error === 'sign_in_required') throw new Error(t('account.err.signin'));
+    if (data.error === 'not_configured')   throw new Error('Payments are not set up yet.');
+    throw new Error(data.message || data.error || 'Could not open the payment page.');
+  }
+  return data.url;
+}
+
+/** 決済から戻ってきたとき、発券を待ちます。 */
+async function fetchOrderBySession(sessionId, tries = 8) {
+  for (let i = 0; i < tries; i++) {
+    const res = await fetch('/api/order?session=' + encodeURIComponent(sessionId));
+    if (res.status === 202) { await wait(1200); continue; }
+    if (!res.ok) throw new Error('order lookup failed (' + res.status + ')');
+    return res.json();
+  }
+  /* 送られてくるのが遅いだけのこともあるので、失敗とは呼びません */
+  return { pending: true };
+}
+
+/* ---------------------------------------------------------
    注文とチケット
 
    まだお金は扱いません。無料イベントだけで
