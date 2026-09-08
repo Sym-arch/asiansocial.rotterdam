@@ -159,21 +159,21 @@ function renderEvent(ev) {
     <div class="wrap ev-body">
       <div>
         <div class="prose reveal">
-          <h2>About this event</h2>
+          <h2>${esc(t('ev.about'))}</h2>
           <p>${esc(ev.description)}</p>
 
-          <h3>Good to know</h3>
+          <h3>${esc(t('ev.know'))}</h3>
           <ul class="ticks">
-            <li>Hosted in English — everyone is welcome, Asian or not.</li>
-            <li>Coming alone is completely normal; our hosts will introduce you.</li>
-            <li>Reply to your confirmation email if your plans change, so we can free the spot.</li>
-            <li>Questions? Write to <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a>.</li>
+            <li>${esc(t('ev.know1'))}</li>
+            <li>${esc(t('ev.know2'))}</li>
+            <li>${esc(t('ev.know3'))}</li>
+            <li>${esc(t('ev.know4'))} <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a>.</li>
           </ul>
         </div>
 
         ${others.length ? `
         <div style="margin-top:38px">
-          <h2 style="font-size:1.4rem;font-weight:500;margin-bottom:24px">Other upcoming events</h2>
+          <h2 style="font-size:1.4rem;font-weight:500;margin-bottom:24px">${esc(t('ev.others'))}</h2>
           <div class="events__grid">
             ${others.map(eventCardHTML).join('')}
           </div>
