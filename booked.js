@@ -11,11 +11,9 @@ function noBooking() {
   $('#bookedMain').innerHTML = `
     <div class="wrap" style="padding:90px 0 60px">
       <div style="max-width:600px">
-        <h1 style="font-size:clamp(1.6rem,4vw,2.2rem);margin-bottom:12px">We can't find that booking</h1>
-        <p style="color:var(--muted);margin-bottom:24px">
-          Confirmation pages are tied to the browser you booked with. Pick your event again
-          and we will get you on the list.</p>
-        <a class="btn btn--brand" href="index.html#events">See upcoming events</a>
+        <h1 style="font-size:clamp(1.6rem,4vw,2.2rem);margin-bottom:12px">${esc(t('booked.gone'))}</h1>
+        <p style="color:var(--muted);margin-bottom:24px">${esc(t('booked.goneBody'))}</p>
+        <a class="btn btn--brand" href="index.html#events">${esc(t('booked.see'))}</a>
       </div>
     </div>`;
 }
@@ -169,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (rsvp && ev) render(rsvp, ev);
     else if (contentSource === 'loading') {
       $('#bookedMain').innerHTML =
-        '<div class="wrap" style="padding:90px 0 60px"><div class="empty">Loading your booking…</div></div>';
+        `<div class="wrap" style="padding:90px 0 60px"><div class="empty">${esc(t('booked.loading'))}</div></div>`;
     } else noBooking();
   });
 });

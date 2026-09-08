@@ -32,10 +32,9 @@ function notFound() {
   $('#eventMain').innerHTML = `
     <div class="wrap" style="padding:90px 0 60px">
       <div style="max-width:560px">
-        <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);margin-bottom:12px">Event not found</h1>
-        <p style="color:var(--muted);margin-bottom:24px">
-          This event may have been removed, or the link is incomplete.</p>
-        <a class="btn btn--brand" href="index.html#events">Back to all events</a>
+        <h1 style="font-size:clamp(1.6rem,4vw,2.4rem);margin-bottom:12px">${esc(t('ev.gone'))}</h1>
+        <p style="color:var(--muted);margin-bottom:24px">${esc(t('ev.goneBody'))}</p>
+        <a class="btn btn--brand" href="index.html#events">${esc(t('ev.back'))}</a>
       </div>
     </div>`;
 }
@@ -126,24 +125,24 @@ function renderEvent(ev) {
   $('#eventMain').innerHTML = `
   <section class="ev-hero">
     <div class="wrap">
-      <a class="crumb" href="index.html#events">← All events</a>
+      <a class="crumb" href="index.html#events">${esc(t('ev.crumb'))}</a>
 
       <div class="ev-hero__grid">
         <div>
-          ${done ? '<p class="label label--brand">Past event</p>' : ''}
+          ${done ? `<p class="label label--brand">${esc(t('ev.past'))}</p>` : ''}
           <h1>${esc(ev.title)}</h1>
           <p class="lead" style="margin-top:14px">${esc(ev.description).split('\n')[0]}</p>
 
           <div class="ev-facts">
-            <div><span class="lbl">Date</span><div><b>${esc(fmtLong(ev))}</b><span>${esc(fmtTime(ev))} · ${esc(CONFIG.timezone)}</span></div></div>
-            <div><span class="lbl">Venue</span><div><b>${esc(ev.venue)}</b><span>${esc(ev.address || 'Rotterdam')}</span></div></div>
-            <div><span class="lbl">Tickets</span><div>${priceBlockHTML(ev)}${done ? '<span>This event has finished</span>' : ''}</div></div>
+            <div><span class="lbl">${esc(t('meta.date'))}</span><div><b>${esc(fmtLong(ev))}</b><span>${esc(fmtTime(ev))} · ${esc(CONFIG.timezone)}</span></div></div>
+            <div><span class="lbl">${esc(t('meta.venue'))}</span><div><b>${esc(ev.venue)}</b><span>${esc(ev.address || 'Rotterdam')}</span></div></div>
+            <div><span class="lbl">${esc(t('meta.tickets'))}</span><div>${priceBlockHTML(ev)}${done ? `<span>${esc(t('ev.finished'))}</span>` : ''}</div></div>
           </div>
 
           <div class="hero__cta">
-            ${done ? '' : '<a class="btn btn--brand" href="#book">Reserve your spot</a>'}
-            <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">Add to Google Calendar</a>
-            ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">Open in Maps</a>` : ''}
+            ${done ? '' : `<a class="btn btn--brand" href="#book">${esc(t('hero.cta1'))}</a>`}
+            <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">${esc(t('ev.gcal'))}</a>
+            ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('ev.maps'))}</a>` : ''}
           </div>
         </div>
 
