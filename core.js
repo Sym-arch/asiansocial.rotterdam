@@ -100,11 +100,10 @@ const startOf = ev => toDate(ev.date, ev.start);
 const endOf   = ev => toDate(ev.date, ev.end || ev.start);
 const isPast  = ev => endOf(ev).getTime() < Date.now();
 
-/* 日付を表示するロケール。タイ語は既定だと仏暦になるのでグレゴリオ暦に固定します。 */
+/* 日付を表示するロケール。英語は日/月/年で読む欧州式にします（米国式と紛れるため） */
 const dateLocale = () => {
   const l = currentLang();
-  if (l === 'en') return 'en-GB';
-  return l === 'th' ? 'th-TH-u-ca-gregory' : l;
+  return l === 'en' ? 'en-GB' : l;
 };
 
 const fmtDate = (ev, opt) => startOf(ev).toLocaleDateString(dateLocale(),
@@ -1433,6 +1432,11 @@ function applyI18n(root) {
      イベントのページだけは、あとから催しの名前で上書きされます。 */
   const titleKey = document.body && document.body.dataset.i18nTitle;
   if (titleKey) document.title = t(titleKey);
+
+  /* 読み上げソフトとブラウザに、いまの言語を伝えます。
+     ここが en のままだと、日本語が英語として読まれ、
+     ブラウザが「翻訳しますか」と重ねて聞いてきます。 */
+  document.documentElement.lang = uiLang();
   $$('[data-i18n-ph]', box).forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
 }
 

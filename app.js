@@ -154,15 +154,22 @@ function initialCalMonth() {
 let calCursor = initialCalMonth();
 let calTouched = false;   // don't jump the month away while it is being browsed
 
+/* 曜日の見出し。名前は直書きせず、その言語から作ります。
+   2024-01-01 は月曜なので、そこから7日ぶん並べれば月曜始まりになります。 */
 function renderDow() {
-  $('#calDow').innerHTML = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    .map(d => `<div class="cal__dow">${d}</div>`).join('');
+  const monday = new Date(2024, 0, 1);
+  const names = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    names.push(d.toLocaleDateString(dateLocale(), { weekday: 'short' }));
+  }
+  $('#calDow').innerHTML = names.map(d => `<div class="cal__dow">${esc(d)}</div>`).join('');
 }
 
 function renderCalendar() {
   const grid = $('#calGrid');
   const y = calCursor.getFullYear(), m = calCursor.getMonth();
-  $('#calTitle').textContent = calCursor.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  $('#calTitle').textContent = calCursor.toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' });
 
   const offset = (new Date(y, m, 1).getDay() + 6) % 7;      // Monday-first
   const daysInMonth = new Date(y, m + 1, 0).getDate();
