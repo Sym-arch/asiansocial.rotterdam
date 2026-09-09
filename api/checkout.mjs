@@ -73,21 +73,26 @@ export default async function handler(req, res) {
 
     /* 単発決済でも顧客を作って紐付けます。省くと、後で継続課金を足したときに
        同じ人が別顧客として増え、購入履歴が分断されます。 */
-    if (!customerId) {
+    const makeCustomer = async () => {
       const customer = await stripe('customers', {
         email: user.email,
         name: (profiles[0] && profiles[0].name) || undefined,
         metadata: { supabase_user_id: user.id }
       });
-      customerId = customer.id;
       await sb('profiles?id=eq.' + encodeURIComponent(user.id), {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify({ stripe_customer_id: customerId })
+        body: JSON.stringify({ stripe_customer_id: customer.id })
       }).catch(() => {});
-    }
+      return customer.id;
+    };
 
-    const session = await stripe('checkout/sessions', {
+    if (!customerId) customerId = await makeCustomer();
+
+    /* 控えてある顧客IDが、いまのアカウントに無いことがあります。
+       Stripe のアカウントを移したときや、Stripe 側で顧客を消したときです。
+       そこで止めると誰も決済できなくなるので、作り直して一度だけやり直します。 */
+    const openCheckout = () => stripe('checkout/sessions', {
       mode: 'payment',
       customer: customerId,
       client_reference_id: user.id,
@@ -116,6 +121,16 @@ export default async function handler(req, res) {
         lang: lang
       }
     });
+
+    let session;
+    try {
+      session = await openCheckout();
+    } catch (err) {
+      if (!/No such customer|resource_missing/i.test(err.message)) throw err;
+      console.warn('stale customer, recreating:', customerId);
+      customerId = await makeCustomer();
+      session = await openCheckout();
+    }
 
     return send(res, 200, {
       url: session.url,
