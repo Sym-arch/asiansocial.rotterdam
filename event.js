@@ -58,7 +58,10 @@ function bookingHTML(ev) {
   }
 
   const signed = isSignedIn();
-  const who = (MEMBER && MEMBER.profile && MEMBER.profile.name) || signedInAs();
+  const myName = (MEMBER && MEMBER.profile && MEMBER.profile.name || '').trim();
+  /* 名前を登録していない人がいます。以前はメールアドレスで代用していたので、
+     確認画面やチケットに「t.iino@…さん」と出ていました。ここで聞きます。 */
+  const needName = signed && !myName;
 
   return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
     <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('rsvp.title'))}</h2>
@@ -68,9 +71,17 @@ function bookingHTML(ev) {
     <form id="bookForm" novalidate>
       ${signed ? `
       <p class="book-as">
-        ${esc(t('rsvp.asMember', { name: who }))}
+        ${esc(t('rsvp.asMember', { name: myName || signedInAs() }))}
         <button type="button" class="linkish" data-member>${esc(t('rsvp.notYou'))}</button>
-      </p>` : `
+      </p>
+      ${needName ? `
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="field">
+          <label for="bName">${esc(t('rsvp.name'))} <span class="req">*</span></label>
+          <input id="bName" type="text" autocomplete="name" required>
+          <small class="field__hint">${esc(t('rsvp.nameWhy'))}</small>
+        </div>
+      </div>` : ''}` : `
       <div class="form-grid" style="grid-template-columns:1fr">
         <div class="field">
           <label for="bName">${esc(t('rsvp.name'))} <span class="req">*</span></label>

@@ -350,10 +350,17 @@ async function submitRsvp(input) {
   /* サインイン済みなら入力させない。
      未サインインなら、予約と同時に無料会員を作ります。 */
   if (isSignedIn()) {
-    input = Object.assign({}, input, {
-      name:  input.name  || (MEMBER && MEMBER.profile && MEMBER.profile.name) || signedInAs(),
-      email: signedInAs()
-    });
+    const known = (MEMBER && MEMBER.profile && MEMBER.profile.name || '').trim();
+    const given = String(input.name || '').trim();
+    if (!known && !given) throw new Error(t('rsvp.err.name'));
+
+    input = Object.assign({}, input, { name: known || given, email: signedInAs() });
+
+    /* 名前を初めて教えてもらったので控えます。次回から聞きません */
+    if (!known && given) {
+      try { await saveProfile({ name: given, locale: currentLang() }); }
+      catch (err) { console.warn('name not saved:', err.message); }
+    }
   } else {
     if (!input.name || !input.email) throw new Error(t('rsvp.err.required'));
     if (!isEmail(input.email)) throw new Error(t('rsvp.err.email'));
@@ -760,9 +767,28 @@ const ADMIN_ERRORS = {
 };
 const adminError = err => new Error(ADMIN_ERRORS[err.message] || err.message);
 
+/**
+ * 主催者の一覧。
+ * admin_list はメールアドレスしか返しません（auth.users が出どころ）。
+ * 表示は名前のほうが分かるので、profiles から引いて添えます。
+ * 管理者は profiles を読めます（03-members.sql）。
+ */
 async function adminList() {
-  try { return await callRpc('admin_list'); }
+  let rows;
+  try { rows = await callRpc('admin_list'); }
   catch (err) { throw adminError(err); }
+  if (!rows.length) return rows;
+
+  try {
+    const ids = rows.map(r => r.user_id).join(',');
+    const profiles = await sbSelect('profiles', 'select=id,name&id=in.(' + ids + ')');
+    const byId = new Map(profiles.map(p => [p.id, p.name]));
+    rows.forEach(r => { r.name = (byId.get(r.user_id) || '').trim(); });
+  } catch (err) {
+    /* 名前が引けなくても一覧は出します */
+    console.warn('organiser names failed:', err.message);
+  }
+  return rows;
 }
 /**
  * 主催者を招きます。
@@ -1484,7 +1510,24 @@ async function loadContent() {
 
 /* Admin writes: keep the local copy and the table in step. */
 const pushEvent = rec => supabaseReady() ? sbUpsert('events', evToRow(rec)) : Promise.resolve();
-const dropEvent = id  => supabaseReady() ? sbDelete('events', id) : Promise.resolve();
+/**
+ * イベントを消します。
+ * 予約とチケットは events への外部キーを張っていないので、消しても
+ * 残ります。DB 側にも後始末のトリガーを入れてありますが、そちらが
+ * 未適用の環境でも揃うように、ここでも片付けます。
+ */
+async function dropEvent(id) {
+  if (!supabaseReady()) return;
+  await sbDelete('events', id);
+  /* 受付名簿から消します。失敗しても、イベントの削除は成立させます */
+  try {
+    await fetch(sbUrl('rsvps?event_id=eq.' + encodeURIComponent(id)), {
+      method: 'DELETE', headers: sbHeaders()
+    });
+  } catch (err) {
+    console.warn('rsvp cleanup failed:', err.message);
+  }
+}
 
 /**
  * Draw once from the cache so the page is never blank, then redraw with

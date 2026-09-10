@@ -270,8 +270,6 @@ function renderOrganisers() {
   /* 招待と削除はオーナーだけです。押せない操作は並べません */
   const form = $('#adminOrgForm');
   if (form) form.hidden = !IS_OWNER;
-  const note = $('#aoOwnerNote');
-  if (note) note.hidden = IS_OWNER;
 
   box.innerHTML = ADMIN_ORGS.length ? ADMIN_ORGS.map(a => {
     const owner = a.role === 'owner';
@@ -279,10 +277,10 @@ function renderOrganisers() {
     return `
     <div class="admin-row">
       <div class="admin-row__main">
-        <strong>${esc(a.email)}
+        <strong>${esc(a.name || a.email)}
           ${owner ? '<span class="pill">owner</span>' : ''}
           ${a.user_id === me ? '<span class="pill">you</span>' : ''}</strong>
-        <span>${esc(a.note || '—')} · added ${esc(new Date(a.created_at).toLocaleDateString('en-GB'))}</span>
+        <span>${a.name ? esc(a.email) + ' · ' : ''}${esc(a.note || '—')} · added ${esc(new Date(a.created_at).toLocaleDateString('en-GB'))}</span>
       </div>
       <div class="admin-row__act">
         ${canRemove
@@ -527,8 +525,12 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
         : '';
       if (!confirm(`Delete "${(ev && ev.title) || 'this event'}"?` + warn)) return;
       const gone = t.dataset.delEv;
-      EVENTS = EVENTS.filter(x => x.id !== gone); saveEvents(); refreshPublic(); renderAdmin();
-      dropEvent(gone).catch(err => toast(err.message, true));
+      EVENTS = EVENTS.filter(x => x.id !== gone);
+      ADMIN_RSVPS = ADMIN_RSVPS.filter(r => r.eventId !== gone);
+      saveEvents(); refreshPublic(); renderAdmin();
+      dropEvent(gone)
+        .then(() => refreshRsvps())
+        .catch(err => toast(err.message, true));
       toast('Event deleted.');
       return;
     }
