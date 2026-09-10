@@ -557,20 +557,25 @@ async function accountExists(email) {
 /**
  * パスワード再設定のメールを送ります。
  *
- * redirect_to を渡すのが要です。渡さないとメールのリンクは Site URL
- * （トップページ）に着き、トークンを読む人が居ないので何も起きません。
- * 実際にそうなっていました。
+ * Supabase の SMTP 経由（/auth/v1/recover）は使いません。そこが落ちて
+ * いて "Error sending recovery email" を返し、一通も出ていませんでした。
+ * 予約の確認メールで動いている Resend 側に寄せています。
+ *
+ * 失敗は握り潰しません。以前は catch で捨てていたので、届いていない
+ * のに「送りました」と出ていました。
  */
 async function sendPasswordReset(email) {
   if (!isEmail(email)) throw new Error(t('rsvp.err.email'));
-  await fetch(authBase() + '/recover', {
+  const res = await fetch('/api/reset', {
     method: 'POST',
-    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: email.trim(),
-      redirect_to: new URL('reset.html', location.href).href
-    })
-  }).catch(() => {});
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim() })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.error === 'not_configured') throw new Error('Email sending is not set up yet.');
+    throw new Error(data.message || data.error || 'Could not send the email. Please try again.');
+  }
   return true;
 }
 
@@ -952,11 +957,16 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
 
   const bookingRow = r => {
     const tk = byEvent.get(r.event_id);
-    const when = r.event_date
-      ? new Date(r.event_date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
+    /* 控えてある名前は予約した当時のものです。イベント名を変えると
+       ここだけ古い名前で残ります。いまある回は、いまの名前で出します。 */
+    const ev = findEvent(r.event_id);
+    const title = (ev && ev.title) || r.event_title || '\u2014';
+    const date = (ev && ev.date) || r.event_date;
+    const when = date
+      ? new Date(date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
       : '';
     return `<li>
-      <b>${esc(r.event_title || '\u2014')}</b>
+      <b>${esc(title)}</b>
       <span>${esc(when)} \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span>
       ${tk ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
                 ${esc(t('account.openTicket'))}</a>` : ''}

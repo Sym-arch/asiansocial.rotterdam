@@ -65,6 +65,12 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
+
+/* hidden を必ず効かせます。
+   .btn{display:inline-flex} のようなクラス指定は、ブラウザ標準の
+   [hidden]{display:none} より強いので、hidden を付けても消えません。
+   ヘッダーの Admin ボタンがこれでずっと見えていました。 */
+[hidden]{display:none!important}
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--header-h) + 10px);-webkit-text-size-adjust:100%}
 body{
   margin:0;background:var(--paper);color:var(--ink);
