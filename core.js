@@ -903,8 +903,10 @@ async function renderMemberModal() {
 
   if (isSignedIn()) {
     body.innerHTML = '<div class="empty" style="padding:40px 0">\u2026</div>';
-    const [, rsvps, tickets] = await Promise.all([loadMember(), loadMyRsvps(), loadMyTickets()]);
-    body.innerHTML = memberCardHTML(rsvps, tickets);
+    const [, rsvps, tickets, admin] = await Promise.all([
+      loadMember(), loadMyRsvps(), loadMyTickets(), isAdminUser().catch(() => false)
+    ]);
+    body.innerHTML = memberCardHTML(rsvps, tickets, admin);
     wireMemberCard();
   } else {
     body.innerHTML = memberAuthHTML();
@@ -922,7 +924,7 @@ async function renderMemberModal() {
  * @param rsvps   予約の一覧
  * @param tickets 自分のチケット（secret 込み）。予約と event_id で突き合わせます
  */
-function memberCardHTML(rsvps, tickets) {
+function memberCardHTML(rsvps, tickets, isOrganiser) {
   const profile = (MEMBER && MEMBER.profile) || {};
   const ship = (MEMBER && MEMBER.membership) || {};
   const tier = memberTier();
@@ -933,6 +935,20 @@ function memberCardHTML(rsvps, tickets) {
 
   const byEvent = new Map();
   (tickets || []).forEach(tk => { if (!byEvent.has(tk.event_id)) byEvent.set(tk.event_id, tk); });
+
+  /* 消されたイベントの予約は出しません。
+     予約はイベントへの外部キーを張っていないので、イベントが消えても
+     行としては残ります。DB 側でも後始末していますが、そちらが未適用でも
+     画面には出ないようにします。
+
+     イベントの読み込みに失敗したときは絞りません。全部消えたように
+     見えるほうが、古い行が1つ残るより困ります。 */
+  const known = contentSource === 'supabase'
+    ? new Set(EVENTS.map(e => e.id))
+    : null;
+  const shown = known
+    ? rsvps.filter(r => !r.event_id || known.has(r.event_id))
+    : rsvps;
 
   const bookingRow = r => {
     const tk = byEvent.get(r.event_id);
@@ -973,10 +989,16 @@ function memberCardHTML(rsvps, tickets) {
 
     <div class="acct-block">
       <h2>${esc(t('account.bookings'))}</h2>
-      ${rsvps.length
-        ? `<ul class="acct-list">${rsvps.map(bookingRow).join('')}</ul>`
+      ${shown.length
+        ? `<ul class="acct-list">${shown.map(bookingRow).join('')}</ul>`
         : `<p style="color:var(--muted)">${esc(t('account.noBookings'))}</p>`}
     </div>
+
+    ${isOrganiser ? `
+    <div class="acct-block">
+      <h2>${esc(t('account.organiser'))}</h2>
+      <a class="btn btn--line btn--sm" href="index.html#admin">${esc(t('account.openAdmin'))}</a>
+    </div>` : ''}
 
     <div class="acct-foot">
       <button class="mini" type="button" id="mcSignOut">${esc(t('account.signout'))}</button>

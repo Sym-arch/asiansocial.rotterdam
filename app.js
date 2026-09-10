@@ -250,11 +250,10 @@ async function requireAdmin() {
   if (!isAdmin && isSignedIn()) await refreshAdminFlag();
   if (isAdmin) { renderAdmin(); openModal('#adminModal'); refreshRsvps(); return; }
 
-  /* 会員としてサインイン済みの人には、なぜ開かないのかを言います。
-     黙ってログイン画面を出すと、入れているのに弾かれたように見えます。 */
-  if (isSignedIn()) toast('That account is not an organiser.', true);
-  openModal('#loginModal');
-  setTimeout(() => $('#adminEmail').focus(), 60);
+  /* ここへ来るのは、押した時点で権限が外れていた場合だけです。
+     ボタンはもともと管理者にしか出していません。 */
+  hideAdminEntry();
+  toast(isSignedIn() ? 'That account is not an organiser.' : 'Please sign in first.', true);
 }
 
 /* 管理者の一覧。開いたときにだけ読みます。
@@ -572,40 +571,25 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
      サインインすればボタンが現れます。 */
   refreshAdminFlag().then(ok => {
     if (ok) { revealAdminEntry(); refreshRsvps(); return; }
-    /* 会員として入っているだけの人には入口を出しません。
-       この端末の目印も消すので、次からは出ません。 */
+    /* 会員として入っているだけの人には入口を出しません */
     if (isSignedIn()) hideAdminEntry();
   });
-  /* opening the site with #admin lets you get in on a new browser */
-  if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
-  window.addEventListener('hashchange', () => {
-    if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
-  });
 
-  $('#loginForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = $('#loginSubmit'), label = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Signing in…';
-    try {
-      await signIn($('#adminEmail').value.trim(), $('#adminPass').value);
-      $('#adminPass').value = '';
-      /* 入れたことと、主催者であることは別です */
-      if (!(await refreshAdminFlag())) {
-        hideAdminEntry();
-        closeModal($('#loginModal'));
-        toast('Signed in — but this account is not an organiser.', true);
-        btn.disabled = false; btn.textContent = label;
-        return;
-      }
-      revealAdminEntry();
-      closeModal($('#loginModal'));
-      renderAdmin(); openModal('#adminModal');
-      toast('Signed in as ' + signedInAs());
-      refreshRsvps();
-    } catch (err) {
-      toast(err.message, true);
-    }
-    btn.disabled = false; btn.textContent = label;
+  /* マイページから戻ってくる道。#admin で開けますが、
+     先に管理者かどうかを確かめます。確かめる前に出すと、
+     URL を知っているだけの人にボタンが見えます。 */
+  async function openAdminFromHash() {
+    if (location.hash !== '#admin') return;
+    if (!(await refreshAdminFlag())) return;
+    revealAdminEntry();
+    requireAdmin();
+  }
+  openAdminFromHash();
+  window.addEventListener('hashchange', openAdminFromHash);
+
+  /* 予約の途中でサインインした場合も、その場で入口を出します */
+  document.addEventListener('member:changed', () => {
+    refreshAdminFlag().then(ok => (ok ? revealAdminEntry() : hideAdminEntry()));
   });
   $('#adminLogout').addEventListener('click', () => {
     signOut(); isAdmin = false; ADMIN_RSVPS = [];

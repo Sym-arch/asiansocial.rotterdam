@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (onProxy()) { location.href = nativeUrl(currentLang()); return; }
 
   initShell();
+
+  /* 予約の突き合わせにイベント一覧が要ります。読めなくても表示は続けます */
+  await loadContent().catch(() => {});
+
   await renderMemberModal();
   syncTitle();
 
