@@ -240,6 +240,11 @@ const isAdminDevice = () => {
 function rememberAdminDevice() {
   try { localStorage.setItem(ADMIN_DEVICE, '1'); } catch {}
 }
+/* 管理者でないことがはっきりしたら、この端末の目印を消します。
+   主催者が使ったあとの端末を会員が使う場合に、入口が残らないようにです。 */
+function forgetAdminDevice() {
+  try { localStorage.removeItem(ADMIN_DEVICE); } catch {}
+}
 function revealAdminEntry() {
   const btn = $('#adminOpen');
   if (btn) btn.hidden = false;
@@ -559,11 +564,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);
-  if (isAdminDevice()) revealAdminEntry();
+
+  /* サインインしている間は、答えが出るまで入口を出しません。
+     先に出すと、会員として入っている人の画面に一瞬 Admin が見えます。
+     サインアウト中だけ、この端末の目印で出します（主催者が
+     ログイン画面へ辿り着くために要る。押してもログイン欄が開くだけです）。 */
+  if (!isSignedIn() && isAdminDevice()) revealAdminEntry();
+
   refreshAdminFlag().then(ok => {
-    if (ok) { revealAdminEntry(); refreshRsvps(); }
-    /* 会員として入っているだけの人には入口も出しません */
-    else if (isSignedIn()) hideAdminEntry();
+    if (ok) { revealAdminEntry(); refreshRsvps(); return; }
+    /* 会員として入っているだけの人には入口を出しません。
+       この端末の目印も消すので、次からは出ません。 */
+    if (isSignedIn()) { hideAdminEntry(); forgetAdminDevice(); }
   });
   /* opening the site with #admin lets you get in on a new browser */
   if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
@@ -580,7 +592,7 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#adminPass').value = '';
       /* 入れたことと、主催者であることは別です */
       if (!(await refreshAdminFlag())) {
-        hideAdminEntry();
+        hideAdminEntry(); forgetAdminDevice();
         closeModal($('#loginModal'));
         toast('Signed in — but this account is not an organiser.', true);
         btn.disabled = false; btn.textContent = label;
