@@ -941,19 +941,28 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
   const byEvent = new Map();
   (tickets || []).forEach(tk => { if (!byEvent.has(tk.event_id)) byEvent.set(tk.event_id, tk); });
 
-  /* 消されたイベントの予約は出しません。
+  /* いま存在する回の予約だけを出します。
      予約はイベントへの外部キーを張っていないので、イベントが消えても
-     行としては残ります。DB 側でも後始末していますが、そちらが未適用でも
-     画面には出ないようにします。
+     行としては残ります。event_id が空のまま残っている行もあります。
+     どちらも、開く先も日付の裏付けも無い「読めない予約」です。
 
-     イベントの読み込みに失敗したときは絞りません。全部消えたように
-     見えるほうが、古い行が1つ残るより困ります。 */
+     はじめは event_id が空の行を「判断できないので残す」扱いにして
+     いましたが、それだと消えた回の予約が古い名前のまま出続けました。
+
+     イベントの読み込みに失敗したときだけ絞りません。全部消えたように
+     見えるほうが、古い行が1つ残るより困るためです。 */
   const known = contentSource === 'supabase'
     ? new Set(EVENTS.map(e => e.id))
     : null;
   const shown = known
-    ? rsvps.filter(r => !r.event_id || known.has(r.event_id))
+    ? rsvps.filter(r => r.event_id && known.has(r.event_id))
     : rsvps;
+
+  if (known && shown.length !== rsvps.length) {
+    console.info('bookings hidden (event no longer exists):',
+      rsvps.filter(r => !(r.event_id && known.has(r.event_id)))
+           .map(r => ({ id: r.id, event_id: r.event_id, title: r.event_title })));
+  }
 
   const bookingRow = r => {
     const tk = byEvent.get(r.event_id);
