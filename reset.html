@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Set your password — Asian Social Rotterdam</title>
+<!-- リンクにトークンが載るので、検索結果には出しません -->
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48-v2.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96-v2.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192-v2.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon-v2.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#c10e2e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-i18n-title="page.reset">
+
+<!-- ============ HEADER ============ -->
+<header class="header">
+  <div class="wrap header__inner">
+    <a class="brand" href="index.html#home">
+      <img src="assets/logo.jpg" alt="Asian Social Rotterdam logo">
+      <span class="brand__txt">
+        <b>Asian Social</b>
+        <span>Rotterdam</span>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav">
+      <a href="index.html#home" data-i18n="nav.home">Home</a>
+      <a href="index.html#en" data-i18n="nav.en">En.</a>
+      <a href="about.html" data-i18n="nav.about">About</a>
+      <a class="nav__acc" href="profile.html" data-i18n="account.link">Membership</a>
+    </nav>
+
+    <div class="lang" id="lang">
+      <button class="lang__btn" type="button" id="langBtn" aria-haspopup="true" aria-expanded="false">EN</button>
+      <ul class="lang__menu" id="langMenu" hidden></ul>
+    </div>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span></button>
+  </div>
+</header>
+
+<main>
+<section class="sec acct-member">
+  <div class="wrap">
+    <div class="acct-page" id="resetMain"></div>
+  </div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__bottom">
+      <span>© <span id="year"></span> Asian Social Rotterdam. <span data-i18n="footer.rights">All rights reserved.</span></span>
+      <span class="footer__by">by Symarch</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="i18n.js"></script>
+<script src="core.js"></script>
+<script src="reset.js"></script>
+</body>
+</html>

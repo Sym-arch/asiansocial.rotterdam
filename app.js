@@ -565,12 +565,11 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Admin login */
   $('#adminOpen').addEventListener('click', requireAdmin);
 
-  /* サインインしている間は、答えが出るまで入口を出しません。
-     先に出すと、会員として入っている人の画面に一瞬 Admin が見えます。
-     サインアウト中だけ、この端末の目印で出します（主催者が
-     ログイン画面へ辿り着くために要る。押してもログイン欄が開くだけです）。 */
-  if (!isSignedIn() && isAdminDevice()) revealAdminEntry();
-
+  /* 入口は「管理者だと確かめられたとき」だけ出します。
+     端末の目印で先に出していた頃は、主催者が一度使った端末に
+     Admin が残り、会員にも見えて紛らわしいものでした。
+     主催者は先にサインインします（ヘッダーの Log in）。
+     サインインすればボタンが現れます。 */
   refreshAdminFlag().then(ok => {
     if (ok) { revealAdminEntry(); refreshRsvps(); return; }
     /* 会員として入っているだけの人には入口を出しません。
@@ -629,12 +628,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isEmail(email)) return toast('Enter a valid email address.', true);
 
     const btn = $('#aoSubmit'), label = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Adding…';
+    btn.disabled = true; btn.textContent = 'Sending…';
     try {
-      await adminAdd(email, $('#aoNote').value.trim());
+      const out = await adminInvite(email, $('#aoNote').value.trim());
       $('#aoEmail').value = ''; $('#aoNote').value = '';
       await refreshOrganisers();
-      toast('Added ' + email + ' as an organiser.');
+      toast(out.existed
+        ? email + ' is now an organiser. We emailed them a password link.'
+        : 'Invitation sent to ' + email + '. They set their own password.');
     } catch (err) {
       toast(err.message, true);
     }

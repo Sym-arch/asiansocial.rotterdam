@@ -543,12 +543,33 @@ async function signIn(email, password) {
  * パスワード再設定のリンクを送る。
  * 登録済みかどうかは返しません（会員名簿を推測されないため）。
  */
+/** そのメールアドレスの会員が居るか。居ないなら送っても届きません。 */
+async function accountExists(email) {
+  const res = await fetch(sbUrl('rpc/account_exists'), {
+    method: 'POST',
+    headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_email: String(email).trim() })
+  });
+  if (!res.ok) throw new Error('lookup failed (' + res.status + ')');
+  return await res.json() === true;
+}
+
+/**
+ * パスワード再設定のメールを送ります。
+ *
+ * redirect_to を渡すのが要です。渡さないとメールのリンクは Site URL
+ * （トップページ）に着き、トークンを読む人が居ないので何も起きません。
+ * 実際にそうなっていました。
+ */
 async function sendPasswordReset(email) {
   if (!isEmail(email)) throw new Error(t('rsvp.err.email'));
   await fetch(authBase() + '/recover', {
     method: 'POST',
     headers: { apikey: CONFIG.supabase.anonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim() })
+    body: JSON.stringify({
+      email: email.trim(),
+      redirect_to: new URL('reset.html', location.href).href
+    })
   }).catch(() => {});
   return true;
 }
@@ -719,9 +740,30 @@ async function adminList() {
   try { return await callRpc('admin_list'); }
   catch (err) { throw adminError(err); }
 }
-async function adminAdd(email, note) {
-  try { return await callRpc('admin_add', { p_email: email, p_note: note || null }); }
-  catch (err) { throw adminError(err); }
+/**
+ * 主催者を招きます。
+ * 相手のアカウントが無ければ作り、本人がパスワードを決めるリンクを送ります。
+ * こちらでパスワードを作って渡す形にはしません。
+ */
+async function adminInvite(email, note) {
+  await ensureSession();
+  const res = await fetch('/api/organiser', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + (SESSION ? SESSION.access_token : '')
+    },
+    body: JSON.stringify({ email, note: note || '' })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.error === 'not_an_organiser') throw new Error('You are not an organiser.');
+    if (data.error === 'sign_in_required')  throw new Error('Please sign in again.');
+    if (data.error === 'not_configured')    throw new Error('Email sending is not set up yet.');
+    if (data.error === 'bad_email')         throw new Error('That email address does not look right.');
+    throw new Error(data.message || data.error || 'Could not send the invitation.');
+  }
+  return data;
 }
 async function adminRemove(userId) {
   try { return await callRpc('admin_remove', { p_user_id: userId }); }
@@ -793,7 +835,7 @@ async function adminSetCheckIn(ticketId, checkedIn) {
    ここで組み立てて全ページに共通で入れます。
    --------------------------------------------------------- */
 
-let MEMBER_MODE = 'signin';   /* 'signin' | 'create' */
+let MEMBER_MODE = 'signin';   /* 'signin' | 'create' | 'forgot' | 'sent' */
 
 function memberModalEl() {
   let el = $('#memberModal');
@@ -921,7 +963,36 @@ function memberCardHTML(rsvps, tickets) {
     </div>`;
 }
 
+function memberForgotHTML() {
+  return `
+    <h2 style="font-size:1.3rem;font-weight:500;margin:0 0 10px">
+      ${esc(t('forgot.title'))}</h2>
+    <p style="color:var(--muted);font-size:.9rem;margin:0 0 22px">${esc(t('forgot.body'))}</p>
+
+    <div class="field">
+      <label for="mfEmail">${esc(t('rsvp.email'))}</label>
+      <input id="mfEmail" type="email" autocomplete="email" inputmode="email">
+    </div>
+
+    <button class="btn btn--brand btn--block" type="button" id="mfSubmit" style="margin-top:20px">
+      ${esc(t('forgot.send'))}</button>
+
+    <p class="acct-swap">
+      <button type="button" class="linkish" id="mfBack">${esc(t('forgot.back'))}</button>
+    </p>`;
+}
+
+function memberSentHTML() {
+  return `
+    <h2 style="font-size:1.3rem;font-weight:500;margin:0 0 10px">
+      ${esc(t('forgot.sentTitle'))}</h2>
+    <p style="color:var(--muted);font-size:.9rem;margin:0 0 22px">${esc(t('forgot.sentBody'))}</p>
+    <button class="btn btn--line btn--block" type="button" id="mfBack">${esc(t('forgot.back'))}</button>`;
+}
+
 function memberAuthHTML() {
+  if (MEMBER_MODE === 'forgot') return memberForgotHTML();
+  if (MEMBER_MODE === 'sent')   return memberSentHTML();
   const creating = MEMBER_MODE === 'create';
   return `
     <h2 style="font-size:1.3rem;font-weight:500;margin:0 0 22px">
@@ -957,6 +1028,45 @@ function memberAuthHTML() {
 }
 
 function wireMemberAuth() {
+  /* 「忘れた」と「送りました」は入力の意味が違うので、別に配線します */
+  if (MEMBER_MODE === 'forgot' || MEMBER_MODE === 'sent') {
+    const back = $('#mfBack');
+    if (back) back.addEventListener('click', () => {
+      MEMBER_MODE = 'signin';
+      renderMemberModal();
+    });
+
+    const send = $('#mfSubmit');
+    if (send) {
+      const go = async () => {
+        const email = $('#mfEmail').value.trim();
+        if (!isEmail(email)) return toast(t('rsvp.err.email'), true);
+
+        const label = send.textContent;
+        send.disabled = true; send.textContent = t('forgot.checking');
+        try {
+          if (!(await accountExists(email))) {
+            toast(t('forgot.noAccount'), true);
+            send.disabled = false; send.textContent = label;
+            return;
+          }
+          await sendPasswordReset(email);
+          MEMBER_MODE = 'sent';
+          await renderMemberModal();
+          return;
+        } catch (err) {
+          toast(err.message, true);
+        }
+        send.disabled = false; send.textContent = label;
+      };
+      send.addEventListener('click', go);
+      $('#memberBody').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.matches('input')) go();
+      });
+    }
+    return;
+  }
+
   const submit = async () => {
     const btn = $('#mmSubmit'), label = btn.textContent;
     const creating = MEMBER_MODE === 'create';
@@ -987,9 +1097,14 @@ function wireMemberAuth() {
     renderMemberModal();
   });
   const forgot = $('#mmForgot');
-  if (forgot) forgot.addEventListener('click', async () => {
-    try { await sendPasswordReset($('#mmEmail').value); toast(t('account.resetSent')); }
-    catch (err) { toast(err.message, true); }
+  if (forgot) forgot.addEventListener('click', () => {
+    MEMBER_MODE = 'forgot';
+    renderMemberModal().then(() => {
+      /* サインイン欄に入れかけていたものを引き継ぎます */
+      const typed = $('#mmEmail');
+      const box = $('#mfEmail');
+      if (box) { if (typed && typed.value) box.value = typed.value; box.focus(); }
+    });
   });
 }
 
