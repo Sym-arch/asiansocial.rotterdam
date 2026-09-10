@@ -517,7 +517,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (t.dataset.delEv) {
-      if (!confirm('Delete this event? RSVPs for it stay in the inbox.')) return;
+      /* 削除は予約にも波及します。何人ぶんが消えるのかを先に見せます */
+      const ev = findEvent(t.dataset.delEv);
+      const booked = ADMIN_RSVPS.filter(r => r.eventId === t.dataset.delEv);
+      const heads = booked.reduce((n, r) => n + (Number(r.guests) || 1), 0);
+      const warn = booked.length
+        ? `
+
+${booked.length} booking(s) for ${heads} people will be removed from the door list, and their tickets stop working. Paid orders are marked cancelled — this does not refund anyone.`
+        : '';
+      if (!confirm(`Delete "${(ev && ev.title) || 'this event'}"?` + warn)) return;
       const gone = t.dataset.delEv;
       EVENTS = EVENTS.filter(x => x.id !== gone); saveEvents(); refreshPublic(); renderAdmin();
       dropEvent(gone).catch(err => toast(err.message, true));
