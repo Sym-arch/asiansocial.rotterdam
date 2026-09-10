@@ -323,6 +323,7 @@
       <div class="tabs" role="tablist">
         <button type="button" class="is-on" data-tab="events">Events</button>
         <button type="button" data-tab="inbox">RSVPs &amp; messages</button>
+        <button type="button" data-tab="organisers">Organisers</button>
       </div>
 
       <!-- EVENTS TAB -->
@@ -432,6 +433,37 @@
           </div>
         </div>
         <div class="admin-list" id="adminEventList"></div>
+      </section>
+
+      <!-- ORGANISERS TAB -->
+      <section class="tabpane" data-pane="organisers">
+        <div class="notice">
+          Organisers can create events, read the booking list and run the door check-in.
+          The person must already have an account on this site — ask them to sign up first,
+          then add the email they used.
+        </div>
+
+        <form class="admin-form" id="adminOrgForm">
+          <div class="admin-head" style="margin-top:0">
+            <h4>Add an organiser</h4>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="aoEmail">Email <span class="req">*</span></label>
+              <input id="aoEmail" type="email" required placeholder="name@example.com">
+            </div>
+            <div class="field">
+              <label for="aoNote">Note</label>
+              <input id="aoNote" type="text" placeholder="e.g. En. host">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" type="submit" id="aoSubmit">Add organiser</button>
+          </div>
+        </form>
+
+        <div class="admin-head"><h4>Organisers</h4><span class="pill" id="aoCount">0</span></div>
+        <div class="admin-list" id="adminOrgList"></div>
       </section>
 
       <!-- INBOX TAB -->

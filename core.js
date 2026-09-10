@@ -687,6 +687,47 @@ async function issueTicket(ev, rsvp) {
   return { secret, url: ticketUrl(secret) };
 }
 
+/* --- 管理者の管理 -------------------------------------------------------
+   admins は「自分の行しか読めない」ので、一覧も追加もサーバ側の関数を
+   通します。関数の入口で管理者かどうかを見ています（08-admin-manage.sql）。 */
+
+async function callRpc(name, body) {
+  if (!(await ensureSession())) throw new Error('Please sign in again.');
+  const res = await fetch(sbUrl('rpc/' + name), {
+    method: 'POST', headers: sbHeaders(), body: JSON.stringify(body || {})
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    /* Postgres の raise exception は message に入ってきます。
+       そのまま出すと読めないので、こちら側の言葉に直します。 */
+    let code = '';
+    try { code = (JSON.parse(text).message || '').trim(); } catch { code = text; }
+    throw new Error(code || (name + ' → ' + res.status));
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+const ADMIN_ERRORS = {
+  not_an_organiser:   'You are not an organiser.',
+  no_such_account:    'No account with that email yet. Ask them to sign up on the site first, then add them.',
+  cannot_remove_self: 'You cannot remove yourself. Ask another organiser to do it.',
+  last_organiser:     'This is the only organiser. Add someone else first.'
+};
+const adminError = err => new Error(ADMIN_ERRORS[err.message] || err.message);
+
+async function adminList() {
+  try { return await callRpc('admin_list'); }
+  catch (err) { throw adminError(err); }
+}
+async function adminAdd(email, note) {
+  try { return await callRpc('admin_add', { p_email: email, p_note: note || null }); }
+  catch (err) { throw adminError(err); }
+}
+async function adminRemove(userId) {
+  try { return await callRpc('admin_remove', { p_user_id: userId }); }
+  catch (err) { throw adminError(err); }
+}
+
 /** secret だけでチケットを読みます（ログイン不要）。 */
 async function fetchTicket(secret) {
   const res = await fetch(sbUrl('rpc/get_ticket'), {

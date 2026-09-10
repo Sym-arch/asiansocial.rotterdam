@@ -264,6 +264,43 @@ async function requireAdmin() {
   setTimeout(() => $('#adminEmail').focus(), 60);
 }
 
+/* 管理者の一覧。開いたときにだけ読みます。
+   admins は普段の描画では使わないので、常に持ち歩く必要がありません。 */
+let ADMIN_ORGS = [];
+
+function renderOrganisers() {
+  const box = $('#adminOrgList');
+  if (!box) return;
+  $('#aoCount').textContent = ADMIN_ORGS.length;
+  const me = (SESSION && SESSION.user_id) || '';
+  box.innerHTML = ADMIN_ORGS.length ? ADMIN_ORGS.map(a => `
+    <div class="admin-row">
+      <div class="admin-row__main">
+        <strong>${esc(a.email)} ${a.user_id === me ? '<span class="pill">you</span>' : ''}</strong>
+        <span>${esc(a.note || '—')} · added ${esc(new Date(a.created_at).toLocaleDateString('en-GB'))}</span>
+      </div>
+      <div class="admin-row__act">
+        ${a.user_id === me ? ''
+          : `<button class="mini mini--danger" type="button" data-del-org="${esc(a.user_id)}">Remove</button>`}
+      </div>
+    </div>`).join('') : '<div class="empty">Could not read the organiser list.</div>';
+}
+
+async function refreshOrganisers() {
+  if (!isAdmin) return;
+  try {
+    /* 古いセッションには user_id が入っていません。
+       先に確定させないと、自分の行に「Remove」が出てしまいます。 */
+    await ensureUserId();
+    ADMIN_ORGS = await adminList();
+    renderOrganisers();
+  } catch (err) {
+    ADMIN_ORGS = [];
+    $('#adminOrgList').innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+    $('#aoCount').textContent = '0';
+  }
+}
+
 /** Pull the booking list; without a valid session RLS returns nothing. */
 async function refreshRsvps() {
   if (!isAdmin) return;
@@ -463,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-close],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-msg]');
+    const t = e.target.closest('[data-close],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-msg],[data-del-org]');
     if (!t) return;
 
     if (t.hasAttribute('data-close')) { closeModal(t.closest('.modal')); return; }
@@ -489,6 +526,16 @@ document.addEventListener('DOMContentLoaded', () => {
       EVENTS = EVENTS.filter(x => x.id !== gone); saveEvents(); refreshPublic(); renderAdmin();
       dropEvent(gone).catch(err => toast(err.message, true));
       toast('Event deleted.');
+      return;
+    }
+    if (t.dataset.delOrg) {
+      const who = ADMIN_ORGS.find(a => a.user_id === t.dataset.delOrg);
+      if (!confirm('Remove ' + (who ? who.email : 'this organiser') +
+                   '?\n\nThey keep their member account, but lose access to the admin panel.')) return;
+      adminRemove(t.dataset.delOrg)
+        .then(refreshOrganisers)
+        .then(() => toast('Organiser removed.'))
+        .catch(err => toast(err.message, true));
       return;
     }
     if (t.dataset.delRsvp) {
@@ -560,7 +607,27 @@ document.addEventListener('DOMContentLoaded', () => {
   $$('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
     $$('.tabs [data-tab]').forEach(x => x.classList.toggle('is-on', x === b));
     $$('.tabpane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === b.dataset.tab));
+    /* 管理者の一覧は開いたときに取りに行きます */
+    if (b.dataset.tab === 'organisers') refreshOrganisers();
   }));
+
+  $('#adminOrgForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = $('#aoEmail').value.trim();
+    if (!isEmail(email)) return toast('Enter a valid email address.', true);
+
+    const btn = $('#aoSubmit'), label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Adding…';
+    try {
+      await adminAdd(email, $('#aoNote').value.trim());
+      $('#aoEmail').value = ''; $('#aoNote').value = '';
+      await refreshOrganisers();
+      toast('Added ' + email + ' as an organiser.');
+    } catch (err) {
+      toast(err.message, true);
+    }
+    btn.disabled = false; btn.textContent = label;
+  });
 
   /* Admin: event form */
   $('#adminEventReset').addEventListener('click', () => eventFormFill(null));
