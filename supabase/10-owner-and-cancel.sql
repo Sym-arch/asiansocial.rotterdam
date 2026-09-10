@@ -46,7 +46,13 @@ $$;
 
 -- ---------------------------------------------------------
 -- 3. 一覧（役割も返します）
+--
+--    列が増えるので、create or replace では差し替えられません
+--    （戻り値の形が変わる関数は置き換えられない決まりです）。
+--    先に落としてから作り直します。
 -- ---------------------------------------------------------
+drop function if exists public.admin_list();
+
 create or replace function public.admin_list()
 returns table (user_id uuid, email text, note text, role text, created_at timestamptz)
 language plpgsql

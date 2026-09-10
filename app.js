@@ -229,22 +229,10 @@ async function refreshAdminFlag() {
   return isAdmin;
 }
 
-/* The Admin button is hidden for everyone. It only appears on a browser that
-   has signed in here before (remembered on this device), or when the page is
-   opened with #admin. A static site cannot know who the visitor is, so this
-   keeps the entry point out of sight rather than authenticating anyone. */
-const ADMIN_DEVICE = 'asr.adminDevice';
-const isAdminDevice = () => {
-  try { return localStorage.getItem(ADMIN_DEVICE) === '1'; } catch { return false; }
-};
-function rememberAdminDevice() {
-  try { localStorage.setItem(ADMIN_DEVICE, '1'); } catch {}
-}
-/* 管理者でないことがはっきりしたら、この端末の目印を消します。
-   主催者が使ったあとの端末を会員が使う場合に、入口が残らないようにです。 */
-function forgetAdminDevice() {
-  try { localStorage.removeItem(ADMIN_DEVICE); } catch {}
-}
+/* Admin ボタンは、管理者だと確かめられたときだけ出します。
+   以前は「この端末で前にサインインしたか」を目印にして出していましたが、
+   主催者が一度使った端末に入口が残り、会員にも見えて紛らわしいものでした。
+   端末ではなく、その時サインインしている人で決めます。 */
 function revealAdminEntry() {
   const btn = $('#adminOpen');
   if (btn) btn.hidden = false;
@@ -480,19 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   bootstrapContent(drawAll);
 
-  /* content created before the tables existed would otherwise stay stranded
-     in this browser, so lift it up once from the admin's own device */
-  if (supabaseReady() && isAdminDevice()) {
-    loadContent()
-      .then(() => syncLocalToSupabase())
-      .then(r => {
-        if (!r.events) return;
-        toast(`Uploaded ${r.events} event(s) to Supabase.`);
-        return loadContent().then(drawAll);
-      })
-      .catch(err => console.warn('sync skipped:', err));
-  }
-
   /* Scroll-spy */
   ['home', 'events', 'membership', 'en'].forEach(id => {
     const el = document.getElementById(id);
@@ -590,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ok) { revealAdminEntry(); refreshRsvps(); return; }
     /* 会員として入っているだけの人には入口を出しません。
        この端末の目印も消すので、次からは出ません。 */
-    if (isSignedIn()) { hideAdminEntry(); forgetAdminDevice(); }
+    if (isSignedIn()) hideAdminEntry();
   });
   /* opening the site with #admin lets you get in on a new browser */
   if (location.hash === '#admin') { revealAdminEntry(); requireAdmin(); }
@@ -607,13 +582,13 @@ document.addEventListener('DOMContentLoaded', () => {
       $('#adminPass').value = '';
       /* 入れたことと、主催者であることは別です */
       if (!(await refreshAdminFlag())) {
-        hideAdminEntry(); forgetAdminDevice();
+        hideAdminEntry();
         closeModal($('#loginModal'));
         toast('Signed in — but this account is not an organiser.', true);
         btn.disabled = false; btn.textContent = label;
         return;
       }
-      rememberAdminDevice(); revealAdminEntry();
+      revealAdminEntry();
       closeModal($('#loginModal'));
       renderAdmin(); openModal('#adminModal');
       toast('Signed in as ' + signedInAs());
@@ -766,21 +741,6 @@ They receive it straight away.`;
     if (!MSGS.length) return toast('Nothing to export.', true);
     download('asr-messages.csv', toCsv(MSGS), 'text/csv;charset=utf-8');
   });
-  $('#syncUp').addEventListener('click', async e => {
-    const btn = e.currentTarget, label = btn.textContent;
-    btn.disabled = true; btn.textContent = 'Uploading…';
-    try {
-      const r = await syncLocalToSupabase();
-      await loadContent(); drawAll();
-      toast(r.failed
-        ? `Uploaded ${r.events}, ${r.failed} failed — check the table policies.`
-        : `Uploaded ${r.events} event(s).`, Boolean(r.failed));
-    } catch (err) {
-      toast(err.message, true);
-    }
-    btn.disabled = false; btn.textContent = label;
-  });
-
 
   eventFormFill(null);
 });

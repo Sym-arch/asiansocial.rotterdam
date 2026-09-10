@@ -1441,28 +1441,6 @@ async function loadContent() {
   return loaded > 0;
 }
 
-/**
- * Push anything that exists only in this browser up to Supabase.
- * Run from the admin device so content created before the tables existed
- * is not stranded locally.
- * @returns {Promise<{events:number, failed:number}>}
- */
-async function syncLocalToSupabase() {
-  const out = { events: 0, failed: 0 };
-  if (!supabaseReady()) return out;
-
-  let remote;
-  try { remote = await sbSelect('events'); }
-  catch { return out; }
-
-  const have = new Set(remote.map(r => r.id));
-  for (const e of EVENTS) {
-    if (have.has(e.id)) continue;
-    try { await sbUpsert('events', evToRow(e)); out.events++; } catch { out.failed++; }
-  }
-  return out;
-}
-
 /* Admin writes: keep the local copy and the table in step. */
 const pushEvent = rec => supabaseReady() ? sbUpsert('events', evToRow(rec)) : Promise.resolve();
 const dropEvent = id  => supabaseReady() ? sbDelete('events', id) : Promise.resolve();
