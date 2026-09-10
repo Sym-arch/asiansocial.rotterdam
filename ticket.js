@@ -55,13 +55,60 @@ function ticketHTML(tk) {
       : used
         ? `<p class="tk__state tk__state--done">
              ${esc(time ? t('ticket.doneAt', { time }) : t('ticket.done'))}</p>`
-        : `<p class="tk__hint tk__hint--lead">${esc(t('ticket.showStaff'))}</p>`}`,
+        : `<p class="tk__hint tk__hint--lead">${esc(t('ticket.showStaff'))}</p>`}
+
+    ${cancelBlockHTML(tk)}`,
     used ? 'tk--used' : '');
+}
+
+/* 取り消しの導線。
+   まだ有効で、これからの回のときだけ出します。終わった回や
+   受付済みのものに取り消しボタンを見せても、押せば断られるだけです。
+
+   サインインしていない人には出しません。このページは鍵さえあれば
+   誰でも開けるので、他人のチケットに取り消しボタンが並ぶことになります。 */
+function cancelBlockHTML(tk) {
+  if (tk.status !== 'valid') return '';
+  const ev = findEvent(tk.event_id);
+  if (ev && isPast(ev)) return '';
+
+  if (!isSignedIn()) {
+    return `<p class="tk__manage">
+      <a href="profile.html">${esc(t('ticket.signInToManage'))}</a></p>`;
+  }
+  return `<p class="tk__manage">
+    <button type="button" class="linkish" id="tkCancel">${esc(t('ticket.cancel'))}</button></p>`;
+}
+
+async function wireCancel(tk) {
+  const btn = $('#tkCancel');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const ev = findEvent(tk.event_id);
+    const when = tk.event_date
+      ? new Date(tk.event_date).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'long' })
+      : '';
+    /* 押した瞬間には消しません。戻せない操作なので一度確かめます */
+    const ask = t('ticket.cancelAsk', { title: tk.event_title || (ev && ev.title) || '', date: when })
+              + '\n\n' + t('ticket.cancelWarn');
+    if (!confirm(ask)) return;
+
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = t('ticket.cancelling');
+    try {
+      await cancelMyBooking(T_SECRET);
+      location.href = 'profile.html' + (uiLang() === 'en' ? '' : '?lang=' + uiLang());
+    } catch (err) {
+      toast(err.message, true);
+      btn.disabled = false; btn.textContent = label;
+    }
+  });
 }
 
 function render(tk) {
   $('#ticketMain').innerHTML = tk ? ticketHTML(tk) : notFoundHTML();
   initShell();
+  if (tk) wireCancel(tk);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

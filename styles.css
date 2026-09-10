@@ -1010,3 +1010,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   .en-event__img{width:64px}
   .en-event__price{grid-column:2;font-size:.8rem}
 }
+
+/* チケットの「取り消す」。押し間違えたくない操作なので、
+   目立つボタンにはせず、本文から離した控えめな文字にします。 */
+.tk__manage{margin-top:34px;font-size:.84rem;color:var(--muted)}
+.tk__manage a,.tk__manage button{color:var(--muted);font-size:inherit}
+.tk__manage button:hover,.tk__manage a:hover{color:var(--brand-text)}

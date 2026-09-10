@@ -38,8 +38,11 @@ export default async function handler(req, res) {
     const user  = await userFromToken(token);
     if (!user || !user.id) return send(res, 401, { error: 'sign_in_required' });
 
-    const admins = await sb('admins?select=user_id&user_id=eq.' + encodeURIComponent(user.id));
+    /* 主催者どうしが対等だと、招いた相手が招いた人を外せます。
+       「運営する人」と「運営する人を決める人」を分けています。 */
+    const admins = await sb('admins?select=user_id,role&user_id=eq.' + encodeURIComponent(user.id));
     if (!admins.length) return send(res, 403, { error: 'not_an_organiser' });
+    if (admins[0].role !== 'owner') return send(res, 403, { error: 'owner_only' });
 
     /* --- 相手のアカウントを用意して、設定リンクを作ります -------------
        invite は「まだ居ない人」を作ってリンクを返します。

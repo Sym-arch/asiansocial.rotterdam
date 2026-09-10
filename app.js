@@ -272,23 +272,37 @@ async function requireAdmin() {
 /* 管理者の一覧。開いたときにだけ読みます。
    admins は普段の描画では使わないので、常に持ち歩く必要がありません。 */
 let ADMIN_ORGS = [];
+let IS_OWNER = false;
 
 function renderOrganisers() {
   const box = $('#adminOrgList');
   if (!box) return;
   $('#aoCount').textContent = ADMIN_ORGS.length;
   const me = (SESSION && SESSION.user_id) || '';
-  box.innerHTML = ADMIN_ORGS.length ? ADMIN_ORGS.map(a => `
+
+  /* 招待と削除はオーナーだけです。押せない操作は並べません */
+  const form = $('#adminOrgForm');
+  if (form) form.hidden = !IS_OWNER;
+  const note = $('#aoOwnerNote');
+  if (note) note.hidden = IS_OWNER;
+
+  box.innerHTML = ADMIN_ORGS.length ? ADMIN_ORGS.map(a => {
+    const owner = a.role === 'owner';
+    const canRemove = IS_OWNER && !owner && a.user_id !== me;
+    return `
     <div class="admin-row">
       <div class="admin-row__main">
-        <strong>${esc(a.email)} ${a.user_id === me ? '<span class="pill">you</span>' : ''}</strong>
+        <strong>${esc(a.email)}
+          ${owner ? '<span class="pill">owner</span>' : ''}
+          ${a.user_id === me ? '<span class="pill">you</span>' : ''}</strong>
         <span>${esc(a.note || '—')} · added ${esc(new Date(a.created_at).toLocaleDateString('en-GB'))}</span>
       </div>
       <div class="admin-row__act">
-        ${a.user_id === me ? ''
-          : `<button class="mini mini--danger" type="button" data-del-org="${esc(a.user_id)}">Remove</button>`}
+        ${canRemove
+          ? `<button class="mini mini--danger" type="button" data-del-org="${esc(a.user_id)}">Remove</button>`
+          : ''}
       </div>
-    </div>`).join('') : '<div class="empty">Could not read the organiser list.</div>';
+    </div>`; }).join('') : '<div class="empty">Could not read the organiser list.</div>';
 }
 
 async function refreshOrganisers() {
@@ -298,6 +312,8 @@ async function refreshOrganisers() {
        先に確定させないと、自分の行に「Remove」が出てしまいます。 */
     await ensureUserId();
     ADMIN_ORGS = await adminList();
+    const me = (SESSION && SESSION.user_id) || '';
+    IS_OWNER = ADMIN_ORGS.some(a => a.user_id === me && a.role === 'owner');
     renderOrganisers();
   } catch (err) {
     ADMIN_ORGS = [];

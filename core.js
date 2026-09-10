@@ -728,11 +728,30 @@ async function callRpc(name, body) {
   return text ? JSON.parse(text) : null;
 }
 
+/**
+ * 自分の予約を取り消します。
+ * 鍵を知っているだけでは通りません。サインインしている本人だけです。
+ * 転送されたスクリーンショットで他人の予約を消せてしまうためです。
+ */
+async function cancelMyBooking(secret) {
+  try { return await callRpc('cancel_my_booking', { p_secret: secret }); }
+  catch (err) { throw new Error(CANCEL_ERRORS[err.message] || err.message); }
+}
+
+const CANCEL_ERRORS = {
+  sign_in_required: 'Please sign in with the account you booked with.',
+  no_such_ticket:   'We could not find that booking.',
+  not_your_booking: 'That booking belongs to another account.',
+  already_used:     'You have already been checked in at the door.',
+  event_passed:     'This event has already happened.'
+};
+
 const ADMIN_ERRORS = {
-  not_an_organiser:   'You are not an organiser.',
-  no_such_account:    'No account with that email yet. Ask them to sign up on the site first, then add them.',
-  cannot_remove_self: 'You cannot remove yourself. Ask another organiser to do it.',
-  last_organiser:     'This is the only organiser. Add someone else first.'
+  not_an_organiser:    'You are not an organiser.',
+  owner_only:          'Only the owner can add or remove organisers.',
+  cannot_remove_self:  'You cannot remove yourself.',
+  cannot_remove_owner: 'The owner cannot be removed.',
+  last_organiser:      'This is the only organiser. Add someone else first.'
 };
 const adminError = err => new Error(ADMIN_ERRORS[err.message] || err.message);
 
@@ -758,6 +777,7 @@ async function adminInvite(email, note) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (data.error === 'not_an_organiser') throw new Error('You are not an organiser.');
+    if (data.error === 'owner_only')        throw new Error('Only the owner can invite organisers.');
     if (data.error === 'sign_in_required')  throw new Error('Please sign in again.');
     if (data.error === 'not_configured')    throw new Error('Email sending is not set up yet.');
     if (data.error === 'bad_email')         throw new Error('That email address does not look right.');
