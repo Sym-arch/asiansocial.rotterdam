@@ -1052,3 +1052,31 @@ ul,ol{margin:0;padding:0;list-style:none}
 .tk__manage{margin-top:34px;font-size:.84rem;color:var(--muted)}
 .tk__manage a,.tk__manage button{color:var(--muted);font-size:inherit}
 .tk__manage button:hover,.tk__manage a:hover{color:var(--brand-text)}
+
+
+/* =========================================================
+   イベントポリシー（policy.html）
+   読むためのページなので、1行を短く、項目ごとに区切ります。
+   ========================================================= */
+.policy{max-width:760px}
+.policy__h1{font-size:clamp(2.1rem,5vw,3.2rem);margin:16px 0 10px;text-wrap:balance;word-break:keep-all;overflow-wrap:anywhere}
+.policy__date{font-size:.84rem;color:var(--muted);margin-bottom:clamp(30px,5vw,50px)}
+.policy__sec{border-top:1px solid var(--rule);padding:26px 0 30px;scroll-margin-top:calc(var(--header-h) + 16px)}
+.policy__sec h2{font-size:1.2rem;font-weight:600;letter-spacing:-.01em;margin-bottom:14px}
+.policy__sec p{color:var(--ink-2);line-height:1.7}
+.policy__sec ul{display:grid;gap:12px}
+.policy__sec li{position:relative;padding-left:20px;color:var(--ink-2);line-height:1.7}
+.policy__sec li::before{
+  content:"";position:absolute;left:2px;top:.72em;width:6px;height:6px;border-radius:50%;
+  background:var(--brand-text);
+}
+.policy__sec b{color:var(--ink);font-weight:600}
+.policy__sec a{color:var(--brand-text);white-space:nowrap}   /* メールアドレスを途中で折らない */
+
+/* 予約・会員登録の同意欄 */
+.consent{
+  display:flex;align-items:flex-start;gap:10px;margin-top:18px;
+  font-size:.84rem;line-height:1.55;color:var(--ink-2);cursor:pointer;
+}
+.consent input{flex:none;width:18px;height:18px;margin:2px 0 0;accent-color:var(--brand);cursor:pointer}
+.consent a{color:var(--brand-text)}

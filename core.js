@@ -1140,6 +1140,20 @@ function memberSentHTML() {
     <button class="btn btn--line btn--block" type="button" id="mfBack">${esc(t('forgot.back'))}</button>`;
 }
 
+/**
+ * 予約・会員登録の同意欄。
+ * ポリシーは別タブで開きます。同じタブで開くと、入力中の内容が消えます。
+ */
+function consentHTML(id, key) {
+  const lang = uiLang();
+  const href = 'policy.html' + (lang === 'en' ? '' : '?lang=' + lang);
+  const link = `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(t('consent.policy'))}</a>`;
+  return `<label class="consent" for="${id}">
+      <input type="checkbox" id="${id}">
+      <span>${esc(t(key)).split('{policy}').join(link)}</span>
+    </label>`;
+}
+
 function memberAuthHTML() {
   if (MEMBER_MODE === 'forgot') return memberForgotHTML();
   if (MEMBER_MODE === 'sent')   return memberSentHTML();
@@ -1164,6 +1178,8 @@ function memberAuthHTML() {
       <input id="mmPass" type="password" autocomplete="${creating ? 'new-password' : 'current-password'}"
              placeholder="${creating ? esc(t('account.passwordPh')) : ''}">
     </div>
+
+    ${creating ? consentHTML('mmConsent', 'consent.account') : ''}
 
     <button class="btn btn--brand btn--block" type="button" id="mmSubmit" style="margin-top:20px">
       ${esc(t(creating ? 'account.createBtn' : 'account.signinBtn'))}</button>
@@ -1220,6 +1236,8 @@ function wireMemberAuth() {
   const submit = async () => {
     const btn = $('#mmSubmit'), label = btn.textContent;
     const creating = MEMBER_MODE === 'create';
+    const agreed = $('#mmConsent');
+    if (creating && agreed && !agreed.checked) { toast(t('consent.err'), true); agreed.focus(); return; }
     btn.disabled = true;
     btn.textContent = t(creating ? 'account.creating' : 'account.signingIn');
     try {

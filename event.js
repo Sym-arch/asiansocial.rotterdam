@@ -110,6 +110,8 @@ function bookingHTML(ev) {
         </div>
       </div>
 
+      ${consentHTML('bConsent', 'consent.booking')}
+
       <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
         ${esc(isPaid(ev) ? t('rsvp.payBtn', { price: priceFor(ev).label })
                          : t(signed ? 'rsvp.submit' : 'rsvp.bookBtn'))}</button>
@@ -119,9 +121,6 @@ function bookingHTML(ev) {
         ${esc(t('rsvp.haveAccount'))}
         <button type="button" class="linkish" data-member>${esc(t('account.toSignin'))}</button>
       </p>`}
-
-      <small style="display:block;margin-top:12px;color:var(--muted);font-size:.78rem">
-        ${esc(t('rsvp.privacy'))}</small>
     </form>`;
 }
 
@@ -212,6 +211,9 @@ function renderEvent(ev) {
   const form = $('#bookForm');
   if (form) form.addEventListener('submit', async e => {
     e.preventDefault();
+    /* 返金なしの条件に同意してもらってから、アカウント作成や決済へ進みます */
+    const agreed = $('#bConsent');
+    if (agreed && !agreed.checked) { toast(t('consent.err'), true); agreed.focus(); return; }
     const btn = $('#bSubmit');
     btn.disabled = true; btn.textContent = t('rsvp.sending');
     try {
