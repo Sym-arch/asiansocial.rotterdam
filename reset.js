@@ -103,7 +103,7 @@ async function rsSave() {
   const pass = $('#rsPass').value;
   const again = $('#rsPass2').value;
 
-  if (pass.length < 8) return toast(t('account.err.password'), true);
+  if (!passwordOk(pass)) return toast(t('account.err.password'), true);
   if (pass !== again) return toast(t('reset.mismatch'), true);
 
   const btn = $('#rsSave'), label = btn.textContent;

@@ -364,7 +364,7 @@ async function submitRsvp(input) {
   } else {
     if (!input.name || !input.email) throw new Error(t('rsvp.err.required'));
     if (!isEmail(input.email)) throw new Error(t('rsvp.err.email'));
-    if (String(input.password || '').length < MIN_PASSWORD) throw new Error(t('account.err.password'));
+    if (!passwordOk(input.password)) throw new Error(t('account.err.password'));
     try {
       await signUp(input.email, input.password, input.name);
     } catch (err) {
@@ -501,10 +501,20 @@ async function ensureSession() {
 
 const MIN_PASSWORD = 8;
 
+/**
+ * パスワードの決まり。8文字以上で、英字と数字を両方含むこと。
+ * 登録・予約時の登録・再設定の3か所で同じ判定を使います。
+ * 場所ごとに書くと、どこか1つだけ緩いまま残ります。
+ */
+function passwordOk(pw) {
+  const s = String(pw || '');
+  return s.length >= MIN_PASSWORD && /[A-Za-z]/.test(s) && /[0-9]/.test(s);
+}
+
 /** アカウントを作ってそのままサインインする。 */
 async function signUp(email, password, name) {
   if (!isEmail(email)) throw new Error(t('rsvp.err.email'));
-  if (String(password).length < MIN_PASSWORD) throw new Error(t('account.err.password'));
+  if (!passwordOk(password)) throw new Error(t('account.err.password'));
 
   const res = await fetch(authBase() + '/signup', {
     method: 'POST',
