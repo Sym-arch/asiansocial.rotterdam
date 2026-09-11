@@ -851,6 +851,9 @@ function doorCode(id) {
   return out;
 }
 
+/** 会員番号の表記（12 → "No. 0012"）。会員証と受付名簿で揃えます。 */
+const fmtMemberNo = n => n ? 'No. ' + String(n).padStart(4, '0') : '';
+
 /** secret だけでチケットを読みます（ログイン不要）。 */
 async function fetchTicket(secret) {
   const res = await fetch(sbUrl('rpc/get_ticket'), {
@@ -873,9 +876,38 @@ const TICKET_COLS = 'id,order_id,user_id,email,event_id,event_title,event_date,'
 
 async function adminListTickets(eventId) {
   if (!(await ensureSession())) throw new Error('Not signed in.');
-  return sbSelect('tickets',
+  const rows = await sbSelect('tickets',
     'select=' + TICKET_COLS +
     '&event_id=eq.' + encodeURIComponent(eventId) + '&order=holder_name.asc');
+  await attachMemberNumbers(rows);
+  return rows;
+}
+
+/**
+ * 受付で「会員番号は？」と聞いて確かめられるように、予約した人の番号を添えます。
+ * チケットに user_id が無い行（アカウント作成と同時の予約など）は、
+ * メールアドレスから会員を引きます。
+ * 12-member-number.sql が未適用なら列が無いので、番号なしのまま続けます。
+ */
+async function attachMemberNumbers(rows) {
+  try {
+    const byEmail = new Map();
+    const loose = [...new Set(rows.filter(r => !r.user_id && r.email).map(r => r.email))];
+    if (loose.length) {
+      const list = loose.map(e => '"' + e.replace(/"/g, '') + '"').join(',');
+      const ps = await sbSelect('profiles', 'select=id,email&email=in.(' + encodeURIComponent(list) + ')');
+      ps.forEach(p => byEmail.set(p.email.toLowerCase(), p.id));
+    }
+    const uidOf = r => r.user_id || byEmail.get(String(r.email || '').toLowerCase()) || null;
+
+    const ids = [...new Set(rows.map(uidOf).filter(Boolean))];
+    if (!ids.length) return;
+    const ms = await sbSelect('memberships', 'select=user_id,member_no&user_id=in.(' + ids.join(',') + ')');
+    const noOf = new Map(ms.map(m => [m.user_id, m.member_no]));
+    rows.forEach(r => { r.member_no = noOf.get(uidOf(r)) || null; });
+  } catch (err) {
+    console.warn('member numbers failed:', err.message);
+  }
 }
 
 /**
@@ -989,6 +1021,7 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
   const profile = (MEMBER && MEMBER.profile) || {};
   const ship = (MEMBER && MEMBER.membership) || {};
   const tier = memberTier();
+  const memberNo = fmtMemberNo(ship.member_no);
   /* カードに載せるので短く（月と年だけ） */
   const since = ship.started_at
     ? new Date(ship.started_at).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long' })
@@ -1044,6 +1077,7 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
       <span class="mcard__ring" aria-hidden="true"></span>
       <div class="mcard__top"><span>Asian Social · Rotterdam</span></div>
       <div>
+        ${memberNo ? `<div class="mcard__no">${esc(memberNo)}</div>` : ''}
         <div class="mcard__name">${esc(name)}</div>
         <div class="mcard__meta">
           <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>

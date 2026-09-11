@@ -49,7 +49,7 @@ function listHTML() {
         ${evs.map(e => `<option value="${esc(e.id)}" ${e.id === CI_EVENT ? 'selected' : ''}>
           ${esc(fmtDate(e))} — ${esc(e.title)}</option>`).join('')}
       </select>
-      <input id="ciSearch" type="search" placeholder="Search by name or code" autocomplete="off">
+      <input id="ciSearch" type="search" placeholder="Search by name, code or member no." autocomplete="off">
     </div>
 
     <div class="ci__bar">
@@ -75,12 +75,13 @@ function rowHTML(t) {
     : '';
   return `
     <li class="ci__row ${used ? 'is-in' : ''}"
-        data-name="${esc(((t.holder_name || '') + ' ' + doorCode(t.id)).toLowerCase())}">
+        data-name="${esc([t.holder_name || '', doorCode(t.id), t.member_no ? String(t.member_no).padStart(4, '0') : '']
+                         .join(' ').toLowerCase())}">
       <label>
         <input type="checkbox" data-id="${esc(t.id)}" ${used ? 'checked' : ''}>
         <span class="ci__who">
           <b>${esc(t.holder_name)}</b>
-          <span><span class="ci__code">#${esc(doorCode(t.id))}</span> · ${esc(t.quantity)} ${t.quantity > 1 ? 'people' : 'person'}${at ? ' · ' + esc(at) : ''}</span>
+          <span><span class="ci__code">#${esc(doorCode(t.id))}</span>${t.member_no ? ' · ' + esc(fmtMemberNo(t.member_no)) : ''} · ${esc(t.quantity)} ${t.quantity > 1 ? 'people' : 'person'}${at ? ' · ' + esc(at) : ''}</span>
         </span>
       </label>
     </li>`;
