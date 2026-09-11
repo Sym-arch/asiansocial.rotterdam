@@ -45,6 +45,7 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'Privacy', items: [
         `Asian Social is responsible for your data. We keep your name, email address, member number and bookings, to run bookings, send tickets and tell you about changes to events.`,
+        `We email members when a new event is announced. Every email has an unsubscribe link, and you can turn these emails off in your profile.`,
         `We use Supabase (database), Stripe (payments), Resend (email) and Vercel (hosting) to run this service.`,
         `We may update this policy. The date at the top shows the latest version.`,
         `You can ask us to see, correct or delete your data at any time: ${MAIL}`
@@ -85,6 +86,7 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'プライバシー', items: [
         `個人データの管理者は Asian Social です。予約の管理、チケットの送付、イベントの変更のお知らせのために、お名前、メールアドレス、会員番号、予約履歴を保管します。`,
+        `新しいイベントが公開されたときに、会員の方へお知らせのメールを送ります。どのメールにも配信停止のリンクがあり、プロフィールからも停止できます。`,
         `このサービスの運営に、Supabase（データベース）、Stripe（決済）、Resend（メール）、Vercel（ホスティング）を利用しています。`,
         `このポリシーは更新することがあります。最新の版は、ページ上部の日付で確認できます。`,
         `ご自身のデータの確認・訂正・削除は、いつでも ${MAIL} までご依頼いただけます。`
@@ -125,6 +127,7 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'Privacy', items: [
         `Asian Social is verantwoordelijk voor je gegevens. We bewaren je naam, e-mailadres, lidnummer en boekingen om boekingen te regelen, tickets te sturen en je te informeren over wijzigingen.`,
+        `We mailen leden wanneer er een nieuw evenement is. Elke e-mail heeft een afmeldlink, en je kunt deze e-mails uitzetten in je profiel.`,
         `We gebruiken Supabase (database), Stripe (betalingen), Resend (e-mail) en Vercel (hosting) voor deze dienst.`,
         `We kunnen dit beleid bijwerken. De datum bovenaan toont de nieuwste versie.`,
         `Je kunt ons altijd vragen je gegevens in te zien, te corrigeren of te verwijderen: ${MAIL}`

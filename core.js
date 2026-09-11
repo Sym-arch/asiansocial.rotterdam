@@ -651,6 +651,34 @@ async function sendEventReminder(eventId) {
   return data;
 }
 
+/**
+ * 新しいイベントを会員へメールします（主催者のみ）。
+ * dryRun なら送らずに、届く人数と前回の送信だけを返します。
+ * @returns {Promise<{sent?:number, recipients:number, last?:{at:string|null, count:number}}>}
+ */
+async function announceEvent(eventId, dryRun) {
+  await ensureSession();
+  const res = await fetch('/api/announce', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + (SESSION ? SESSION.access_token : '')
+    },
+    body: JSON.stringify({ eventId, dryRun: !!dryRun })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.error === 'not_an_organiser') throw new Error('You are not an organiser on this site.');
+    if (data.error === 'sign_in_required') throw new Error('Please sign in again.');
+    if (data.error === 'not_configured')   throw new Error('Email sending is not set up yet.');
+    if (data.error === 'not_migrated')     throw new Error('Run supabase/13-announcements.sql in Supabase first.');
+    if (data.error === 'partly_sent')
+      throw new Error('Sent to ' + data.sent + ' of ' + data.recipients + ' members, then the mail service stopped: ' + data.message);
+    throw new Error(data.message || data.error || 'Could not send the email.');
+  }
+  return data;
+}
+
 /** 決済から戻ってきたとき、発券を待ちます。 */
 async function fetchOrderBySession(sessionId, tries = 8) {
   for (let i = 0; i < tries; i++) {
@@ -1095,6 +1123,15 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
       <button class="mini" type="button" id="mcSave" style="margin-top:14px">${esc(t('account.save'))}</button>
     </div>
 
+    ${'news_opt_in' in profile ? `
+    <div class="acct-block">
+      <h2>${esc(t('account.newsTitle'))}</h2>
+      <label class="consent" for="mcNews" style="margin-top:0">
+        <input type="checkbox" id="mcNews" ${profile.news_opt_in ? 'checked' : ''}>
+        <span>${esc(t('account.news'))}</span>
+      </label>
+    </div>` : ''}
+
     <div class="acct-block">
       <h2>${esc(t('account.bookings'))}</h2>
       ${shown.length
@@ -1286,6 +1323,20 @@ function wireMemberCard() {
       document.dispatchEvent(new CustomEvent('member:changed'));
     } catch (err) { toast(err.message, true); }
     btn.disabled = false;
+  });
+  /* チェックを変えたらすぐ保存します。保存ボタンを押し忘れて
+     「止めたはずなのに届く」とならないようにするためです */
+  const news = $('#mcNews');
+  if (news) news.addEventListener('change', async () => {
+    news.disabled = true;
+    try {
+      await saveProfile({ news_opt_in: news.checked });
+      toast(t(news.checked ? 'account.newsOn' : 'account.newsOff'));
+    } catch (err) {
+      news.checked = !news.checked;
+      toast(err.message, true);
+    }
+    news.disabled = false;
   });
   $('#mcSignOut').addEventListener('click', () => {
     signOut();
@@ -1491,7 +1542,10 @@ const evFromRow = r => ({
   earlyBird:        !!r.early_bird,
   priceEarlyCents:  r.price_early_cents,
   earlyBirdUntil:   r.early_bird_until,
-  capacity:         r.capacity
+  capacity:         r.capacity,
+  /* 会員へメールで知らせた記録（13-announcements.sql）。書き込みはサーバだけです */
+  announcedAt:      r.announced_at || null,
+  announcedCount:   r.announced_count || 0
 });
 const evToRow = e => ({
   id: e.id, title: e.title, date: e.date, start_time: e.start, end_time: e.end,

@@ -8,6 +8,8 @@
    ビルドもバージョン追従も不要になるためです。
    ========================================================= */
 
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
 /** 環境変数の名前は人によって違うので、よくある候補を順に見ます。 */
 export function env(...names) {
   for (const n of names) {
@@ -223,8 +225,11 @@ export async function sendMailBatch(messages) {
       to: [m.to],
       reply_to: REPLY_TO,
       subject: m.subject,
-      html: m.html
+      html: m.html,
+      ...(m.headers ? { headers: m.headers } : {})
     }));
+    /* Resend は1秒に2回までです。100人を超えると続けて叩くことになるので間を空けます */
+    if (i) await new Promise(r => setTimeout(r, 600));
     const res = await fetch('https://api.resend.com/emails/batch', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + RESEND_KEY, 'Content-Type': 'application/json' },
@@ -239,6 +244,20 @@ export async function sendMailBatch(messages) {
     sent += chunk.length;
   }
   return { sent };
+}
+
+/* --- 配信停止リンクの署名 ------------------------------------------------
+   会員ID だけのリンクだと、他人の ID に書き換えて止められてしまいます。
+   サーバだけが持つ鍵で署名し、合うものだけ受け付けます。 */
+
+export function unsubToken(userId) {
+  return createHmac('sha256', SERVICE_KEY).update('unsubscribe:' + userId).digest('hex').slice(0, 32);
+}
+
+export function unsubOk(userId, token) {
+  const a = Buffer.from(unsubToken(userId));
+  const b = Buffer.from(String(token || ''));
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export const randomHex = (bytes = 24) => {
