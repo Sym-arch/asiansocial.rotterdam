@@ -49,7 +49,7 @@ function listHTML() {
         ${evs.map(e => `<option value="${esc(e.id)}" ${e.id === CI_EVENT ? 'selected' : ''}>
           ${esc(fmtDate(e))} — ${esc(e.title)}</option>`).join('')}
       </select>
-      <input id="ciSearch" type="search" placeholder="Search by name" autocomplete="off">
+      <input id="ciSearch" type="search" placeholder="Search by name or code" autocomplete="off">
     </div>
 
     <div class="ci__bar">
@@ -74,12 +74,13 @@ function rowHTML(t) {
     ? new Date(t.checked_in_at).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
     : '';
   return `
-    <li class="ci__row ${used ? 'is-in' : ''}" data-name="${esc((t.holder_name || '').toLowerCase())}">
+    <li class="ci__row ${used ? 'is-in' : ''}"
+        data-name="${esc(((t.holder_name || '') + ' ' + doorCode(t.id)).toLowerCase())}">
       <label>
         <input type="checkbox" data-id="${esc(t.id)}" ${used ? 'checked' : ''}>
         <span class="ci__who">
           <b>${esc(t.holder_name)}</b>
-          <span>${esc(t.quantity)} ${t.quantity > 1 ? 'people' : 'person'}${at ? ' · ' + esc(at) : ''}</span>
+          <span><span class="ci__code">#${esc(doorCode(t.id))}</span> · ${esc(t.quantity)} ${t.quantity > 1 ? 'people' : 'person'}${at ? ' · ' + esc(at) : ''}</span>
         </span>
       </label>
     </li>`;
@@ -117,7 +118,8 @@ function flashSaved() {
 }
 
 function applyFilter(q) {
-  const needle = (q || '').trim().toLowerCase();
+  /* 「#A7K2」と打たれても引けるように、先頭の # は外します */
+  const needle = (q || '').trim().toLowerCase().replace(/^#/, '');
   $$('#ciList .ci__row').forEach(li => {
     li.hidden = needle && !li.dataset.name.includes(needle);
   });

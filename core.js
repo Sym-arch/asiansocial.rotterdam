@@ -831,6 +831,26 @@ async function adminRemove(userId) {
   catch (err) { throw adminError(err); }
 }
 
+/**
+ * 受付で使う短い番号（例 A7K2）。
+ * チケットの id から毎回同じ4文字を作るので、DB に列を足さずに済みます。
+ * 券面と受付の名簿の両方で同じ関数を使います。
+ * 0/O・1/I・2/Z・5/S・8/B は暗がりや口頭で取り違えるので外してあります。
+ */
+const DOOR_ALPHABET = 'ACDEFGHJKLMNPQRTUVWXY34679';
+function doorCode(id) {
+  const s = String(id || '');
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h >>>= 0;
+  let out = '';
+  for (let i = 0; i < 4; i++) {
+    out += DOOR_ALPHABET[h % DOOR_ALPHABET.length];
+    h = Math.floor(h / DOOR_ALPHABET.length);
+  }
+  return out;
+}
+
 /** secret だけでチケットを読みます（ログイン不要）。 */
 async function fetchTicket(secret) {
   const res = await fetch(sbUrl('rpc/get_ticket'), {
@@ -969,8 +989,9 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
   const profile = (MEMBER && MEMBER.profile) || {};
   const ship = (MEMBER && MEMBER.membership) || {};
   const tier = memberTier();
+  /* カードに載せるので短く（月と年だけ） */
   const since = ship.started_at
-    ? new Date(ship.started_at).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(ship.started_at).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long' })
     : '';
   const name = profile.name || profile.email || signedInAs();
 
@@ -1019,19 +1040,17 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
   };
 
   return `
-    <div class="washi">
-      <div class="washi__grain" aria-hidden="true"></div>
-      <div class="washi__head">
-        <img src="assets/logo.jpg" alt="" width="34" height="34">
-        <div><b>Asian Social</b><span>Rotterdam</span></div>
+    <section class="mcard" aria-label="${esc(t('account.card'))}">
+      <span class="mcard__ring" aria-hidden="true"></span>
+      <div class="mcard__top"><span>Asian Social · Rotterdam</span></div>
+      <div>
+        <div class="mcard__name">${esc(name)}</div>
+        <div class="mcard__meta">
+          <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>
+          ${since ? `<span>${esc(t('account.since'))} ${esc(since)}</span>` : ''}
+        </div>
       </div>
-      <p class="washi__label">${esc(t('account.card'))}</p>
-      <div class="washi__name">${esc(name)}</div>
-      <div class="washi__meta">
-        <span>${esc(t(tier === 'premium' ? 'account.tier.premium' : 'account.tier.free'))}</span>
-        ${since ? `<span>${esc(t('account.since'))} ${esc(since)}</span>` : ''}
-      </div>
-    </div>
+    </section>
 
     <div class="acct-block">
       <h2>${esc(t('account.name'))}</h2>

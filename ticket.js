@@ -28,37 +28,59 @@ function notFoundHTML() {
     <a class="btn btn--line" href="index.html">${esc(t('booked.home'))}</a>`);
 }
 
+/* 半券型。上が券面（誰が・何に・いつ）、切り取り線の下が受付用（人数と番号）。
+   受付の人は下半分だけ見れば通せます。 */
 function ticketHTML(tk) {
-  const ev   = findEvent(tk.event_id);
-  const date = tk.event_date
-    ? new Date(tk.event_date).toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
-    : '';
-  const used = tk.status === 'used';
-  const time = used && tk.checked_in_at
+  const ev    = findEvent(tk.event_id);
+  const title = (ev && ev.title) || tk.event_title || '';
+  const when  = tk.event_date || (ev && ev.date);
+  const date  = when
+    ? new Date(when).toLocaleDateString(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
+    : '\u2014';
+  const used  = tk.status === 'used';
+  const off   = tk.status === 'void';
+  const at    = used && tk.checked_in_at
     ? new Date(tk.checked_in_at).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
     : '';
 
   return ticketShell(`
-    <p class="label label--brand">${esc(t('ticket.label'))}</p>
+    <article class="stub ${used ? 'stub--used' : ''} ${off ? 'stub--off' : ''}">
+      <div class="stub__band">
+        ${used
+          ? `<span>✓ ${esc(at ? t('ticket.doneAt', { time: at }) : t('ticket.done'))}</span>`
+          : `<span>Asian Social Rotterdam</span><span>${esc(t('ticket.label'))}</span>`}
+      </div>
 
-    <h1 class="tk__name">${esc(tk.holder_name)}</h1>
-    <p class="tk__admits">${esc(t('ticket.admits', { n: tk.quantity }))}</p>
+      <div class="stub__body">
+        <p class="stub__event">${esc(title)}</p>
+        <h1 class="stub__name">${esc(tk.holder_name)}</h1>
+        <dl class="stub__facts">
+          <div><dt>${esc(t('ticket.date'))}</dt><dd>${esc(date)}</dd></div>
+          <div><dt>${esc(t('ticket.time'))}</dt><dd>${esc(ev ? fmtTime(ev) : '\u2014')}</dd></div>
+          ${ev && ev.venue ? `<div class="stub__wide"><dt>${esc(t('ticket.venue'))}</dt><dd>${esc(ev.venue)}</dd></div>` : ''}
+        </dl>
+      </div>
 
-    <div class="tk__event">
-      <b>${esc(tk.event_title || '')}</b>
-      <span>${esc(date)}${ev ? ' · ' + esc(fmtTime(ev)) : ''}</span>
-      ${ev && ev.venue ? `<span>${esc(ev.venue)}</span>` : ''}
-    </div>
+      <div class="stub__perf" aria-hidden="true"></div>
 
-    ${tk.status === 'void'
+      <div class="stub__foot">
+        <div>
+          <span class="stub__k">${esc(t('ticket.admitsLabel'))}</span>
+          <b class="stub__qty">${esc(tk.quantity)}</b>
+        </div>
+        <div class="stub__code">
+          <span class="stub__k">${esc(t('ticket.code'))}</span>
+          <b>#${esc(doorCode(tk.id))}</b>
+        </div>
+      </div>
+
+    </article>
+
+    ${off
       ? `<p class="tk__state tk__state--off">${esc(t('ticket.void'))}</p>`
-      : used
-        ? `<p class="tk__state tk__state--done">
-             ${esc(time ? t('ticket.doneAt', { time }) : t('ticket.done'))}</p>`
-        : `<p class="tk__hint tk__hint--lead">${esc(t('ticket.showStaff'))}</p>`}
+      : used ? '' : `<p class="tk__hint">${esc(t('ticket.showStaff'))}</p>`}
 
-    ${cancelBlockHTML(tk)}`,
-    used ? 'tk--used' : '');
+    ${cancelBlockHTML(tk)}`);
 }
 
 /* 取り消しの導線。
