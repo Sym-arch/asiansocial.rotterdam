@@ -330,41 +330,6 @@ function fillReminderSelect() {
   if (keep && EVENTS.some(e => e.id === keep)) rem.value = keep;
 }
 
-/* 新しいイベントを会員へメールで知らせます。
-   押した瞬間には送りません。何人に届くか、前に送っていないかを
-   サーバに聞いてから確認を取ります。取り消せない一斉送信だからです。 */
-async function announceFlow(eventId, btn) {
-  const ev = findEvent(eventId);
-  if (!ev) return;
-  const was = btn ? btn.textContent : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Checking…'; }
-  try {
-    const info = await announceEvent(ev.id, true);
-    if (!info.recipients) return toast('No members have new-event emails turned on.', true);
-
-    const again = info.last && info.last.at
-      ? '\n\nThis event was already emailed on ' +
-        new Date(info.last.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) +
-        ' to ' + info.last.count + ' member(s). Sending again emails everyone a second time.'
-      : '';
-    const ask = 'Email "' + ev.title + '" to ' + info.recipients + ' member' + (info.recipients > 1 ? 's' : '') + '?' +
-                '\n\nThey receive it straight away. Every email has an unsubscribe link.' + again;
-    if (!confirm(ask)) return;
-
-    if (btn) btn.textContent = 'Sending…';
-    const out = await announceEvent(ev.id, false);
-    ev.announcedAt = new Date().toISOString();
-    ev.announcedCount = out.sent;
-    saveEvents(); renderAdmin();
-    toast('Emailed ' + out.sent + ' member(s).');
-  } catch (err) {
-    toast(err.message, true);
-  } finally {
-    /* 送れたときは一覧を描き直すので、元のボタンはもう画面にありません */
-    if (btn && btn.isConnected) { btn.disabled = false; btn.textContent = was; }
-  }
-}
-
 /** 表とリマインダーが見ているイベント。空文字は「すべて」です。 */
 const rsvpFilter = () => (($('#rsvpEvent') || {}).value || '');
 
@@ -386,13 +351,10 @@ function renderAdmin() {
         <strong>${esc(ev.title)}
           ${ev.brand === 'en' ? '<span class="pill">En.</span>' : ''}
           ${isPast(ev) ? '<span class="pill">past</span>' : ''}</strong>
-        <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)} · ${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} RSVPs${ev.announcedAt
-          ? ' · emailed to ' + esc(ev.announcedCount) + ' member(s) on ' + esc(new Date(ev.announcedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))
-          : ''}</span>
+        <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)} · ${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} RSVPs</span>
       </div>
       <div class="admin-row__act">
         <a class="mini" href="${esc(eventUrl(ev.id))}" target="_blank" rel="noopener">View page</a>
-        ${isPast(ev) ? '' : `<button class="mini" type="button" data-announce-ev="${esc(ev.id)}">Email members</button>`}
         <button class="mini" type="button" data-edit-ev="${esc(ev.id)}">Edit</button>
         <button class="mini" type="button" data-dup-ev="${esc(ev.id)}">Duplicate</button>
         <button class="mini mini--danger" type="button" data-del-ev="${esc(ev.id)}">Delete</button>
@@ -531,12 +493,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Admin click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-close],[data-announce-ev],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-msg],[data-del-org]');
+    const t = e.target.closest('[data-close],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-msg],[data-del-org]');
     if (!t) return;
 
     if (t.hasAttribute('data-close')) { closeModal(t.closest('.modal')); return; }
-
-    if (t.dataset.announceEv) { announceFlow(t.dataset.announceEv, t); return; }
 
     if (t.dataset.editEv) {
       eventFormFill(EVENTS.find(x => x.id === t.dataset.editEv));
@@ -721,9 +681,6 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
     saveEvents(); eventFormFill(null); refreshPublic(); renderAdmin();
     try { await pushEvent(rec); } catch (err) { return toast(err.message, true); }
     toast(existing ? 'Event updated' : 'Event published');
-    /* 作ったばかりの回は、そのまま会員へ知らせられるようにします。
-       人数を見せる確認が出るので、ここで勝手に送られることはありません */
-    if (!existing && !isPast(rec)) announceFlow(rec.id, null);
   });
 
   /* Admin: reminders + exports */
