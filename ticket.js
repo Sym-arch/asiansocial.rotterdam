@@ -53,7 +53,7 @@ function ticketHTML(tk) {
 
       <div class="stub__body">
         <p class="stub__event">${esc(title)}</p>
-        <h1 class="stub__name">${esc(tk.holder_name)}</h1>
+        <h1 class="stub__name">${esc(personName(tk.holder_name))}</h1>
         <dl class="stub__facts">
           <div><dt>${esc(t('ticket.date'))}</dt><dd>${esc(date)}</dd></div>
           <div><dt>${esc(t('ticket.time'))}</dt><dd>${esc(ev ? fmtTime(ev) : '\u2014')}</dd></div>

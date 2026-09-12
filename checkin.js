@@ -80,7 +80,7 @@ function rowHTML(t) {
       <label>
         <input type="checkbox" data-id="${esc(t.id)}" ${used ? 'checked' : ''}>
         <span class="ci__who">
-          <b>${esc(t.holder_name)}</b>
+          <b>${esc(personName(t.holder_name))}</b>
           <span><span class="ci__code">#${esc(doorCode(t.id))}</span>${t.member_no ? ' · ' + esc(fmtMemberNo(t.member_no)) : ''} · ${esc(t.quantity)} ${t.quantity > 1 ? 'people' : 'person'}${at ? ' · ' + esc(at) : ''}</span>
         </span>
       </label>

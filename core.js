@@ -220,6 +220,13 @@ async function uploadImage(file) {
 
 const slug = s => String(s).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
 const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s));
+/* 古い予約には、名前の代わりにメールアドレスが入っています。
+   券面や受付名簿にアドレスをそのまま大きく出したくないので、
+   @ より前だけにします。行そのものは set_my_name が直します。 */
+const personName = s => {
+  const v = String(s == null ? '' : s).trim();
+  return isEmail(v) ? v.split('@')[0] : v;
+};
 const eventUrl = id => 'event.html?id=' + encodeURIComponent(id);
 /* Absolute URL against the page the visitor is on — works on any domain,
    so emails can link back without hard-coding the host. */
@@ -1000,9 +1007,26 @@ async function renderMemberModal() {
 
   if (isSignedIn()) {
     body.innerHTML = '<div class="empty" style="padding:40px 0">\u2026</div>';
-    const [, rsvps, tickets, admin] = await Promise.all([
+    let [, rsvps, tickets, admin] = await Promise.all([
       loadMember(), loadMyRsvps(), loadMyTickets(), isAdminUser().catch(() => false)
     ]);
+
+    /* 名前の代わりにメールアドレスが入っている行があれば、黙って直します。
+       本人が気づいて操作するものではないので、開いたときに済ませます。
+       14-holder-name.sql が未適用なら、そのままの表示で続けます。 */
+    const myName = ((MEMBER && MEMBER.profile && MEMBER.profile.name) || '').trim();
+    const stale = myName && (rsvps.some(r => isEmail(r.name || '')) ||
+                             tickets.some(tk => isEmail(tk.holder_name || '')));
+    if (stale) {
+      try {
+        await callRpc('set_my_name', { p_name: myName });
+        const fresh = await Promise.all([loadMyRsvps(), loadMyTickets()]);
+        rsvps = fresh[0]; tickets = fresh[1];
+      } catch (err) {
+        console.warn('name sync failed:', err.message);
+      }
+    }
+
     body.innerHTML = memberCardHTML(rsvps, tickets, admin);
     wireMemberCard();
   } else {
@@ -1039,7 +1063,11 @@ async function ensureTicket(ev, r) {
     const issued = await issueTicket(ev, {
       id:     r.id,
       email:  r.email || signedInAs(),
-      name:   r.name || (MEMBER && MEMBER.profile && MEMBER.profile.name) || signedInAs(),
+      /* 予約に入っているのがアドレスなら、プロフィールの名前を優先します。
+         ここで拾わないと、直したはずの券面にまたアドレスが載ります。 */
+      name:   (!isEmail(r.name || '') && r.name) ||
+              (MEMBER && MEMBER.profile && MEMBER.profile.name) ||
+              personName(r.name || signedInAs()),
       guests: r.guests || 1
     });
     return issued.secret;
@@ -1443,6 +1471,13 @@ async function saveProfile(fields) {
   });
   if (!res.ok) throw new Error('Could not save (' + res.status + ')');
   if (MEMBER && MEMBER.profile) Object.assign(MEMBER.profile, fields);
+
+  /* 予約とチケットに残っている名前も揃えます。ここを飛ばすと、
+     プロフィールだけ直って券面はアドレスのまま、になります。 */
+  if (fields && fields.name) {
+    try { await callRpc('set_my_name', { p_name: fields.name }); }
+    catch (err) { console.warn('name not synced to tickets:', err.message); }
+  }
 }
 
 /**
