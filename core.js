@@ -698,6 +698,8 @@ async function issueTicket(ev, rsvp) {
   const secret = newSecret();
   const orderId = 'o' + rsvp.id;
 
+  /* 同じ予約から二度目に呼ばれることがあります（あとからの発券）。
+     注文だけ先にできている場合は、それを使って先へ進みます */
   await sbInsert('orders', {
     id: orderId,
     user_id: (SESSION && SESSION.user_id) || null,
@@ -711,6 +713,8 @@ async function issueTicket(ev, rsvp) {
     total_cents: 0,
     tier_at_purchase: memberTier(),
     status: 'paid'
+  }).catch(err => {
+    if (!/409|duplicate/i.test(err.message)) throw err;
   });
 
   await sbInsert('tickets', {
@@ -1017,7 +1021,40 @@ async function renderMemberModal() {
  * @param rsvps   予約の一覧
  * @param tickets 自分のチケット（secret 込み）。予約と event_id で突き合わせます
  */
+/* マイページに出している予約。あとから発券するときに参照します */
+let MY_RSVPS = [];
+
+/**
+ * 予約にチケットが無いときに、その場で発券します。
+ *
+ * 無料の回だけです。有料の回はお金を受け取ってからサーバ側で作ります。
+ * ここで作れるようにすると、払わずにチケットが出てしまいます。
+ *
+ * 予約した時に発券が失敗していた回や、発券の仕組みを入れる前の予約も、
+ * これで開けるようになります。
+ */
+async function ensureTicket(ev, r) {
+  if (isPaid(ev)) throw new Error(t('account.ticketPaid'));
+  try {
+    const issued = await issueTicket(ev, {
+      id:     r.id,
+      email:  r.email || signedInAs(),
+      name:   r.name || (MEMBER && MEMBER.profile && MEMBER.profile.name) || signedInAs(),
+      guests: r.guests || 1
+    });
+    return issued.secret;
+  } catch (err) {
+    /* すでに同じ id のチケットがあると入りません。自分の分から拾い直します */
+    const mine = await loadMyTickets();
+    const tk = mine.find(x => String(x.id) === 't' + r.id) ||
+               mine.find(x => x.event_id === r.event_id);
+    if (tk) return tk.secret;
+    throw err;
+  }
+}
+
 function memberCardHTML(rsvps, tickets, isOrganiser) {
+  MY_RSVPS = rsvps || [];
   const profile = (MEMBER && MEMBER.profile) || {};
   const ship = (MEMBER && MEMBER.membership) || {};
   const tier = memberTier();
@@ -1028,8 +1065,17 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
     : '';
   const name = profile.name || profile.email || signedInAs();
 
+  /* 予約からチケットを引く手がかりを二つ持ちます。
+     ふつうは回（event_id）で引けますが、同じ回に二度予約した行や、
+     event_id が入っていないチケットでは引けません。無料予約のチケットは
+     id が 't' + 予約の id なので、そちらからも引けるようにします。 */
   const byEvent = new Map();
-  (tickets || []).forEach(tk => { if (!byEvent.has(tk.event_id)) byEvent.set(tk.event_id, tk); });
+  const byId    = new Map();
+  (tickets || []).forEach(tk => {
+    if (tk.event_id && !byEvent.has(tk.event_id)) byEvent.set(tk.event_id, tk);
+    byId.set(String(tk.id), tk);
+  });
+  const ticketFor = r => byId.get('t' + r.id) || (r.event_id ? byEvent.get(r.event_id) : null) || null;
 
   /* いま存在する回の予約だけを出します。
      予約はイベントへの外部キーを張っていないので、イベントが消えても
@@ -1054,8 +1100,17 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
            .map(r => ({ id: r.id, event_id: r.event_id, title: r.event_title })));
   }
 
+  /* リンクが出ない予約があったら、理由を追えるように書き出します。
+     「チケットが無い」のか「突き合わせに失敗した」のかで直す場所が違います */
+  const noTicket = shown.filter(r => !ticketFor(r));
+  if (noTicket.length) {
+    console.info('bookings with no ticket link:',
+      noTicket.map(r => ({ rsvp: r.id, event_id: r.event_id })),
+      'my tickets:', (tickets || []).map(tk => ({ id: tk.id, event_id: tk.event_id, status: tk.status })));
+  }
+
   const bookingRow = r => {
-    const tk = byEvent.get(r.event_id);
+    const tk = ticketFor(r);
     /* 控えてある名前は予約した当時のものです。イベント名を変えると
        ここだけ古い名前で残ります。いまある回は、いまの名前で出します。 */
     const ev = findEvent(r.event_id);
@@ -1067,8 +1122,14 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
     return `<li>
       <b>${esc(title)}</b>
       <span>${esc(when)} \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span>
-      ${tk ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
-                ${esc(t('account.openTicket'))}</a>` : ''}
+      ${tk
+        ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
+             ${esc(t('account.openTicket'))}</a>`
+        : (ev && !isPaid(ev))
+          /* 無料の回でチケットが無いときは、押された時点で作ります */
+          ? `<button class="acct-ticket" type="button" data-ticket="${esc(r.id)}">
+               ${esc(t('account.openTicket'))}</button>`
+          : ''}
     </li>`;
   };
 
@@ -1287,6 +1348,21 @@ function wireMemberCard() {
     } catch (err) { toast(err.message, true); }
     btn.disabled = false;
   });
+  /* 無料の回でチケットがまだ無い予約。押されたら作って、そのまま開きます */
+  $$('[data-ticket]').forEach(btn => btn.addEventListener('click', async () => {
+    const r  = MY_RSVPS.find(x => String(x.id) === btn.dataset.ticket);
+    const ev = r && findEvent(r.event_id);
+    if (!r || !ev) return;
+    const was = btn.textContent;
+    btn.disabled = true; btn.textContent = t('account.openingTicket');
+    try {
+      location.href = ticketUrl(await ensureTicket(ev, r));
+    } catch (err) {
+      toast(err.message, true);
+      btn.disabled = false; btn.textContent = was;
+    }
+  }));
+
   $('#mcSignOut').addEventListener('click', () => {
     signOut();
     location.href = homeUrl();

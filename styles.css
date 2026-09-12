@@ -960,6 +960,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   letter-spacing:.12em;text-transform:uppercase;color:var(--brand-text);
   text-decoration:none;border-bottom:1px solid currentColor;
 }
+/* あとから発券する行はボタンです。見た目はリンクと同じに揃えます */
+button.acct-ticket{background:none;border:0;border-bottom:1px solid currentColor;padding:0;cursor:pointer;font-family:inherit}
+button.acct-ticket[disabled]{opacity:.5;cursor:default}
 
 /* =========================================================
    En. — ホームの中の日本コミュニティのセクション

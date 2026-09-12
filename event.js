@@ -124,6 +124,69 @@ function bookingHTML(ev) {
     </form>`;
 }
 
+/* 「席を予約する」を押したら、予約欄をその場で中央に開きます。
+   以前は同じページの下へ飛ぶだけでした。電話では本文がとても長いので、
+   押しても何も起きていないように見えていました。
+
+   欄は作り直さず、そのまま動かします。作り直すと、入力中の内容も
+   組み込んだ動きも消えてしまうためです。 */
+let BOOK_MODAL_OPEN = false;
+
+function bookingModalEl() {
+  let el = $('#bookModal');
+  if (el) return el;
+  el = document.createElement('div');
+  el.className = 'modal modal--sm';
+  el.id = 'bookModal';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-modal', 'true');
+  el.innerHTML =
+    '<div class="modal__scrim" data-close></div>' +
+    '<div class="modal__panel">' +
+      '<div class="modal__head"><h3 id="bookModalTitle"></h3>' +
+        '<button class="modal__close" type="button" data-close aria-label="Close">\u2715</button></div>' +
+      '<div class="modal__body" id="bookModalBody"></div>' +
+    '</div>';
+  document.body.appendChild(el);
+  el.addEventListener('click', e => {
+    if (e.target === el || e.target.closest('[data-close]')) closeBookingModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && BOOK_MODAL_OPEN) closeBookingModal();
+  });
+  return el;
+}
+
+function openBookingModal() {
+  const panel = $('#book > div');
+  if (!panel) return;
+  const el = bookingModalEl();
+  /* 中の見出しが「席を予約する」なので、上にはイベント名を出します。
+     同じ言葉が上下に並ぶと、どちらが見出しなのか分からなくなります */
+  const h1 = document.querySelector('.ev-hero h1');
+  $('#bookModalTitle').textContent = (h1 && h1.textContent.trim()) || t('rsvp.title');
+  /* 描き直しの前に開いていた欄が残っていることがあります。入れ替えます */
+  $('#bookModalBody').innerHTML = '';
+  $('#bookModalBody').appendChild(panel);
+  el.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+  BOOK_MODAL_OPEN = true;
+  const first = $('#bookModalBody input:not([type=checkbox]), #bookModalBody select');
+  if (first) first.focus();
+}
+
+function closeBookingModal() {
+  const el = $('#bookModal');
+  if (!el) return;
+  /* 閉じたら元の位置へ戻します。置き去りにすると、次に開いたときに空になります */
+  const panel = $('#bookModalBody > *');
+  const home = $('#book');
+  if (panel && home) home.appendChild(panel);
+  el.classList.remove('is-open');
+  document.body.style.overflow = '';
+  BOOK_MODAL_OPEN = false;
+}
+
 function renderEvent(ev) {
   const done = isPast(ev);
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
@@ -150,7 +213,7 @@ function renderEvent(ev) {
           </div>
 
           <div class="hero__cta">
-            ${done ? '' : `<a class="btn btn--brand" href="#book">${esc(t('hero.cta1'))}</a>`}
+            ${done ? '' : `<a class="btn btn--brand" href="#book" data-book-open>${esc(t('hero.cta1'))}</a>`}
             <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">${esc(t('ev.gcal'))}</a>
             ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('ev.maps'))}</a>` : ''}
           </div>
@@ -207,6 +270,15 @@ function renderEvent(ev) {
   const bookLabel = () => isPaid(ev)
     ? t('rsvp.payBtn', { price: priceFor(ev).label })
     : t(isSignedIn() ? 'rsvp.submit' : 'rsvp.bookBtn');
+
+  /* JavaScript が動かないときは、これまでどおり下の予約欄へ飛びます */
+  $$('[data-book-open]').forEach(b => b.addEventListener('click', e => {
+    e.preventDefault();
+    openBookingModal();
+  }));
+  /* サインインなどで描き直したときは、開いたままにします。
+     「#book」付きで開かれたとき（翻訳ページからの案内など）も開きます */
+  if (BOOK_MODAL_OPEN || location.hash === '#book') openBookingModal();
 
   const form = $('#bookForm');
   if (form) form.addEventListener('submit', async e => {
