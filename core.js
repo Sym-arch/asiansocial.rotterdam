@@ -1594,7 +1594,9 @@ async function sbDelete(table, id) {
 const evFromRow = r => ({
   id: r.id, title: r.title, date: r.date, start: r.start_time, end: r.end_time,
   venue: r.venue, address: r.address, price: r.price, image: r.image, description: r.description,
-  brand: r.brand || 'asian-social',
+  /* DB は 'en-community'、画面は 'en' を使います。ここで橋渡ししないと、
+     En. の回を保存するたびに check 制約で弾かれます（03-members.sql）。 */
+  brand: r.brand === 'en-community' ? 'en' : (r.brand || 'asian-social'),
   priceCents:       r.price_cents || 0,
   currency:         r.currency || 'EUR',
   memberDiscount:   !!r.member_discount,
@@ -1607,7 +1609,7 @@ const evFromRow = r => ({
 const evToRow = e => ({
   id: e.id, title: e.title, date: e.date, start_time: e.start, end_time: e.end,
   venue: e.venue, address: e.address, image: e.image, description: e.description,
-  brand: e.brand || 'asian-social',
+  brand: e.brand === 'en' ? 'en-community' : (e.brand || 'asian-social'),
   /* price は表示用の自由入力だった列。金額の計算は price_cents 側で行い、
      price には整形した文字列を入れて古い表示との互換を保ちます。 */
   price: priceLabel(e.priceCents || 0, e.currency || 'EUR'),
@@ -1701,7 +1703,18 @@ async function loadContent() {
 }
 
 /* Admin writes: keep the local copy and the table in step. */
-const pushEvent = rec => supabaseReady() ? sbUpsert('events', evToRow(rec)) : Promise.resolve();
+/**
+ * イベントを Supabase に保存します。
+ *
+ * 書き込みは管理者のサインイン済みセッションでしか通りません（02-lockdown.sql）。
+ * トークンは1時間で切れるので、送る前に必ず入れ直します。ここを省くと、
+ * 管理画面を開いたまましばらく経ったあとの保存が 401 で落ちます。
+ */
+async function pushEvent(rec) {
+  if (!supabaseReady()) return;
+  if (!(await ensureSession())) throw new Error('Your sign-in has expired. Sign in again, then save.');
+  await sbUpsert('events', evToRow(rec));
+}
 /**
  * イベントを消します。
  * 予約とチケットは events への外部キーを張っていないので、消しても
@@ -1710,6 +1723,7 @@ const pushEvent = rec => supabaseReady() ? sbUpsert('events', evToRow(rec)) : Pr
  */
 async function dropEvent(id) {
   if (!supabaseReady()) return;
+  if (!(await ensureSession())) throw new Error('Your sign-in has expired. Sign in again, then delete.');
   await sbDelete('events', id);
   /* 受付名簿から消します。失敗しても、イベントの削除は成立させます */
   try {

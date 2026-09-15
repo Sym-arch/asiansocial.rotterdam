@@ -507,10 +507,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const src = EVENTS.find(x => x.id === t.dataset.dupEv);
       if (!src) return;
       const copy = Object.assign({}, src, { id: uid(), title: src.title + ' (copy)' });
-      EVENTS.push(copy);
-      saveEvents(); refreshPublic(); renderAdmin();
-      pushEvent(copy).catch(err => toast(err.message, true));
-      toast('Event duplicated — edit the date before publishing.');
+      /* 保存が通ってから一覧に出します（新規作成と同じ理由） */
+      pushEvent(copy).then(() => {
+        EVENTS.push(copy);
+        saveEvents(); refreshPublic(); renderAdmin();
+        toast('Event duplicated — edit the date before publishing.');
+      }).catch(err => toast('Not saved: ' + err.message, true));
       return;
     }
     if (t.dataset.delEv) {
@@ -677,9 +679,20 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
       image,
       description: $('#aeDesc').value.trim()
     };
+    /* 先に Supabase へ保存し、通ってから画面に出します。
+       逆にすると、保存に失敗しても一覧には残り、再読み込みで消えます。
+       「投稿したのに次に見たら無い」はこれが原因でした。 */
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      await pushEvent(rec);
+    } catch (err) {
+      btn.disabled = false; btn.textContent = label;
+      return toast('Not saved: ' + err.message, true);
+    }
+    btn.disabled = false; btn.textContent = label;
+
     if (existing) Object.assign(existing, rec); else EVENTS.push(rec);
     saveEvents(); eventFormFill(null); refreshPublic(); renderAdmin();
-    try { await pushEvent(rec); } catch (err) { return toast(err.message, true); }
     toast(existing ? 'Event updated' : 'Event published');
   });
 
