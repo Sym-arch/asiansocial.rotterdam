@@ -18,6 +18,14 @@ import { missingEnv, sb, userFromToken, priceFor, stripe, priceLabel, readJson, 
    Stripe の下限が30分です。枠の押さえは作らず、これだけで十分としています。 */
 const SESSION_MINUTES = 30;
 
+/* カードの利用明細に出す名前。22文字までで、< > \ " ' * は使えません。 */
+const STATEMENT_NAME = 'ASIAN SOCIAL';
+const DESCRIPTOR_TRIES = [
+  { statement_descriptor: STATEMENT_NAME },
+  { statement_descriptor_suffix: STATEMENT_NAME },
+  null
+];
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'method_not_allowed' });
 
@@ -92,8 +100,13 @@ export default async function handler(req, res) {
     /* 控えてある顧客IDが、いまのアカウントに無いことがあります。
        Stripe のアカウントを移したときや、Stripe 側で顧客を消したときです。
        そこで止めると誰も決済できなくなるので、作り直して一度だけやり直します。 */
-    const openCheckout = () => stripe('checkout/sessions', {
+    const openCheckout = (descriptor) => stripe('checkout/sessions', {
       mode: 'payment',
+      /* 明細書に出る名前。この Stripe アカウントは別事業と共用で、既定は
+         その事業の名前です。そのままだと参加者の利用明細に身に覚えのない
+         名前が並び、問い合わせや支払いの取り消しにつながります。
+         この決済のぶんだけ差し替えます（別事業の明細は変わりません）。 */
+      ...(descriptor ? { payment_intent_data: descriptor } : {}),
       customer: customerId,
       client_reference_id: user.id,
       expires_at: Math.floor(Date.now() / 1000) + SESSION_MINUTES * 60,
@@ -122,14 +135,30 @@ export default async function handler(req, res) {
       }
     });
 
+    /* 全文の差し替えは、アカウントによっては許可されていません。
+       断られたら接尾辞だけ、それも駄目なら付けずに進みます。
+       ここで止めると、明細の見た目のために誰も決済できなくなります。 */
+    const create = async () => {
+      let last;
+      for (const d of DESCRIPTOR_TRIES) {
+        try { return await openCheckout(d); }
+        catch (err) {
+          if (!/statement_descriptor/i.test(err.message)) throw err;
+          console.warn('statement descriptor rejected:', err.message);
+          last = err;
+        }
+      }
+      throw last;
+    };
+
     let session;
     try {
-      session = await openCheckout();
+      session = await create();
     } catch (err) {
       if (!/No such customer|resource_missing/i.test(err.message)) throw err;
       console.warn('stale customer, recreating:', customerId);
       customerId = await makeCustomer();
-      session = await openCheckout();
+      session = await create();
     }
 
     return send(res, 200, {
