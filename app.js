@@ -187,10 +187,11 @@ function renderCalendar() {
   grid.innerHTML = cells.map(c => {
     if (c.out) return `<div class="cal__cell is-out"><span class="cal__num">${c.day}</span></div>`;
     const key = y + '-' + pad(m + 1) + '-' + pad(c.day);
-    /* カレンダーも同じで、終わった回は出しません */
-    const evs = EVENTS.filter(e => e.date === key && !isPast(e)).sort((a, b) => a.start.localeCompare(b.start));
+    /* カレンダーには終わった回も残します。記録として見えるほうがよいためです。
+       一覧（What's coming up）からは外してあるので、混ざるのはここだけです */
+    const evs = EVENTS.filter(e => e.date === key).sort((a, b) => a.start.localeCompare(b.start));
     const chips = evs.map(ev => {
-      return `<a class="cal__ev"
+      return `<a class="cal__ev ${isPast(ev) ? 'is-past' : ''}"
                 href="${esc(eventUrl(ev.id))}" title="${esc(ev.start + ' ' + ev.title)}"
                 aria-label="${esc(ev.title + ' — ' + fmtDate(ev))}">${esc(ev.start)} ${esc(ev.title)}</a>`;
     }).join('');
