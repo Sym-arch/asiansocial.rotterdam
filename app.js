@@ -33,9 +33,10 @@ function renderHeroNext() {
    --------------------------------------------------------- */
 function renderEventRail() {
   const track = $('#eventsTrack');
+  /* 終わった回は並べません。これから行ける回だけを見せます
+     （管理画面では引き続き全部見えます） */
   const next = upcoming();
-  const past = EVENTS.filter(isPast).sort(byDate).reverse().slice(0, 2);
-  const all = next.concat(past);
+  const all = next;
   track.innerHTML = all.length
     ? all.map(eventCardHTML).join('')
     : `<div class="empty empty--rail">
@@ -186,9 +187,10 @@ function renderCalendar() {
   grid.innerHTML = cells.map(c => {
     if (c.out) return `<div class="cal__cell is-out"><span class="cal__num">${c.day}</span></div>`;
     const key = y + '-' + pad(m + 1) + '-' + pad(c.day);
-    const evs = EVENTS.filter(e => e.date === key).sort((a, b) => a.start.localeCompare(b.start));
+    /* カレンダーも同じで、終わった回は出しません */
+    const evs = EVENTS.filter(e => e.date === key && !isPast(e)).sort((a, b) => a.start.localeCompare(b.start));
     const chips = evs.map(ev => {
-      return `<a class="cal__ev ${isPast(ev) ? 'is-past' : ''}"
+      return `<a class="cal__ev"
                 href="${esc(eventUrl(ev.id))}" title="${esc(ev.start + ' ' + ev.title)}"
                 aria-label="${esc(ev.title + ' — ' + fmtDate(ev))}">${esc(ev.start)} ${esc(ev.title)}</a>`;
     }).join('');
@@ -248,7 +250,7 @@ async function requireAdmin() {
   if (onProxy()) { location.href = nativeUrl('en', '#admin'); return; }
 
   if (!isAdmin && isSignedIn()) await refreshAdminFlag();
-  if (isAdmin) { renderAdmin(); openModal('#adminModal'); refreshRsvps(); return; }
+  if (isAdmin) { renderAdmin(); openModal('#adminModal'); prepAdminPanel(); refreshRsvps(); return; }
 
   /* ここへ来るのは、押した時点で権限が外れていた場合だけです。
      ボタンはもともと管理者にしか出していません。 */
@@ -426,6 +428,22 @@ function eventFormFill(ev) {
     : (supabaseReady() ? 'Uploaded to your Supabase bucket.' : 'Kept in this browser until Supabase is configured.');
   $('#adminEventFormTitle').textContent = ev ? 'Edit event' : 'Add a new event';
   $('#aeSubmit').textContent = ev ? 'Save changes' : 'Publish event';
+  /* たたんであっても、編集を押したら開きます */
+  const fold = $('#aeFold');
+  if (fold && ev) fold.open = true;
+}
+
+/**
+ * 管理画面を開くときの下ごしらえ。
+ * - 電話では入力フォームをたたみます（一覧が先に見えるように）
+ * - タブを上に貼り付ける位置を、見出しの実寸から決めます
+ */
+function prepAdminPanel() {
+  const fold = $('#aeFold');
+  if (fold) fold.open = !window.matchMedia('(max-width:720px)').matches;
+  const modal = $('#adminModal');
+  const head = modal && modal.querySelector('.modal__head');
+  if (modal && head) modal.style.setProperty('--admin-head-h', head.offsetHeight + 'px');
 }
 
 function toCsv(rows) {

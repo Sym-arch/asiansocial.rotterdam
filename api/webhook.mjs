@@ -43,7 +43,11 @@ export default async function handler(req, res) {
     if (!event) return send(res, 400, { error: 'no_body' });
   }
 
-  if (event.type !== 'checkout.session.completed') {
+  /* 支払いが後から確定する手段（銀行振替系など）では、完了の知らせが
+     async_payment_succeeded で届きます。ここで無視すると、払ったのに
+     券が出ません。Stripe 側の送信対象にも同じイベントを足してください。 */
+  const HANDLED = ['checkout.session.completed', 'checkout.session.async_payment_succeeded'];
+  if (!HANDLED.includes(event.type)) {
     return send(res, 200, { received: true, ignored: event.type });
   }
 

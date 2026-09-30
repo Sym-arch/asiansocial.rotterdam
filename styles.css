@@ -1083,3 +1083,77 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 }
 .consent input{flex:none;width:18px;height:18px;margin:2px 0 0;accent-color:var(--brand);cursor:pointer}
 .consent a{color:var(--brand-text)}
+
+
+/* =========================================================
+   管理画面（読みやすさと、電話での操作しやすさ）
+
+   電話では画面いっぱいのモーダルとして開きます。見出しとタブが
+   一緒に流れて消えると、閉じることも切り替えることもできなく
+   なるので、その2つは上に貼り付けたままにします。
+   貼り付ける位置は、見出しの実寸から prepAdminPanel() が入れます。
+   ========================================================= */
+#adminModal .modal__head{position:sticky;top:0;z-index:3;background:var(--paper)}
+#adminModal .tabs{
+  position:sticky;top:var(--admin-head-h,60px);z-index:2;background:var(--paper);
+  margin:0 0 22px;padding-top:6px;gap:18px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+}
+#adminModal .tabs button{white-space:nowrap;padding-bottom:12px}
+
+/* 数字は囲みます。線だけだと、どこまでが1つの数字か分かりません */
+.kpi{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;border-top:0;margin-bottom:24px}
+.kpi div{padding:14px 16px;border:1px solid var(--rule);border-radius:10px;background:var(--paper-2)}
+.kpi div:last-child{border-right:1px solid var(--rule)}
+
+/* 長い入力欄はたたんでおけるようにします */
+.fold{border-top:2px solid var(--ink);margin-bottom:30px}
+.fold__sum{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:15px 0;cursor:pointer;list-style:none;
+}
+.fold__sum::-webkit-details-marker{display:none}
+.fold__title{
+  font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);
+}
+.fold__mark{
+  width:11px;height:11px;flex:none;margin-right:4px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:rotate(45deg);transition:transform .2s ease;
+}
+.fold[open] .fold__mark{transform:rotate(-135deg)}
+.fold .admin-form{border-top:0;padding-top:0}
+
+/* 一覧の行は、名前と補足の行間を空けて読みやすくします */
+.admin-row{padding:16px 0}
+.admin-row__main strong{font-size:1rem;line-height:1.35}
+.admin-row__main > span{display:block;margin-top:4px;line-height:1.5}
+
+/* 絞り込みと書き出しのかたまり */
+.admin-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.admin-select{
+  font:inherit;font-size:.82rem;padding:9px 10px;max-width:100%;color:inherit;
+  border:1px solid var(--rule);border-radius:8px;background:transparent;
+}
+
+/* 横に長い表は、行を目で追えないと読めません。1行おきに薄く敷きます */
+.inbox-table th,.inbox-table td{padding:12px 14px 12px 0}
+.inbox-table tbody tr:nth-child(odd){background:color-mix(in srgb,var(--ink) 4%,transparent)}
+.table-scroll{overflow-x:auto;border-bottom:1px solid var(--rule)}
+
+@media (max-width:720px){
+  #adminModal .modal__body{padding:18px var(--gutter) 40px}
+  .kpi{grid-template-columns:1fr 1fr}
+  .kpi b{font-size:1.35rem}
+  /* 指で押す前提の大きさにします。枠が小さいと当たりません */
+  .mini{padding:10px 14px;font-size:.78rem}
+  .admin-head{gap:8px;align-items:flex-start}
+  /* 一覧の行のボタンだけを広げます。見出し脇の件数まで広げると、
+     見出しと件数が2行に割れます */
+  .admin-row .admin-row__act{width:100%}
+  .admin-row .admin-row__act .mini,.admin-row .admin-row__act .btn{flex:1 1 auto;justify-content:center;text-align:center}
+  .admin-tools{width:100%}
+  .admin-tools .admin-select{flex:1 1 100%}
+  .admin-tools .mini,.admin-tools .btn{flex:1 1 calc(50% - 4px);justify-content:center}
+  .inbox-table{min-width:520px}
+}

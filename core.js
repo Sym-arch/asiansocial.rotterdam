@@ -614,7 +614,9 @@ const isPaid = ev => (ev && ev.priceCents || 0) > 0;
 
 /** 決済画面のURLを受け取ります。 */
 async function startCheckout(eventId, quantity) {
-  await ensureSession();
+  /* 期限切れのまま送ると、サーバ側で 401 になります。ここで作り直せたか
+     どうかを見て、「サインインし直してください」とはっきり伝えます。 */
+  if (!(await ensureSession())) throw new Error(t('account.err.signin'));
   const res = await fetch('/api/checkout', {
     method: 'POST',
     headers: {

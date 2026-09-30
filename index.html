@@ -300,11 +300,14 @@
 
       <!-- EVENTS TAB -->
       <section class="tabpane is-on" data-pane="events">
+        <!-- 電話ではたたんだ状態で開きます。長い入力欄が先頭にあると、
+             下の一覧までたどり着けません。編集を押すと自動で開きます -->
+        <details class="fold" id="aeFold" open>
+          <summary class="fold__sum">
+            <span class="fold__title" id="adminEventFormTitle">Add a new event</span>
+            <span class="fold__mark" aria-hidden="true"></span>
+          </summary>
         <form class="admin-form" id="adminEventForm">
-          <div class="admin-head" style="margin-top:0">
-            <h4 id="adminEventFormTitle">Add a new event</h4>
-            <button class="mini" type="button" id="adminEventReset">Clear form</button>
-          </div>
           <input type="hidden" id="aeId">
           <div class="form-grid">
             <div class="field field--full">
@@ -394,8 +397,10 @@
           </div>
           <div class="form-actions">
             <button class="btn btn--brand" type="submit" id="aeSubmit">Publish event</button>
+            <button class="mini" type="button" id="adminEventReset">Clear form</button>
           </div>
         </form>
+        </details>
 
         <div class="admin-head">
           <h4>Published events</h4>
@@ -441,11 +446,10 @@
 
         <div class="admin-head" style="margin-top:0">
           <h4>RSVPs <span id="rsvpCount" class="pill"></span></h4>
-          <div class="admin-row__act">
+          <div class="admin-tools">
             <!-- このセレクトは表の絞り込みも兼ねます。表と送信先が食い違うと事故になるので、
                  選ぶ場所は1つにしてあります -->
-            <select id="rsvpEvent" aria-label="Filter by event"
-                    style="font:inherit;font-size:.78rem;padding:6px 8px;border:1px solid var(--rule);background:transparent"></select>
+            <select id="rsvpEvent" class="admin-select" aria-label="Filter by event"></select>
             <button class="mini" type="button" id="sendReminder">Send reminder</button>
             <button class="mini" type="button" id="copyEmails">Copy emails</button>
             <button class="mini" type="button" id="exportRsvp">Export CSV</button>
