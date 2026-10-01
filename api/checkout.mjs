@@ -20,8 +20,11 @@ const SESSION_MINUTES = 30;
 
 /* カードの利用明細に出す名前。22文字までで、< > \ " ' * は使えません。 */
 const STATEMENT_NAME = 'ASIAN SOCIAL';
+/* 全文の指定（statement_descriptor）はカード決済では使えない決まりで、
+   カードと iDEAL が並ぶ決済画面に送ると、iDEAL 側が出なくなる恐れがあります。
+   カードで使える接尾辞だけにし、それも断られたら付けずに通します。
+   iDEAL などカード以外の明細名は、Stripe アカウント側の設定が使われます。 */
 const DESCRIPTOR_TRIES = [
-  { statement_descriptor: STATEMENT_NAME },
   { statement_descriptor_suffix: STATEMENT_NAME },
   null
 ];
