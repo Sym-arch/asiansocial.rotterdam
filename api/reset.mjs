@@ -39,6 +39,8 @@ export default async function handler(req, res) {
   try {
     const link = await generateLink('recovery', email, origin + '/reset.html');
     await sendMail({
+      /* 本人のパスワードの話なので、こちらに控えは要りません */
+      copyUs: false,
       to: email,
       subject: 'Set a new password — Asian Social Rotterdam',
       html: resetHTML({ link, origin })

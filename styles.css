@@ -811,9 +811,18 @@ ul,ol{margin:0;padding:0;list-style:none}
 .acct-block h2{font-size:1.05rem;font-weight:600;margin-bottom:18px}
 
 .acct-list{list-style:none;display:grid;gap:2px}
-.acct-list li{border-bottom:1px solid var(--rule-soft);padding:14px 0}
+.acct-list li{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;
+  border-bottom:1px solid var(--rule-soft);padding:14px 0;
+}
+.acct-list__main{min-width:0;flex:1 1 220px}
 .acct-list b{display:block;font-weight:500;margin-bottom:4px}
 .acct-list span{font-size:.82rem;color:var(--muted)}
+
+/* 名前の編集。ふだんは表示だけにします */
+.namebox{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.namebox__value{font-size:1.05rem}
+.namebox__act{display:flex;align-items:center;gap:16px;margin-top:14px}
 
 .acct-foot{
   border-top:1px solid var(--rule);padding-top:24px;
@@ -955,13 +964,18 @@ ul,ol{margin:0;padding:0;list-style:none}
 
 
 /* 予約からチケットを開く */
+/* 予約の行の右端に置く、チケットを開く導線 */
 .acct-ticket{
-  display:inline-block;margin-top:8px;font-size:.76rem;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--brand-text);
-  text-decoration:none;border-bottom:1px solid currentColor;
+  flex:none;margin-left:auto;display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px;border:1px solid var(--rule);border-radius:999px;
+  font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--brand-text);text-decoration:none;background:transparent;
+  font-family:inherit;cursor:pointer;
+  transition:border-color .15s ease,background .15s ease;
 }
-/* あとから発券する行はボタンです。見た目はリンクと同じに揃えます */
-button.acct-ticket{background:none;border:0;border-bottom:1px solid currentColor;padding:0;cursor:pointer;font-family:inherit}
+.acct-ticket::after{content:"\2192";font-size:.9rem;letter-spacing:0}
+.acct-ticket:hover{border-color:var(--brand-text);background:color-mix(in srgb,var(--brand) 8%,transparent)}
+.acct-ticket[disabled]{opacity:.5;cursor:default}
 button.acct-ticket[disabled]{opacity:.5;cursor:default}
 
 /* =========================================================
@@ -1157,3 +1171,23 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
   .admin-tools .mini,.admin-tools .btn{flex:1 1 calc(50% - 4px);justify-content:center}
   .inbox-table{min-width:520px}
 }
+
+
+/* =========================================================
+   イベント一覧（events.html）
+   ホームの横並びと違い、こちらは全部を一覧で見せます。
+   カードは横並び用に幅が固定されているので、並べ方だけ上書きします。
+   ========================================================= */
+.ev-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));
+  gap:clamp(24px,4vw,44px);margin-bottom:clamp(40px,6vw,72px);
+}
+.ev-grid .ev-card{flex:1 1 auto;width:100%}
+.ev-group{
+  font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--muted);font-family:var(--body);
+  border-top:1px solid var(--rule);padding-top:18px;margin:0 0 26px;
+}
+/* 終わった回は、これからの回より一段落ち着かせます */
+.ev-grid .ev-card.is-past{opacity:.72}
+.ev-grid .ev-card.is-past:hover{opacity:1}

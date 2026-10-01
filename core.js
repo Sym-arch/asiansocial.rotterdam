@@ -1116,7 +1116,9 @@ async function ensureTicket(ev, r) {
     const tk = mine.find(x => String(x.id) === 't' + r.id) ||
                mine.find(x => x.event_id === r.event_id);
     if (tk) return tk.secret;
-    throw err;
+    /* DB の文言をそのまま見せても、読む人には何のことか分かりません */
+    console.warn('ticket open failed:', err.message);
+    throw new Error(t('account.ticketFailed'));
   }
 }
 
@@ -1187,8 +1189,10 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
       ? new Date(date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
       : '';
     return `<li>
-      <b>${esc(title)}</b>
-      <span>${esc(when)} \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span>
+      <div class="acct-list__main">
+        <b>${esc(title)}</b>
+        <span>${esc(when)} \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span>
+      </div>
       ${tk
         ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
              ${esc(t('account.openTicket'))}</a>`
@@ -1216,11 +1220,22 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
 
     <div class="acct-block">
       <h2>${esc(t('account.name'))}</h2>
-      <div class="field">
-        <label for="mcName" class="sr-only">${esc(t('account.name'))}</label>
-        <input id="mcName" type="text" value="${esc(profile.name || '')}" placeholder="${esc(t('account.namePh'))}">
+      <!-- ふだんは表示だけにします。保存ボタンが出たままだと、
+           何か書きかけのように見えます -->
+      <div class="namebox" id="mcNameView">
+        <span class="namebox__value">${esc(profile.name || '\u2014')}</span>
+        <button class="mini" type="button" id="mcEdit">${esc(t('account.edit'))}</button>
       </div>
-      <button class="mini" type="button" id="mcSave" style="margin-top:14px">${esc(t('account.save'))}</button>
+      <div id="mcNameEdit" hidden>
+        <div class="field">
+          <label for="mcName" class="sr-only">${esc(t('account.name'))}</label>
+          <input id="mcName" type="text" value="${esc(profile.name || '')}" placeholder="${esc(t('account.namePh'))}">
+        </div>
+        <div class="namebox__act">
+          <button class="mini" type="button" id="mcSave">${esc(t('account.save'))}</button>
+          <button class="linkish" type="button" id="mcCancel">${esc(t('account.cancel'))}</button>
+        </div>
+      </div>
     </div>
 
     <div class="acct-block">
@@ -1405,11 +1420,31 @@ function wireMemberAuth() {
 }
 
 function wireMemberCard() {
+  /* 名前は「編集」を押したときだけ書き換えられるようにします */
+  const nameView = $('#mcNameView'), nameEdit = $('#mcNameEdit');
+  const showEdit = on => { if (nameView && nameEdit) { nameView.hidden = on; nameEdit.hidden = !on; } };
+  const editBtn = $('#mcEdit');
+  if (editBtn) editBtn.addEventListener('click', () => {
+    showEdit(true);
+    const box = $('#mcName');
+    if (box) { box.focus(); box.select(); }
+  });
+  const cancelBtn = $('#mcCancel');
+  if (cancelBtn) cancelBtn.addEventListener('click', () => {
+    const box = $('#mcName');
+    if (box) box.value = (MEMBER && MEMBER.profile && MEMBER.profile.name) || '';
+    showEdit(false);
+  });
+
   $('#mcSave').addEventListener('click', async () => {
     const btn = $('#mcSave');
     btn.disabled = true;
     try {
-      await saveProfile({ name: $('#mcName').value.trim(), locale: currentLang() });
+      const given = $('#mcName').value.trim();
+      await saveProfile({ name: given, locale: currentLang() });
+      const shown = $('#mcNameView .namebox__value');
+      if (shown) shown.textContent = given || '\u2014';
+      showEdit(false);
       toast(t('account.saved'));
       document.dispatchEvent(new CustomEvent('member:changed'));
     } catch (err) { toast(err.message, true); }
@@ -1546,7 +1581,13 @@ async function loadMyTickets() {
 async function loadMyRsvps() {
   if (!(await ensureSession())) return [];
   try {
-    return await sbSelect('rsvps', 'order=event_date.desc');
+    /* 自分のアドレスの予約だけを取ります。以前は絞らずに読んでいて、
+       権限側も「サインインしていれば全件」だったため、他の人の予約まで
+       マイページに並んでいました。権限は 15-rsvp-privacy.sql で直します。 */
+    const mine = signedInAs();
+    if (!mine) return [];
+    return await sbSelect('rsvps',
+      'email=ilike.' + encodeURIComponent(mine) + '&order=event_date.desc');
   } catch (err) {
     console.warn('bookings load failed:', err.message);
     return [];

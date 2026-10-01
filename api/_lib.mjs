@@ -188,7 +188,12 @@ export async function verifyStripeSignature(rawBody, header, secret, toleranceSe
 
 /* --- メール ------------------------------------------------------------- */
 
-export async function sendMail({ to, subject, html, replyTo }) {
+/**
+ * 1通送ります。
+ * copyUs を false にすると、こちら側への控え（BCC）を付けません。
+ * パスワード再設定のように、本人以外が読む必要のないものに使います。
+ */
+export async function sendMail({ to, subject, html, replyTo, copyUs = true }) {
   if (!RESEND_KEY) return { skipped: 'no RESEND_API_KEY' };
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -196,7 +201,7 @@ export async function sendMail({ to, subject, html, replyTo }) {
     body: JSON.stringify({
       from: FROM_EMAIL,
       to: [to],
-      bcc: [REPLY_TO],
+      ...(copyUs ? { bcc: [REPLY_TO] } : {}),
       reply_to: replyTo || REPLY_TO,
       subject,
       html

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>All events — Asian Social Rotterdam</title>
+<meta name="description" content="Every Asian Social Rotterdam meetup — what is coming up, and everything we have hosted so far.">
+<link rel="canonical" href="https://www.symarch-llc.com/events.html">
+<meta name="robots" content="index,follow">
+<meta property="og:site_name" content="Asian Social Rotterdam">
+<meta property="og:title" content="All events — Asian Social Rotterdam">
+<meta property="og:description" content="Upcoming meetups and everything we have hosted so far.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.symarch-llc.com/events.html">
+<meta property="og:image" content="https://www.symarch-llc.com/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48-v2.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96-v2.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192-v2.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon-v2.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#c10e2e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-i18n-title="page.events">
+
+<!-- ============ HEADER ============ -->
+<header class="header">
+  <div class="wrap header__inner">
+    <a class="brand" href="#home">
+      <img src="assets/logo.jpg" alt="Asian Social Rotterdam logo">
+      <span class="brand__txt">
+        <b>Asian Social</b>
+        <span>Rotterdam</span>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav">
+      <a href="index.html#home" data-i18n="nav.home">Home</a>
+      <a href="index.html#en" data-i18n="nav.en">En.</a>
+      <a href="about.html" data-i18n="nav.about">About</a>
+      <a class="nav__acc" href="profile.html" data-i18n="account.link">Membership</a>
+      <button class="btn btn--line btn--sm" id="adminOpen" type="button" hidden>Admin</button>
+    </nav>
+
+    <div class="lang" id="lang">
+      <button class="lang__btn" type="button" id="langBtn" aria-haspopup="true" aria-expanded="false">EN</button>
+      <ul class="lang__menu" id="langMenu" hidden></ul>
+    </div>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span></button>
+  </div>
+</header>
+
+<main>
+<section class="sec sec--flush pagehead">
+  <!-- 中身は events.js が入れます（これからの回と、これまでの回） -->
+  <div class="wrap" id="eventsAll"></div>
+</section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__grid">
+      <div>
+        <div class="brand">
+          <img src="assets/logo.jpg" alt="" width="38" height="38">
+          <span class="brand__txt"><b>Asian Social</b><span>Rotterdam</span></span>
+        </div>
+        <p data-i18n="footer.blurb">Rotterdam's Asian community — for people with an Asian background and everyone
+           drawn to Asian culture. Open to all.</p>
+      </div>
+      <div>
+        <h4 data-i18n="footer.explore">Explore</h4>
+        <ul>
+          <li><a href="index.html#events" data-i18n="footer.events">Events</a></li>
+          <li><a href="index.html#en" data-i18n="footer.en">En. Japanese Social Club</a></li>
+          <li><a href="about.html" data-i18n="footer.about">About &amp; mission</a></li>
+          <li><a href="policy.html" data-i18n="footer.policy">Event policy and privacy</a></li>
+          <li><a href="about.html#partners" data-i18n="footer.partners">For partners</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="footer.follow">Follow</h4>
+        <ul>
+          <li><a href="https://www.meetup.com/asian-social-and-drinking-gathering/" target="_blank" rel="noopener">Meetup</a></li>
+          <li><a href="https://www.instagram.com/asiansocial.rotterdam/" target="_blank" rel="noopener">Instagram</a></li>
+          <li><a href="mailto:info@sym-arch.com">info@sym-arch.com</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span id="year"></span> Asian Social Rotterdam. <span data-i18n="footer.rights">All rights reserved.</span></span>
+      <span data-i18n="footer.made">Made in Rotterdam · Contact: info@sym-arch.com</span>
+      <span data-i18n="footer.photo">Daylight photo: Weldon Ken, CC BY 2.0</span>
+      <span class="footer__by">by Symarch</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="i18n.js"></script>
+<script src="core.js"></script>
+<script src="events.js"></script>
+</body>
+</html>
