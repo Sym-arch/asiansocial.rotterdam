@@ -317,6 +317,14 @@ function renderEvent(ev) {
       location.href = bookedUrl(rsvp, mode);
     } catch (err) {
       toast(err.message, true);
+      /* すでに登録済みのアドレスだったときは、その場でサインインできるように
+         モーダルを開き、入力済みのアドレスを引き継ぎます。
+         文章だけ出して終わると、当日その場で払えません。 */
+      if (err && err.code === 'sign_in_needed') {
+        await openMemberModal('signin');
+        const box = $('#mmEmail');
+        if (box) { box.value = ($('#bEmail') || {}).value || ''; box.focus(); }
+      }
       btn.disabled = false; btn.textContent = bookLabel();
     }
   });

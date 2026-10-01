@@ -546,6 +546,43 @@ async function signUp(email, password, name) {
   return signIn(email, password);
 }
 
+/**
+ * 有料の回で、まだアカウントが無い人のための下ごしらえ。
+ * 決済の前にアカウントを用意します。決済が済んだあとに、誰の支払いかを
+ * 結びつけるためです。
+ *
+ * すでに同じアドレスで登録済みのことがあります。入力されたパスワードで
+ * サインインできればそのまま決済へ進み、できなければサインインを促します。
+ * ここで行き止まりにすると、当日その場で払えません。
+ */
+async function signUpForBooking(email, password, name) {
+  const mail = String(email || '').trim();
+  if (!isEmail(mail)) throw new Error(t('rsvp.err.email'));
+  if (!passwordOk(password)) throw new Error(t('account.err.password'));
+
+  try {
+    await signUp(mail, password, name);
+  } catch (err) {
+    if (!/already|registered|exists/i.test(err.message)) throw err;
+    try {
+      await signIn(mail, password);
+    } catch (e2) {
+      /* 呼び出し側がサインインの案内を出せるように、種類を添えます */
+      const needsSignIn = new Error(t('rsvp.err.exists'));
+      needsSignIn.code = 'sign_in_needed';
+      throw needsSignIn;
+    }
+  }
+
+  /* 名前を控えます。無いと券面と受付名簿がメールアドレスになります */
+  const given = String(name || '').trim();
+  if (given) {
+    try { await saveProfile({ name: given, locale: currentLang() }); }
+    catch (err) { console.warn('name not saved:', err.message); }
+  }
+  return SESSION;
+}
+
 /** メールとパスワードでサインインする。 */
 async function signIn(email, password) {
   const res = await fetch(authBase() + '/token?grant_type=password', {

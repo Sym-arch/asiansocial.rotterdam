@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "asian-socials",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "3500"],
+      "port": 3500
+    }
+  ]
+}
