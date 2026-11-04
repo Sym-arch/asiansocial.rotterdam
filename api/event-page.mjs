@@ -107,7 +107,11 @@ function decorate(shell, ev, origin) {
     `<script type="application/ld+json">${jsonLd(ev, url, image)}</script>`
   ].join('\n');
 
+  /* /e/<id> は1階層深いので、HTML 内の相対パス（core.js、styles.css、
+     index.html など）がそのままだと /e/ の下を指して全部 404 になります。
+     基準をサイトの root に戻します。これを外すと画面が真っ白になります。 */
   return shell
+    .replace('<meta charset="utf-8">', '<meta charset="utf-8"><base href="/">')
     .replace('<title>Event — Asian Social Rotterdam</title>', head)
     .replace('<meta name="description" content="Event details and RSVP — Asian Social Rotterdam.">', '')
     .replace(`<meta property="og:image" content="${DEFAULT_IMAGE}">`,
