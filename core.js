@@ -220,6 +220,20 @@ async function uploadImage(file) {
 
 const slug = s => String(s).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
 const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s));
+
+/**
+ * 計測へ1件送ります（GTM の dataLayer に積むだけ）。
+ * GTM 側でタグを公開していなければ、ここは何も起こしません。
+ * 計測の失敗で予約や決済が止まらないよう、必ず握りつぶします。
+ */
+function track(event, params) {
+  try {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push(Object.assign({ event: event }, params || {}));
+  } catch (err) {
+    console.warn('track failed:', err.message);
+  }
+}
 /* 古い予約には、名前の代わりにメールアドレスが入っています。
    券面や受付名簿にアドレスをそのまま大きく出したくないので、
    @ より前だけにします。行そのものは set_my_name が直します。 */
@@ -435,6 +449,9 @@ async function submitRsvp(input) {
     console.warn('Email delivery failed:', err);
     mode = 'manual';
   }
+  track('rsvp_free', {
+    items: [{ item_id: ev.id, item_name: ev.title, quantity: Number(guests) || 1 }]
+  });
   return { rsvp, mode };
 }
 
@@ -541,6 +558,7 @@ async function signUp(email, password, name) {
     SESSION = null;
     storeSession(data, email);
     await loadMember();
+    track('sign_up', { method: 'password' });
     return SESSION;
   }
   return signIn(email, password);

@@ -111,6 +111,29 @@ async function renderPaid(sessionId) {
   await loadContent().catch(() => {});
   const ev = data.order ? findEvent(data.order.eventId) : null;
 
+  /* 売上として1件数えます。
+     この画面は再読み込みされることがあるので、同じ決済は一度だけ送ります。 */
+  if (data.order && data.ticketSecret) {
+    const once = 'tracked:' + sessionId;
+    try {
+      if (!sessionStorage.getItem(once)) {
+        sessionStorage.setItem(once, '1');
+        track('purchase', {
+          transaction_id: data.order.id || sessionId,
+          value: (data.order.totalCents || 0) / 100,
+          currency: data.order.currency || 'EUR',
+          items: [{
+            item_id: data.order.eventId,
+            item_name: data.order.eventTitle || (ev && ev.title) || '',
+            quantity: data.order.quantity || 1
+          }]
+        });
+      }
+    } catch (err) {
+      console.warn('purchase not tracked:', err.message);
+    }
+  }
+
   $('#bookedMain').innerHTML = `
   <section class="booked"><div class="wrap"><div class="booked__card">
     <div class="booked__tick">${esc(t('booked.paidTitle'))}</div>

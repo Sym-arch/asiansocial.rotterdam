@@ -303,6 +303,11 @@ function renderEvent(ev) {
           );
         }
         btn.textContent = t('rsvp.toPayment');
+        track('begin_checkout', {
+          currency: ev.currency || 'EUR',
+          value: ((priceFor(ev).cents || 0) * (Number(guests) || 1)) / 100,
+          items: [{ item_id: ev.id, item_name: ev.title, quantity: Number(guests) || 1 }]
+        });
         location.href = await startCheckout(ev.id, guests);
         return;
       }

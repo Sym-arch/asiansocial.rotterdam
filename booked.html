@@ -3,6 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+
+<!-- Google Tag Manager -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  /* 同意がはっきりするまでは Cookie を置かずに動かします（Consent Mode v2）。
+     同意バナーを入れたら、許可されたときに gtag('consent','update',{...}) を呼びます。
+     この行は gtm.js を読み込む前に実行される必要があります。 */
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'granted',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
+  var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+  j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+  f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-KGS22QSJ');
+</script>
+<!-- End Google Tag Manager -->
 <title>Booking confirmed — Asian Social Rotterdam</title>
 <meta name="robots" content="noindex">
 <!-- Google はここから拾います（48の倍数）。
@@ -21,6 +45,10 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-i18n-title="page.booked">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KGS22QSJ"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <header class="header">
   <div class="wrap header__inner">
     <a class="brand" href="index.html">

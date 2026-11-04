@@ -8,7 +8,7 @@
    最新版」と約束しています）。
    ========================================================= */
 
-const POLICY_UPDATED = '2026-09-12';
+const POLICY_UPDATED = '2026-11-04';
 const MAIL = '<a href="mailto:info@sym-arch.com">info@sym-arch.com</a>';
 
 const POLICY = {
@@ -45,7 +45,8 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'Privacy', items: [
         `Asian Social is responsible for your data. We keep your name, email address, member number and bookings, to run bookings, send tickets and tell you about changes to events.`,
-        `We use Supabase (database), Stripe (payments), Resend (email) and Vercel (hosting) to run this service.`,
+        `We use Supabase (database), Stripe (payments), Resend (email), Vercel (hosting) and Google Analytics (visitor statistics) to run this service.`,
+        `Google Analytics tells us how many people visit and which pages they read. It runs without cookies unless you tell us otherwise, and we never use it for advertising.`,
         `We may update this policy. The date at the top shows the latest version.`,
         `You can ask us to see, correct or delete your data at any time: ${MAIL}`
       ] }
@@ -85,7 +86,8 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'プライバシー', items: [
         `個人データの管理者は Asian Social です。予約の管理、チケットの送付、イベントの変更のお知らせのために、お名前、メールアドレス、会員番号、予約履歴を保管します。`,
-        `このサービスの運営に、Supabase（データベース）、Stripe（決済）、Resend（メール）、Vercel（ホスティング）を利用しています。`,
+        `このサービスの運営に、Supabase（データベース）、Stripe（決済）、Resend（メール）、Vercel（ホスティング）、Google アナリティクス（アクセス統計）を利用しています。`,
+        `Google アナリティクスでは、訪問者数とどのページが読まれているかを把握しています。Cookie を使わない設定で動かしており、広告には一切利用していません。`,
         `このポリシーは更新することがあります。最新の版は、ページ上部の日付で確認できます。`,
         `ご自身のデータの確認・訂正・削除は、いつでも ${MAIL} までご依頼いただけます。`
       ] }
@@ -125,7 +127,8 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'Privacy', items: [
         `Asian Social is verantwoordelijk voor je gegevens. We bewaren je naam, e-mailadres, lidnummer en boekingen om boekingen te regelen, tickets te sturen en je te informeren over wijzigingen.`,
-        `We gebruiken Supabase (database), Stripe (betalingen), Resend (e-mail) en Vercel (hosting) voor deze dienst.`,
+        `We gebruiken Supabase (database), Stripe (betalingen), Resend (e-mail), Vercel (hosting) en Google Analytics (bezoekersstatistieken) voor deze dienst.`,
+        `Met Google Analytics zien we hoeveel mensen de site bezoeken en welke pagina's ze lezen. Het draait zonder cookies, en we gebruiken het nooit voor advertenties.`,
         `We kunnen dit beleid bijwerken. De datum bovenaan toont de nieuwste versie.`,
         `Je kunt ons altijd vragen je gegevens in te zien, te corrigeren of te verwijderen: ${MAIL}`
       ] }
