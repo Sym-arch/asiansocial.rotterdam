@@ -3,7 +3,9 @@
    Requires core.js
    ========================================================= */
 
-const EV_ID = new URLSearchParams(location.search).get('id');
+/* /e/<id> で開かれます。古いリンク（?id=...）からも読めるようにしておきます */
+const EV_ID = new URLSearchParams(location.search).get('id') ||
+  decodeURIComponent((location.pathname.match(/^\/e\/([^/]+)/) || [])[1] || '');
 
 /* 割引が効いているときだけ、元の値段に取り消し線を引きます。
    効いていないときに二つ並べると、かえって分かりにくくなります。

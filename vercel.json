@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/e/:id", "destination": "/api/event-page?id=:id" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+  ],
+  "redirects": [
+    {
+      "source": "/event.html",
+      "has": [{ "type": "query", "key": "id", "value": "(?<eid>[^&]+)" }],
+      "destination": "/e/:eid",
+      "permanent": true
+    },
+    { "source": "/exams/:path*", "destination": "/", "permanent": true }
+  ]
+}

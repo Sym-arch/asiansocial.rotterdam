@@ -250,7 +250,10 @@ const personName = s => {
   const v = String(s == null ? '' : s).trim();
   return isEmail(v) ? v.split('@')[0] : v;
 };
-const eventUrl = id => 'event.html?id=' + encodeURIComponent(id);
+/* イベントのページは /e/<id> です。この住所だけ、サーバー側が
+   そのイベント固有の見出し・説明・写真・構造化データを付けて返します
+   （api/event-page.mjs）。古い /event.html?id=... は転送されます。 */
+const eventUrl = id => '/e/' + encodeURIComponent(id);
 /* Absolute URL against the page the visitor is on — works on any domain,
    so emails can link back without hard-coding the host. */
 const absUrl = path => new URL(path, location.href).href;

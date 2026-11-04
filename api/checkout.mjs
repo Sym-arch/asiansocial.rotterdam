@@ -98,7 +98,7 @@ export default async function handler(req, res) {
       client_reference_id: user.id,
       expires_at: Math.floor(Date.now() / 1000) + SESSION_MINUTES * 60,
       success_url: origin + '/booked.html?session={CHECKOUT_SESSION_ID}' + back,
-      cancel_url:  origin + '/event.html?id=' + encodeURIComponent(eventId) + back,
+      cancel_url:  origin + '/e/' + encodeURIComponent(eventId) + back.replace('&', '?'),
       line_items: [{
         quantity,
         price_data: {
