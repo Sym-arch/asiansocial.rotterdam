@@ -195,7 +195,12 @@ function renderEvent(ev) {
   const mapUrl = ev.address
     ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) : '';
 
-  document.title = ev.title + ' — Asian Social Rotterdam';
+  /* /e/<id> ではサーバー側が日付入りの見出しを付けています（api/event-page.mjs）。
+     Google は画面を描いたあとの <title> を見るので、ここで上書きすると
+     せっかく付けた日付が消えます。共通の見出しのときだけ入れます。 */
+  if (!document.title || /^Event — /.test(document.title)) {
+    document.title = ev.title + ' — Asian Social Rotterdam';
+  }
 
   $('#eventMain').innerHTML = `
   <section class="ev-hero">
