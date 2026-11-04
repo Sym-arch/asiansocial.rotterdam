@@ -1191,3 +1191,35 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 /* 終わった回は、これからの回より一段落ち着かせます */
 .ev-grid .ev-card.is-past{opacity:.72}
 .ev-grid .ev-card.is-past:hover{opacity:1}
+
+
+/* =========================================================
+   Cookie の同意バー
+
+   画面の下に出します。読んでいる内容を隠さない高さに収め、
+   「許可しない」と「許可する」は同じ見た目にします（どちらかを
+   目立たせると、選んだことにならないためです）。
+   ========================================================= */
+.cookie{
+  position:fixed;left:0;right:0;bottom:0;z-index:120;display:none;
+  background:var(--paper);border-top:1px solid var(--rule);
+  box-shadow:0 -10px 30px -22px rgba(14,11,20,.5);
+}
+.cookie.is-open{display:block}
+.cookie__inner{
+  width:min(100% - (var(--gutter) * 2),var(--max));margin-inline:auto;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;
+  padding:16px 0 18px;
+}
+.cookie__text{font-size:.88rem;line-height:1.6;color:var(--ink-2);max-width:68ch}
+.cookie__text a{color:var(--brand-text)}
+.cookie__act{display:flex;flex-wrap:wrap;gap:10px;flex:none}
+
+@media (max-width:640px){
+  .cookie__inner{padding:14px 0 16px}
+  .cookie__act{width:100%}
+  .cookie__act .btn{flex:1 1 auto;justify-content:center}
+}
+
+/* あとから変えるための導線（フッター） */
+#cookieSettings{font-size:inherit}

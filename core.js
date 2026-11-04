@@ -1993,6 +1993,87 @@ function applyI18n(root) {
  * という形で壊れます。ハンバーガーと言語メニューが実際にそうなっていました。
  */
 const BOUND = new Set();
+/* ---------------------------------------------------------
+   Cookie の同意
+
+   既定は「拒否」で、各ページの <head> で Consent Mode v2 に伝えてあります。
+   ここでは、その選択を尋ねる帯と、あとから変えるための導線を出します。
+
+   オランダの当局は「拒否が受け入れと同じくらい選びやすいこと」と
+   「あとから簡単に撤回できること」を求めています。そのため
+   2つのボタンは同じ見た目にし、フッターにいつでも開ける導線を置きます。
+   --------------------------------------------------------- */
+const CONSENT_KEY = 'asr:consent';
+
+function consentStored() {
+  try { return localStorage.getItem(CONSENT_KEY) || ''; }
+  catch (err) { return ''; }
+}
+
+/** 選択を保存して、計測へ伝えます。 */
+function consentApply(choice) {
+  const granted = choice === 'granted';
+  try { localStorage.setItem(CONSENT_KEY, granted ? 'granted' : 'denied'); }
+  catch (err) { console.warn('consent not stored:', err.message); }
+  if (typeof gtag === 'function') {
+    gtag('consent', 'update', { analytics_storage: granted ? 'granted' : 'denied' });
+  }
+}
+
+function consentBarHTML() {
+  const lang = uiLang();
+  const href = 'policy.html' + (lang === 'en' ? '' : '?lang=' + lang) + '#privacy';
+  return `<div class="cookie__inner">
+      <p class="cookie__text">
+        ${esc(t('consent.body'))}
+        <a href="${esc(href)}">${esc(t('consent.more'))}</a>
+      </p>
+      <div class="cookie__act">
+        <button class="btn btn--line btn--sm" type="button" data-consent="denied">
+          ${esc(t('consent.decline'))}</button>
+        <button class="btn btn--line btn--sm" type="button" data-consent="granted">
+          ${esc(t('consent.accept'))}</button>
+      </div>
+    </div>`;
+}
+
+function consentOpen() {
+  let bar = $('#cookieBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'cookie';
+    bar.id = 'cookieBar';
+    bar.setAttribute('role', 'dialog');
+    bar.setAttribute('aria-label', 'Cookies');
+    document.body.appendChild(bar);
+    bar.addEventListener('click', e => {
+      const btn = e.target.closest('[data-consent]');
+      if (!btn) return;
+      consentApply(btn.dataset.consent);
+      bar.classList.remove('is-open');
+      toast(t(btn.dataset.consent === 'granted' ? 'consent.on' : 'consent.off'));
+    });
+  }
+  bar.innerHTML = consentBarHTML();
+  bar.classList.add('is-open');
+}
+
+/** まだ選んでいない人にだけ尋ね、フッターに変更用の導線を足します。 */
+function consentInit() {
+  if (consentStored() !== 'granted' && consentStored() !== 'denied') consentOpen();
+
+  const foot = document.querySelector('.footer__bottom');
+  if (foot && !$('#cookieSettings')) {
+    const b = document.createElement('button');
+    b.id = 'cookieSettings';
+    b.className = 'linkish';
+    b.type = 'button';
+    b.textContent = t('consent.settings');
+    b.addEventListener('click', consentOpen);
+    foot.appendChild(b);
+  }
+}
+
 function bindOnce(key, fn) {
   if (BOUND.has(key)) return;
   BOUND.add(key);
@@ -2089,6 +2170,7 @@ function initShell() {
     });
   }
   syncAccountLink();
+  bindOnce('consent', consentInit);
 
   const rev = new IntersectionObserver((entries, obs) => {
     entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); obs.unobserve(en.target); } });

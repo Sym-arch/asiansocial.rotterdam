@@ -21,6 +21,13 @@
     security_storage: 'granted',
     wait_for_update: 500
   });
+  /* 前回「許可する」を選んでいれば、ここで戻します。
+     gtm.js を読み込む前に実行しないと、その回の計測に間に合いません。 */
+  try {
+    if (window.localStorage && localStorage.getItem('asr:consent') === 'granted') {
+      gtag('consent', 'update', { analytics_storage: 'granted' });
+    }
+  } catch (e) {}
   (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});
   var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
   j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
