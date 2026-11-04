@@ -228,6 +228,15 @@ const isEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s));
  */
 function track(event, params) {
   try {
+    /* Google タグ（gtag）があれば、そちらで送ります。これなら GTM 側で
+       タグを作らなくても GA4 に届きます。本番で確かめた結果、dataLayer に
+       積むだけでは届きませんでした（受け取るタグが無いため）。
+
+       注意: 同じイベント名の GA4 タグを GTM 側にも作ると、二重に数えられます。 */
+    if (typeof gtag === 'function') {
+      gtag('event', event, params || {});
+      return;
+    }
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push(Object.assign({ event: event }, params || {}));
   } catch (err) {
