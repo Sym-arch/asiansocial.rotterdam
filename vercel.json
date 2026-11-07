@@ -6,6 +6,12 @@
   ],
   "redirects": [
     {
+      "source": "/:path((?!api/).*)",
+      "has": [{ "type": "host", "value": "(www\\.)?symarch-llc\\.com" }],
+      "destination": "https://www.asiansocials.nl/:path",
+      "permanent": true
+    },
+    {
       "source": "/event.html",
       "has": [{ "type": "query", "key": "id", "value": "(?<eid>[^&]+)" }],
       "destination": "/e/:eid",

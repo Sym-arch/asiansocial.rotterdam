@@ -61,7 +61,7 @@ export default async function handler(req, res) {
     if (!people.length) return send(res, 200, { sent: 0, recipients: 0 });
 
     /* --- 送る ------------------------------------------------------------ */
-    const origin   = env('SITE_URL') || 'https://www.symarch-llc.com';
+    const origin   = env('SITE_URL') || 'https://www.asiansocials.nl';
     const calendar = googleCalendarUrl(ev, origin);
     const subject  = 'Reminder: ' + (ev.title || 'our next meetup') + ' — ' + longDate(ev.date);
 

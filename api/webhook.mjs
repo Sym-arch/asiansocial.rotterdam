@@ -168,7 +168,7 @@ async function fulfil(session) {
   });
 
   /* メールは発券の後です。送信に失敗しても、チケットは残ります */
-  const origin = env('SITE_URL') || 'https://www.symarch-llc.com';
+  const origin = env('SITE_URL') || 'https://www.asiansocials.nl';
   try {
     await sendMail({
       to: email,

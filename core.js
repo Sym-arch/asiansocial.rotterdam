@@ -7,11 +7,11 @@ const CONFIG = {
   /* Where every form submission is delivered. */
   contactEmail: 'info@sym-arch.com',
   orgName: 'Asian Socials',
-  /* 公開ドメイン。www.symarch-llc.com と asiansocial-rotterdam.vercel.app の
+  /* 公開ドメイン。www.asiansocials.nl と asiansocial-rotterdam.vercel.app の
      両方で同じ内容が出るため、canonical はこちらに寄せています。
      ドメインを変えるときは index/event.html の canonical・og:url・構造化データ、
      robots.txt、sitemap.xml も合わせて差し替えてください */
-  siteUrl: 'https://www.symarch-llc.com',
+  siteUrl: 'https://www.asiansocials.nl',
   timezone: 'Europe/Amsterdam',
 
   /* Admin sign-in uses Supabase Auth (email + password) — see README.

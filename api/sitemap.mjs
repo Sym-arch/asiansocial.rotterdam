@@ -13,7 +13,7 @@
 
 import { sb } from './_lib.mjs';
 
-const SITE = 'https://www.symarch-llc.com';
+const SITE = 'https://www.asiansocials.nl';
 
 /* 本人だけのページ（profile / ticket / booked / reset / checkin）は載せません */
 const PAGES = [

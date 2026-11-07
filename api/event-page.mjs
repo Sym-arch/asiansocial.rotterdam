@@ -17,7 +17,7 @@
 import { readFile } from 'node:fs/promises';
 import { sb } from './_lib.mjs';
 
-const SITE = 'https://www.symarch-llc.com';
+const SITE = 'https://www.asiansocials.nl';
 const TZ = 'Europe/Amsterdam';
 const DEFAULT_IMAGE = SITE + '/assets/og-image.jpg';
 
