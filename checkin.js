@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — 受付チェックリスト（checkin.html）
+   Asian Socials — 受付チェックリスト（checkin.html）
    core.js が必要です。運営専用なので英語のみです。
 
    考え方:

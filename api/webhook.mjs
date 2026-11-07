@@ -172,7 +172,7 @@ async function fulfil(session) {
   try {
     await sendMail({
       to: email,
-      subject: 'You’re in — ' + (ev.title || 'Asian Social Rotterdam'),
+      subject: 'You’re in — ' + (ev.title || 'Asian Socials'),
       html: confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, meta })
     });
   } catch (err) {
@@ -235,7 +235,7 @@ function confirmationHTML({ ev, name, quantity, unit, currency, secret, origin, 
         <p style="margin:0;font-size:16px;line-height:1.6;color:#3a3348">
           Bring a friend if you like &mdash; just reply to this email so we can keep the numbers right.</p>
         <p style="margin:22px 0 0;font-size:16px;color:#3a3348">
-          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Social Rotterdam</strong></p>
+          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Socials</strong></p>
       </td></tr>
     </table>
   </div>`;

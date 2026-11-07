@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — home page (index.html)
+   Asian Socials — home page (index.html)
    Requires core.js
    ========================================================= */
 

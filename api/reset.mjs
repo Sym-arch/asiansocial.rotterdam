@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       /* 本人のパスワードの話なので、こちらに控えは要りません */
       copyUs: false,
       to: email,
-      subject: 'Set a new password — Asian Social Rotterdam',
+      subject: 'Set a new password — Asian Socials',
       html: resetHTML({ link, origin })
     });
     return send(res, 200, { ok: true });
@@ -96,7 +96,7 @@ function resetHTML({ link, origin }) {
         <h1 style="margin:16px 0 0;font-size:32px;line-height:1.1;color:#0e0b14">
           Set a new password.</h1>
         <p style="margin:18px 0 0;font-size:16px;line-height:1.6;color:#3a3348">
-          Someone asked to reset the password for this email at Asian Social Rotterdam.
+          Someone asked to reset the password for this email at Asian Socials.
           Use the button below to choose a new one.</p>
       </td></tr>
 
@@ -111,7 +111,7 @@ function resetHTML({ link, origin }) {
 
       <tr><td style="padding:26px 32px 34px">
         <p style="margin:0;font-size:16px;color:#3a3348">
-          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Social Rotterdam</strong></p>
+          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Socials</strong></p>
         <p style="margin:18px 0 0;font-size:12px;color:#9a93a6">
           If this was not you, you can ignore this email — your password stays as it is.
           <br><a href="${origin}" style="color:#9a93a6">${esc(String(origin).replace(/^https?:\/\//, ''))}</a></p>

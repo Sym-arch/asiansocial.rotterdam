@@ -106,7 +106,7 @@ function googleCalendarUrl(ev, origin) {
   const price = priceFor(ev, 'guest');
   const p = new URLSearchParams({
     action: 'TEMPLATE',
-    text: (ev.title || '') + ' | Asian Social Rotterdam',
+    text: (ev.title || '') + ' | Asian Socials',
     dates: stamp(ev.date, start) + '/' + stamp(ev.date, end),
     ctz: TZ,
     details: [
@@ -116,7 +116,7 @@ function googleCalendarUrl(ev, origin) {
       ev.address ? 'Address: ' + ev.address : '',
       'Price: ' + priceLabel(price.cents, ev.currency || 'EUR'),
       '',
-      'Hosted by Asian Social Rotterdam · info@sym-arch.com'
+      'Hosted by Asian Socials · info@sym-arch.com'
     ].filter(Boolean).join('\n'),
     location: [ev.venue, ev.address].filter(Boolean).join(', '),
     sprop: 'website:' + origin
@@ -178,7 +178,7 @@ function reminderHTML({ ev, name, calendar, origin }) {
         <p style="margin:0;font-size:16px;line-height:1.6;color:#3a3348">
           Can't make it any more? Just reply to this email so we can free up your spot.</p>
         <p style="margin:22px 0 0;font-size:16px;color:#3a3348">
-          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Social Rotterdam</strong></p>
+          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Socials</strong></p>
         <p style="margin:20px 0 0;font-size:12px;color:#9a93a6">
           <a href="${origin}" style="color:#9a93a6">${esc(String(origin).replace(/^https?:\/\//, ''))}</a></p>
       </td></tr>

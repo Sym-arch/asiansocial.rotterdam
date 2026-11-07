@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — About & partners (about.html)
+   Asian Socials — About & partners (about.html)
    core.js が必要です。
 
    このページにあるのは読み物とパートナー問い合わせだけです。

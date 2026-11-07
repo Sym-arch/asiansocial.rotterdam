@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — イベントポリシーとプライバシー（policy.html）
+   Asian Socials — イベントポリシーとプライバシー（policy.html）
    core.js が必要です。
 
    本文は i18n.js に入れず、ここに3言語まとめて持ちます。
@@ -18,7 +18,7 @@ const POLICY = {
     updated: 'Last updated',
     sections: [
       { id: 'who', h: 'Who we are',
-        p: `Asian Social Rotterdam is run by Asian Social, a community organisation.
+        p: `Asian Socials is run by Asian Socials, a community organisation.
             Representative: Taiyo Iino. Contact: ${MAIL}` },
       { id: 'tickets', h: 'Tickets & entry', items: [
         `We check tickets at the entrance. Each ticket can be used once — if the same ticket is shown twice, only the first person gets in.`,
@@ -44,7 +44,7 @@ const POLICY = {
         `If we cancel, or change the date, time or venue and you can't make it, you can choose a <b>full refund</b> to the card you paid with, or <b>credit for another event</b> (valid for 2 months). Email ${MAIL} to tell us which you'd prefer.`
       ] },
       { id: 'privacy', h: 'Privacy', items: [
-        `Asian Social is responsible for your data. We keep your name, email address, member number and bookings, to run bookings, send tickets and tell you about changes to events.`,
+        `Asian Socials is responsible for your data. We keep your name, email address, member number and bookings, to run bookings, send tickets and tell you about changes to events.`,
         `We use Supabase (database), Stripe (payments), Resend (email), Vercel (hosting) and Google Analytics (visitor statistics) to run this service.`,
         `Google Analytics tells us how many people visit and which pages they read. We only use analytics cookies if you accept them, and we never use it for advertising. You can change your choice at any time with the cookie settings link at the bottom of every page.`,
         `We may update this policy. The date at the top shows the latest version.`,
@@ -59,7 +59,7 @@ const POLICY = {
     updated: '最終更新',
     sections: [
       { id: 'who', h: '運営者について',
-        p: `Asian Social Rotterdam は、団体「Asian Social」が運営しています。
+        p: `Asian Socials は、団体「Asian Socials」が運営しています。
             代表：飯野太陽。お問い合わせ：${MAIL}` },
       { id: 'tickets', h: 'チケットと入場', items: [
         `入口でチケットを確認します。チケットは1回だけ使えます。同じチケットが2回提示された場合、入場できるのは先に提示した方だけです。`,
@@ -85,7 +85,7 @@ const POLICY = {
         `中止になった場合、または日時・会場が変わって参加できなくなった場合は、お支払いに使ったカードへの<b>全額返金</b>か、<b>別のイベントへの振替</b>（有効期限2か月）を選べます。ご希望を ${MAIL} までメールでお知らせください。`
       ] },
       { id: 'privacy', h: 'プライバシー', items: [
-        `個人データの管理者は Asian Social です。予約の管理、チケットの送付、イベントの変更のお知らせのために、お名前、メールアドレス、会員番号、予約履歴を保管します。`,
+        `個人データの管理者は Asian Socials です。予約の管理、チケットの送付、イベントの変更のお知らせのために、お名前、メールアドレス、会員番号、予約履歴を保管します。`,
         `このサービスの運営に、Supabase（データベース）、Stripe（決済）、Resend（メール）、Vercel（ホスティング）、Google アナリティクス（アクセス統計）を利用しています。`,
         `Google アナリティクスでは、訪問者数とどのページが読まれているかを把握しています。分析用の Cookie は、許可をいただいた場合にのみ使用し、広告には一切利用していません。各ページ下部の「Cookie の設定」から、いつでも変更できます。`,
         `このポリシーは更新することがあります。最新の版は、ページ上部の日付で確認できます。`,
@@ -100,7 +100,7 @@ const POLICY = {
     updated: 'Laatst bijgewerkt',
     sections: [
       { id: 'who', h: 'Wie we zijn',
-        p: `Asian Social Rotterdam wordt georganiseerd door Asian Social, een communityorganisatie.
+        p: `Asian Socials wordt georganiseerd door Asian Socials, een communityorganisatie.
             Vertegenwoordiger: Taiyo Iino. Contact: ${MAIL}` },
       { id: 'tickets', h: 'Tickets en toegang', items: [
         `We controleren tickets bij de ingang. Elk ticket kan één keer worden gebruikt — wordt hetzelfde ticket twee keer getoond, dan komt alleen de eerste persoon binnen.`,
@@ -126,7 +126,7 @@ const POLICY = {
         `Annuleren wij, of veranderen de datum, tijd of locatie en kun je niet komen, dan kun je kiezen voor een <b>volledige terugbetaling</b> op de kaart waarmee je betaalde, of <b>tegoed voor een ander evenement</b> (2 maanden geldig). Mail ${MAIL} wat je wilt.`
       ] },
       { id: 'privacy', h: 'Privacy', items: [
-        `Asian Social is verantwoordelijk voor je gegevens. We bewaren je naam, e-mailadres, lidnummer en boekingen om boekingen te regelen, tickets te sturen en je te informeren over wijzigingen.`,
+        `Asian Socials is verantwoordelijk voor je gegevens. We bewaren je naam, e-mailadres, lidnummer en boekingen om boekingen te regelen, tickets te sturen en je te informeren over wijzigingen.`,
         `We gebruiken Supabase (database), Stripe (betalingen), Resend (e-mail), Vercel (hosting) en Google Analytics (bezoekersstatistieken) voor deze dienst.`,
         `Met Google Analytics zien we hoeveel mensen de site bezoeken en welke pagina's ze lezen. We gebruiken analytische cookies alleen als je ze accepteert, en nooit voor advertenties. Je kunt je keuze altijd wijzigen via de cookie-instellingen onderaan elke pagina.`,
         `We kunnen dit beleid bijwerken. De datum bovenaan toont de nieuwste versie.`,

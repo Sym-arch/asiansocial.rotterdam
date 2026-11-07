@@ -1,12 +1,12 @@
 /* =========================================================
-   Asian Social Rotterdam — shared core
+   Asian Socials — shared core
    Loaded by every page (index.html / event.html / booked.html)
    ========================================================= */
 
 const CONFIG = {
   /* Where every form submission is delivered. */
   contactEmail: 'info@sym-arch.com',
-  orgName: 'Asian Social Rotterdam',
+  orgName: 'Asian Socials',
   /* 公開ドメイン。www.symarch-llc.com と asiansocial-rotterdam.vercel.app の
      両方で同じ内容が出るため、canonical はこちらに寄せています。
      ドメインを変えるときは index/event.html の canonical・og:url・構造化データ、
@@ -1237,7 +1237,7 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
   return `
     <section class="mcard" aria-label="${esc(t('account.card'))}">
       <span class="mcard__ring" aria-hidden="true"></span>
-      <div class="mcard__top"><span>Asian Social · Rotterdam</span></div>
+      <div class="mcard__top"><span>Asian Socials · Rotterdam</span></div>
       <div>
         ${memberNo ? `<div class="mcard__no">${esc(memberNo)}</div>` : ''}
         <div class="mcard__name">${esc(name)}</div>

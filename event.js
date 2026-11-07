@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — event detail page (event.html)
+   Asian Socials — event detail page (event.html)
    Requires core.js
    ========================================================= */
 
@@ -199,7 +199,7 @@ function renderEvent(ev) {
      Google は画面を描いたあとの <title> を見るので、ここで上書きすると
      せっかく付けた日付が消えます。共通の見出しのときだけ入れます。 */
   if (!document.title || /^Event — /.test(document.title)) {
-    document.title = ev.title + ' — Asian Social Rotterdam';
+    document.title = ev.title + ' — Asian Socials';
   }
 
   $('#eventMain').innerHTML = `
@@ -229,7 +229,7 @@ function renderEvent(ev) {
         <div class="ev-hero__img">
           ${ev.image
             ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">`
-            : `<div class="ev-hero__ph">Asian Social Rotterdam</div>`}
+            : `<div class="ev-hero__ph">Asian Socials</div>`}
         </div>
       </div>
     </div>

@@ -36,7 +36,7 @@ $hasRemote = -not [string]::IsNullOrWhiteSpace($remote)
 $branch = (git rev-parse --abbrev-ref HEAD).Trim()
 
 Write-Host ""
-Write-Host "  Asian Social Rotterdam - auto sync" -ForegroundColor Cyan
+Write-Host "  Asian Socials - auto sync" -ForegroundColor Cyan
 Write-Host "  フォルダ : $repo"
 Write-Host "  ブランチ : $branch"
 if ($hasRemote) {

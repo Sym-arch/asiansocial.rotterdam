@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — チケット（ticket.html?t=<secret>）
+   Asian Socials — チケット（ticket.html?t=<secret>）
    core.js が必要です。
 
    来場者はこの画面を受付で見せるだけです。ここでは何も消し込みません。
@@ -48,7 +48,7 @@ function ticketHTML(tk) {
       <div class="stub__band">
         ${used
           ? `<span>✓ ${esc(at ? t('ticket.doneAt', { time: at }) : t('ticket.done'))}</span>`
-          : `<span>Asian Social Rotterdam</span><span>${esc(t('ticket.label'))}</span>`}
+          : `<span>Asian Socials</span><span>${esc(t('ticket.label'))}</span>`}
       </div>
 
       <div class="stub__body">

@@ -4,7 +4,7 @@
    イベントのページを、1件ずつ固有の見出しで返します。
 
    これまでは全イベントが同じ <title> でした。そのため検索結果でも
-   SNS のリンクプレビューでも「Event — Asian Social Rotterdam」としか
+   SNS のリンクプレビューでも「Event — Asian Socials」としか
    出ず、Search Console では表示16回でクリック0でした。写真も出ません。
 
    画面の中身はこれまでどおり event.html と event.js が描きます。
@@ -88,7 +88,7 @@ function decorate(shell, ev, origin) {
   /* イベント名と日付が主役です。ブランド名は入りきるときだけ足します
      （足りないまま切ると「| Asian Soci…」のような見苦しい形で終わります）。 */
   const base  = `${ev.title} — ${when}`;
-  const title = base.length + 24 <= 110 ? `${base} | Asian Social Rotterdam` : cut(base, 110);
+  const title = base.length + 24 <= 110 ? `${base} | Asian Socials` : cut(base, 110);
   const desc  = cut([
     [when, time].filter(Boolean).join(' '),
     [ev.venue, 'Rotterdam'].filter(Boolean).join(', '),
@@ -112,8 +112,8 @@ function decorate(shell, ev, origin) {
      基準をサイトの root に戻します。これを外すと画面が真っ白になります。 */
   return shell
     .replace('<meta charset="utf-8">', '<meta charset="utf-8"><base href="/">')
-    .replace('<title>Event — Asian Social Rotterdam</title>', head)
-    .replace('<meta name="description" content="Event details and RSVP — Asian Social Rotterdam.">', '')
+    .replace('<title>Event — Asian Socials</title>', head)
+    .replace('<meta name="description" content="Event details and RSVP — Asian Socials.">', '')
     .replace(`<meta property="og:image" content="${DEFAULT_IMAGE}">`,
              `<meta property="og:image" content="${esc(image)}">`);
 }
@@ -141,7 +141,7 @@ function jsonLd(ev, url, image) {
         addressCountry: 'NL'
       }
     },
-    organizer: { '@type': 'Organization', name: 'Asian Social Rotterdam', url: SITE },
+    organizer: { '@type': 'Organization', name: 'Asian Socials', url: SITE },
     offers: {
       '@type': 'Offer',
       price: ((ev.price_cents || 0) / 100).toFixed(2),

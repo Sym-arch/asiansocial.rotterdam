@@ -1,4 +1,4 @@
-# Asian Social Rotterdam — 公式サイト
+# Asian Socials — 公式サイト
 
 静的サイト（HTML / CSS / バニラJS）。ビルド不要・サーバー不要で動きます。
 **デモデータは入っていません。**イベントもnote記事も、すべて Admin 画面から追加します。
@@ -120,7 +120,7 @@ Resend を独自SMTPとして接続してあります。
 
 | 項目 | 値 |
 |---|---|
-| 送信元 | `noreply@symarch-llc.com`（Asian Social Rotterdam） |
+| 送信元 | `noreply@symarch-llc.com`（Asian Socials） |
 | Host / Port | `smtp.resend.com` / `465` |
 | Username | `resend`（Resend共通の固定文字列。メールアドレスではない） |
 | Password | Resend の APIキー（`supabase-auth-smtp`／送信専用／symarch-llc.com 限定） |

@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     /* --- 案内を送ります ---------------------------------------------- */
     await sendMail({
       to: email,
-      subject: 'You can now manage Asian Social Rotterdam',
+      subject: 'You can now manage Asian Socials',
       html: inviteHTML({ link, existed, origin })
     });
 
@@ -135,8 +135,8 @@ function inviteHTML({ link, existed, origin }) {
           You can now manage the site.</h1>
         <p style="margin:18px 0 0;font-size:16px;line-height:1.6;color:#3a3348">
           ${existed
-            ? 'Your existing account at Asian Social Rotterdam is now an organiser account. Use the button below if you need to set a new password.'
-            : 'An organiser account has been created for you at Asian Social Rotterdam. Set your password to get started.'}
+            ? 'Your existing account at Asian Socials is now an organiser account. Use the button below if you need to set a new password.'
+            : 'An organiser account has been created for you at Asian Socials. Set your password to get started.'}
         </p>
       </td></tr>
 
@@ -161,7 +161,7 @@ function inviteHTML({ link, existed, origin }) {
 
       <tr><td style="padding:26px 32px 34px">
         <p style="margin:0;font-size:16px;color:#3a3348">
-          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Social Rotterdam</strong></p>
+          See you in Rotterdam,<br><strong style="color:#0e0b14">Asian Socials</strong></p>
         <p style="margin:18px 0 0;font-size:12px;color:#9a93a6">
           If you were not expecting this, you can ignore this email — nothing changes until
           you set a password.</p>

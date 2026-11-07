@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — booking confirmed page (booked.html)
+   Asian Socials — booking confirmed page (booked.html)
    Requires core.js.  URL: booked.html?id=<rsvpId>&m=<deliveryMode>
    ========================================================= */
 

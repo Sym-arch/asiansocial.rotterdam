@@ -1,4 +1,4 @@
--- Asian Social Rotterdam — イベントと note 記事のテーブル
+-- Asian Socials — イベントと note 記事のテーブル
 -- Supabase の SQL Editor にそのまま貼り付けて実行してください。
 --
 -- なぜ必要か:

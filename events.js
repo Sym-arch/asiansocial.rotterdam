@@ -1,5 +1,5 @@
 /* =========================================================
-   Asian Social Rotterdam — すべてのイベント（events.html）
+   Asian Socials — すべてのイベント（events.html）
    core.js が必要です。
 
    ホームの一覧は「これから行ける回」だけを出しています。
