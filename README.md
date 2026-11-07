@@ -120,14 +120,19 @@ Resend を独自SMTPとして接続してあります。
 
 | 項目 | 値 |
 |---|---|
-| 送信元 | `noreply@symarch-llc.com`（Asian Socials） |
+| 送信元 | `noreply@send.asiansocials.nl`（Asian Socials） |
 | Host / Port | `smtp.resend.com` / `465` |
 | Username | `resend`（Resend共通の固定文字列。メールアドレスではない） |
-| Password | Resend の APIキー（`supabase-auth-smtp`／送信専用／symarch-llc.com 限定） |
+| Password | Resend の APIキー（`supabase-auth-smtp`／送信専用） |
 | 送信上限 | 100通/時（Supabase 側） |
 | 同一ユーザーへの間隔 | 60秒 |
 
-`symarch-llc.com` は Resend で verified 済み（SPF / DKIM 設定済み）。
+`send.asiansocials.nl` は Resend で verified 済み（DKIM / 送信用 CNAME 設定済み）。
+
+> 送信をサブドメインにしているのは、ルートの `asiansocials.nl` には
+> Google Workspace の SPF がすでにあるためです。SPF はドメインに1つしか
+> 置けないので、ルートで Resend を認証すると衝突します。
+> 送信の評判を本体ドメインから切り離せる利点もあります。
 
 > ⚠️ Supabase の SMTP 設定画面を開くと、**Chrome の自動入力が Username に
 > メールアドレス、Password に保存済みパスワードを入れてくる**ことがあります。

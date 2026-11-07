@@ -22,7 +22,7 @@ export const ANON_KEY     = env('SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_ANON_
 export const STRIPE_KEY   = env('STRIPE_SECRET_KEY');
 export const RESEND_KEY   = env('RESEND_API_KEY');
 
-export const FROM_EMAIL   = env('MAIL_FROM')     || 'Asian Socials <noreply@symarch-llc.com>';
+export const FROM_EMAIL   = env('MAIL_FROM')     || 'Asian Socials <noreply@send.asiansocials.nl>';
 export const REPLY_TO     = env('MAIL_REPLY_TO') || 'info@sym-arch.com';
 
 /* Vercel の Node ランタイムは (req, res) 形のハンドラを期待します。
