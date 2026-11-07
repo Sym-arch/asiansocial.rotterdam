@@ -7,8 +7,10 @@
 --   管理画面を開ける人がいなくなります。
 --
 --   【実行前に必ず】
---   新しいアドレスでサイトに会員登録しておいてください。
+--   info@asiansocials.nl でサイトに会員登録しておいてください。
 --     https://www.asiansocials.nl/ → Log in → アカウント作成
+--   info@ は t.iino@ のエイリアスなので、確認メールは
+--   いつもの受信トレイに届きます。
 --   Supabase Auth にユーザーが無いと、このスクリプトは
 --   何もせずに中止します（安全のため）。
 --
@@ -24,13 +26,13 @@ declare
   old_id uuid;
   n_admins int;
 begin
-  select id into new_id from auth.users where email = 't.iino@asiansocials.nl';
+  select id into new_id from auth.users where email = 'info@asiansocials.nl';
   select id into old_id from auth.users where email = 't.iino@sym-arch.com';
 
   -- 新しいアカウントが無ければ、何も変えずに知らせて終わります
   if new_id is null then
     raise exception
-      '中止しました: t.iino@asiansocials.nl が Supabase Auth にいません。先にサイトで会員登録してください。';
+      '中止しました: info@asiansocials.nl が Supabase Auth にいません。先にサイトで会員登録してください。';
   end if;
 
   -- 1. 新しいアドレスを管理者にする
@@ -38,7 +40,7 @@ begin
        values (new_id, 'owner')
   on conflict (user_id) do update set note = 'owner';
 
-  raise notice '新しい管理者を登録しました: t.iino@asiansocials.nl (%)', new_id;
+  raise notice '新しい管理者を登録しました: info@asiansocials.nl (%)', new_id;
 
   -- 2. 旧アドレスから管理者権限を外す
   --    ただし、管理者が1人も居なくなる事態は避けます
