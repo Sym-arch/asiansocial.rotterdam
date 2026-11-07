@@ -2062,8 +2062,9 @@ function consentOpen() {
       const btn = e.target.closest('[data-consent]');
       if (!btn) return;
       consentApply(btn.dataset.consent);
+      /* 選び終えたら帯を閉じるだけです。通知は出しません。
+         あとから変えたい人には、フッターの「Cookie settings」があります。 */
       bar.classList.remove('is-open');
-      toast(t(btn.dataset.consent === 'granted' ? 'consent.on' : 'consent.off'));
     });
   }
   bar.innerHTML = consentBarHTML();
