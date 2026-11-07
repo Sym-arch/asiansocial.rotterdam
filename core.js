@@ -1237,7 +1237,7 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
   return `
     <section class="mcard" aria-label="${esc(t('account.card'))}">
       <span class="mcard__ring" aria-hidden="true"></span>
-      <div class="mcard__top"><span>Asian Socials · Rotterdam</span></div>
+      <div class="mcard__top"><span>Asian Socials</span><span>Rotterdam · Amsterdam</span></div>
       <div>
         ${memberNo ? `<div class="mcard__no">${esc(memberNo)}</div>` : ''}
         <div class="mcard__name">${esc(name)}</div>

@@ -888,6 +888,9 @@ ul,ol{margin:0;padding:0;list-style:none}
   .footer__grid{grid-template-columns:1fr}
 }
 @media (max-width:680px){
+  /* 街の名前が2つになって長いので、電話では字間を詰めて1行に収めます。
+     折り返すとロゴの横が3行になり、ヘッダーだけ高くなります。 */
+  .brand__txt span{font-size:.55rem;letter-spacing:.1em;white-space:nowrap}
   .cal__cell{min-height:66px;padding:6px 4px}
   .cal__ev{font-size:0;padding:0;height:6px}
   .modal__panel{margin:0;min-height:100vh;max-height:100vh;border:0}
@@ -948,7 +951,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 .mcard__top{
   display:flex;justify-content:space-between;gap:12px;
-  font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  /* 街が2つで長いので、カードの幅に合わせて字を伸び縮みさせます。
+     固定にすると、狭い電話で2段になって名前の位置が下がります。 */
+  font-size:clamp(.5rem,2.4vw,.62rem);
+  font-weight:700;letter-spacing:.2em;text-transform:uppercase;
 }
 .mcard__name{
   font-family:var(--display);font-weight:500;letter-spacing:-.02em;
