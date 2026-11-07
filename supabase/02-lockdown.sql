@@ -56,6 +56,8 @@ $$;
 -- 3. 自分を管理者として登録
 --    ↓ Supabase Auth で作った管理者アカウントのメールアドレスに書き換える
 -- ---------------------------------------------------------
+--   ※ このアドレスは 16-admin-owner.sql で
+--      t.iino@asiansocials.nl に移しました。ここは当時の記録です。
 insert into admins (user_id, note)
 select id, 'owner'
   from auth.users
