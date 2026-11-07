@@ -56,11 +56,12 @@ export default async function handler(req, res) {
     let ticketBy = new Map();
     try {
       const tickets = await sb(
-        'tickets?select=email,secret&status=eq.valid&event_id=eq.' + encodeURIComponent(eventId)
+        'tickets?select=email,secret,created_at&status=eq.valid&event_id=eq.' + encodeURIComponent(eventId)
       );
       for (const t of tickets || []) {
         const key = String(t.email || '').trim().toLowerCase();
-        if (key && t.secret && !ticketBy.has(key)) ticketBy.set(key, t.secret);
+        if (!key || !t.secret || ticketBy.has(key)) continue;
+        ticketBy.set(key, { secret: t.secret, moved: issuedBeforeMove(t.created_at) });
       }
     } catch (err) {
       /* 引けなくても案内そのものは送ります */
@@ -87,7 +88,7 @@ export default async function handler(req, res) {
       subject,
       html: reminderHTML({
         ev, name: p.name, calendar, origin,
-        ticket: ticketBy.get(p.key) || ''
+        ticket: ticketBy.get(p.key) || null
       })
     })));
 
@@ -103,6 +104,19 @@ export default async function handler(req, res) {
    Google 側が解釈してくれるので、こちらで時差を計算しません。 */
 
 const TZ = 'Europe/Amsterdam';
+
+/* ドメインを www.symarch-llc.com から www.asiansocials.nl へ移した時刻。
+   これより前に発行したチケットのメールには、もう開けない住所が
+   入っています。その人にだけ、住所が変わった旨を添えます。
+
+   古いチケットが全部使われたら、この定数と
+   reminderHTML の moved 分岐は消して構いません。 */
+const MOVED_AT = Date.parse('2026-11-07T17:00:00Z');
+
+function issuedBeforeMove(createdAt) {
+  const t = Date.parse(createdAt || '');
+  return !isNaN(t) && t < MOVED_AT;
+}
 
 function longDate(date) {
   if (!date) return '';
@@ -186,14 +200,15 @@ function reminderHTML({ ev, name, calendar, origin, ticket }) {
 
       ${ticket ? `
       <tr><td style="padding:26px 32px 0">
+        ${ticket.moved ? `
         <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#3a3348">
           We have moved to a new address while renovating the site:
           <strong style="color:#0e0b14">asiansocials.nl</strong>.
           The ticket link in your old confirmation email no longer opens &mdash;
-          please use this one instead. It is the same ticket.</p>
+          please use this one instead. It is the same ticket.</p>` : ''}
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
           <td bgcolor="#0e0b14" style="padding:0">
-            <a href="${origin}/ticket.html#${esc(ticket)}"
+            <a href="${origin}/ticket.html#${esc(ticket.secret)}"
                style="display:inline-block;padding:15px 30px;color:#fff;text-decoration:none;
                       font-size:14px;font-weight:bold">Open your ticket</a>
           </td>
