@@ -9,7 +9,7 @@
    ========================================================= */
 
 const POLICY_UPDATED = '2026-11-04';
-const MAIL = '<a href="mailto:info@sym-arch.com">info@sym-arch.com</a>';
+const MAIL = '<a href="mailto:info@asiansocials.nl">info@asiansocials.nl</a>';
 
 const POLICY = {
   en: {

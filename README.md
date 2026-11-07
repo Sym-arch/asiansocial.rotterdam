@@ -64,7 +64,7 @@ Admin のログインは **Supabase Auth（メール＋パスワード）** で�
 未設定でもアップロードは動きますが、**その端末のブラウザにしか保存されません**。
 
 ### ③ メール送信（設定済み）
-EmailJS 連携済みです。予約すると参加者に確認メールが届き、`info@sym-arch.com` にも
+EmailJS 連携済みです。予約すると参加者に確認メールが届き、`info@asiansocials.nl` にも
 Bcc で控えが入ります。パートナー問い合わせも同アドレスに届きます。
 テンプレート本文は `email-templates/` の HTML です。
 
@@ -150,12 +150,12 @@ Resend を独自SMTPとして接続してあります。
 バックエンド無しで「予約完了メールを本人に自動送信 ＋ 自分にも控えを送る」を実現できます。
 
 1. https://www.emailjs.com/ で無料登録（月200通まで無料）
-2. Gmail（info@sym-arch.com）を Email Service として接続 → `service_xxx` を取得
+2. Gmail（info@asiansocials.nl）を Email Service として接続 → `service_xxx` を取得
 3. テンプレートを2つ作成（プリセットは Contact Us でOK。中身は全部書き換えます）
-   - **予約確認**: To `{{attendee_email}}` / Bcc `info@sym-arch.com` / Reply-To `info@sym-arch.com`
+   - **予約確認**: To `{{attendee_email}}` / Bcc `info@asiansocials.nl` / Reply-To `info@asiansocials.nl`
      Subject `You're in — {{event_title}}`
      本文は Content の `</>`（code）を開いて **`email-templates/rsvp-confirmation.html`** を貼り付け
-   - **パートナー問い合わせ**: To `info@sym-arch.com` / Reply-To `{{reply_to}}` / Subject `{{subject}}`
+   - **パートナー問い合わせ**: To `info@asiansocials.nl` / Reply-To `{{reply_to}}` / Subject `{{subject}}`
      本文は **`email-templates/partner-inquiry.html`** を貼り付け
 4. Template ID は EmailJS が自動採番します。生成された ID をそのまま使ってください
 5. Public Key を取得し、`core.js` の `CONFIG.emailjs` に貼り付け

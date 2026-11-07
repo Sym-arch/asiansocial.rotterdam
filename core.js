@@ -5,7 +5,7 @@
 
 const CONFIG = {
   /* Where every form submission is delivered. */
-  contactEmail: 'info@sym-arch.com',
+  contactEmail: 'info@asiansocials.nl',
   orgName: 'Asian Socials',
   /* 公開ドメイン。www.asiansocials.nl と asiansocial-rotterdam.vercel.app の
      両方で同じ内容が出るため、canonical はこちらに寄せています。

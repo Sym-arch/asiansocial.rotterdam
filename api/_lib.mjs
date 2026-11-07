@@ -23,7 +23,7 @@ export const STRIPE_KEY   = env('STRIPE_SECRET_KEY');
 export const RESEND_KEY   = env('RESEND_API_KEY');
 
 export const FROM_EMAIL   = env('MAIL_FROM')     || 'Asian Socials <noreply@send.asiansocials.nl>';
-export const REPLY_TO     = env('MAIL_REPLY_TO') || 'info@sym-arch.com';
+export const REPLY_TO     = env('MAIL_REPLY_TO') || 'info@asiansocials.nl';
 
 /* Vercel の Node ランタイムは (req, res) 形のハンドラを期待します。
    Web の Response を返す形にすると、呼ばれても応答せず固まります。 */

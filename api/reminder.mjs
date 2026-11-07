@@ -136,7 +136,7 @@ function googleCalendarUrl(ev, origin) {
       ev.address ? 'Address: ' + ev.address : '',
       'Price: ' + priceLabel(price.cents, ev.currency || 'EUR'),
       '',
-      'Hosted by Asian Socials · info@sym-arch.com'
+      'Hosted by Asian Socials · info@asiansocials.nl'
     ].filter(Boolean).join('\n'),
     location: [ev.venue, ev.address].filter(Boolean).join(', '),
     sprop: 'website:' + origin

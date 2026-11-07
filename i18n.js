@@ -325,7 +325,7 @@ const I18N = {
     'footer.partners': 'For partners',
     'footer.follow':   'Follow',
     'footer.rights':   'All rights reserved.',
-    'footer.made':     'Made in Rotterdam · Contact: info@sym-arch.com',
+    'footer.made':     'Made in Rotterdam · Contact: info@asiansocials.nl',
     'footer.photo':    'Daylight photo: Weldon Ken, CC BY 2.0',
   },
 
@@ -637,7 +637,7 @@ const I18N = {
     'footer.partners': 'Voor partners',
     'footer.follow':   'Volg ons',
     'footer.rights':   'Alle rechten voorbehouden.',
-    'footer.made':     'Gemaakt in Rotterdam · Contact: info@sym-arch.com',
+    'footer.made':     'Gemaakt in Rotterdam · Contact: info@asiansocials.nl',
     'footer.photo':    'Daglichtfoto: Weldon Ken, CC BY 2.0',
   },
 
@@ -949,7 +949,7 @@ const I18N = {
     'footer.partners': '提携について',
     'footer.follow':   'フォロー',
     'footer.rights':   '無断転載を禁じます。',
-    'footer.made':     'ロッテルダムより · お問い合わせ: info@sym-arch.com',
+    'footer.made':     'ロッテルダムより · お問い合わせ: info@asiansocials.nl',
     'footer.photo':    '昼の写真: Weldon Ken, CC BY 2.0',
   }
 };
