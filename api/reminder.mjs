@@ -50,12 +50,29 @@ export default async function handler(req, res) {
       'rsvps?select=name,email,guests&event_id=eq.' + encodeURIComponent(eventId)
     );
 
+    /* チケットの控え。確認メールを送ったときの住所は、いまはもう
+       引けません（旧ドメインを畳んだため）。案内と一緒に、新しい
+       住所のチケットを届けます。 */
+    let ticketBy = new Map();
+    try {
+      const tickets = await sb(
+        'tickets?select=email,secret&status=eq.valid&event_id=eq.' + encodeURIComponent(eventId)
+      );
+      for (const t of tickets || []) {
+        const key = String(t.email || '').trim().toLowerCase();
+        if (key && t.secret && !ticketBy.has(key)) ticketBy.set(key, t.secret);
+      }
+    } catch (err) {
+      /* 引けなくても案内そのものは送ります */
+      console.error('ticket lookup failed:', err.message);
+    }
+
     /* 同じ人が二度予約していても、届くのは1通です */
     const byEmail = new Map();
     for (const r of rows) {
       const key = String(r.email || '').trim().toLowerCase();
       if (!key || !key.includes('@')) continue;
-      if (!byEmail.has(key)) byEmail.set(key, { email: r.email.trim(), name: r.name || '' });
+      if (!byEmail.has(key)) byEmail.set(key, { email: r.email.trim(), name: r.name || '', key });
     }
     const people = [...byEmail.values()];
     if (!people.length) return send(res, 200, { sent: 0, recipients: 0 });
@@ -68,7 +85,10 @@ export default async function handler(req, res) {
     const result = await sendMailBatch(people.map(p => ({
       to: p.email,
       subject,
-      html: reminderHTML({ ev, name: p.name, calendar, origin })
+      html: reminderHTML({
+        ev, name: p.name, calendar, origin,
+        ticket: ticketBy.get(p.key) || ''
+      })
     })));
 
     return send(res, 200, { sent: result.sent || people.length, recipients: people.length });
@@ -129,7 +149,7 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function reminderHTML({ ev, name, calendar, origin }) {
+function reminderHTML({ ev, name, calendar, origin, ticket }) {
   const first = String(name || '').split(' ')[0] || 'there';
   const when  = [longDate(ev.date),
                  [ev.start_time, ev.end_time].filter(Boolean).join('–')]
@@ -163,6 +183,22 @@ function reminderHTML({ ev, name, calendar, origin }) {
                 ${esc(priceLabel(price.cents, ev.currency || 'EUR'))}</td></tr>
         </table>
       </td></tr>
+
+      ${ticket ? `
+      <tr><td style="padding:26px 32px 0">
+        <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#3a3348">
+          We have moved to a new address while renovating the site:
+          <strong style="color:#0e0b14">asiansocials.nl</strong>.
+          The ticket link in your old confirmation email no longer opens &mdash;
+          please use this one instead. It is the same ticket.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td bgcolor="#0e0b14" style="padding:0">
+            <a href="${origin}/ticket.html#${esc(ticket)}"
+               style="display:inline-block;padding:15px 30px;color:#fff;text-decoration:none;
+                      font-size:14px;font-weight:bold">Open your ticket</a>
+          </td>
+        </tr></table>
+      </td></tr>` : ''}
 
       <tr><td style="padding:26px 32px 0">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
