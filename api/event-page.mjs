@@ -142,16 +142,38 @@ function jsonLd(ev, url, image) {
       }
     },
     organizer: { '@type': 'Organization', name: 'Asian Socials', url: SITE },
+    /* Search Console が「performer がありません」と出していた箇所です。
+       音楽の出演者はいませんが、その晩を主催して進めるのは私たちなので、
+       主催団体をそのまま出演者として書きます。 */
+    performer: { '@type': 'Organization', name: 'Asian Socials', url: SITE },
     offers: {
       '@type': 'Offer',
       price: ((ev.price_cents || 0) / 100).toFixed(2),
       priceCurrency: ev.currency || 'EUR',
       url,
-      availability: 'https://schema.org/InStock'
+      availability: 'https://schema.org/InStock',
+      /* 同じく「validFrom がありません」の箇所です。
+         申し込みを受け付け始めた日＝イベントを公開した日です。
+         記録が無い回は、当日より前であることだけは確かなので開始時刻を使います。 */
+      validFrom: saleStart(ev)
     }
   };
   /* </script> を含む文字が混ざると、そこで印が切れてしまいます */
   return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+/**
+ * 申し込みを受け付け始めた日時を ISO 8601 で返します。
+ * events.created_at（公開した時刻）を使い、読めない回だけ開始時刻に寄せます。
+ * 開始より後になることは無いので、Google に矛盾した組み合わせを渡しません。
+ */
+function saleStart(ev) {
+  const start = stamp(ev.date, ev.start_time || '19:00');
+  const made = Date.parse(ev.created_at || '');
+  if (isNaN(made)) return start;
+  const begins = Date.parse(start);
+  if (!isNaN(begins) && made > begins) return start;
+  return new Date(made).toISOString();
 }
 
 /* --- 日付と文字 --------------------------------------------------------- */

@@ -71,12 +71,10 @@ const SEED_EVENTS = [];
 
 let EVENTS = DB.get('events', null) || SEED_EVENTS.slice();
 let RSVPS  = DB.get('rsvps',  []);
-let MSGS   = DB.get('messages', []);
 if (!DB.get('events', null)) DB.set('events', EVENTS);
 
 const saveEvents = () => DB.set('events', EVENTS);
 const saveRsvps  = () => DB.set('rsvps',  RSVPS);
-const saveMsgs   = () => DB.set('messages', MSGS);
 
 /* ---------------------------------------------------------
    Small helpers
@@ -2163,6 +2161,35 @@ function initLangMenu() {
 }
 
 /* ---------------------------------------------------------
+   ヘッダーの Admin ボタン（ホーム以外のページ）
+
+   管理画面そのものは index.html の中にしかありません。
+   これまで入口を出す処理も app.js（ホーム専用）にしかなかったので、
+   About やマイページでは、管理者で入っていてもボタンが出ませんでした。
+   ここではボタンを出すところまでを引き受け、押されたらホームへ送ります。
+   ホーム（#adminModal がある）では app.js がその場で開くので、
+   二重に確かめないよう、何もせずに戻ります。
+   --------------------------------------------------------- */
+function initAdminEntry() {
+  const btn = $('#adminOpen');
+  if (!btn) return;
+  if ($('#adminModal')) return;           /* ホームは app.js の担当です */
+
+  const show = ok => { btn.hidden = !ok; };
+
+  /* 「この端末で前に入った」ではなく「いまサインインしている人」で決めます。
+     端末の目印で出すと、主催者が一度使った端末に入口が残ります。 */
+  const check = () => isAdminUser().then(show).catch(() => show(false));
+  check();
+  document.addEventListener('member:changed', check);
+
+  btn.addEventListener('click', () => {
+    /* 翻訳プロキシの上では管理画面は動きません。本来のドメインへ送ります。 */
+    location.href = onProxy() ? nativeUrl('en', '#admin') : 'index.html#admin';
+  });
+}
+
+/* ---------------------------------------------------------
    Shared UI wiring (header menu, reveal-on-scroll, year)
    --------------------------------------------------------- */
 function initShell() {
@@ -2183,6 +2210,7 @@ function initShell() {
     });
   }
   syncAccountLink();
+  bindOnce('admin-entry', initAdminEntry);
   bindOnce('consent', consentInit);
 
   const rev = new IntersectionObserver((entries, obs) => {

@@ -31,10 +31,6 @@ async function submitPartner(e) {
   if (!data.name || !data.email || !data.message) return toast(t('partner.err.required'), true);
   if (!isEmail(data.email)) return toast(t('partner.err.email'), true);
 
-  /* 管理画面はこの端末の控えを読みます。送信に失敗しても残るようにします */
-  MSGS.push(Object.assign({ id: uid(), kind: 'partner', createdAt: new Date().toISOString() }, data));
-  saveMsgs();
-
   const btn = f.querySelector('button[type=submit]');
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = t('partner.sending');

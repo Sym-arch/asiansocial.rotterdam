@@ -330,7 +330,13 @@ function fillReminderSelect() {
   rem.innerHTML = '<option value="">All events</option>' +
     EVENTS.slice().sort(byDate).reverse()
       .map(e => `<option value="${esc(e.id)}">${esc(fmtDate(e, { day: 'numeric', month: 'short' }))} — ${esc(e.title)}</option>`).join('');
-  if (keep && EVENTS.some(e => e.id === keep)) rem.value = keep;
+  if (keep && EVENTS.some(e => e.id === keep)) { rem.value = keep; return; }
+
+  /* 初めて開いたときは、次の回を選んでおきます。
+     「すべて」のままだと、上の数字が累計になり、いまの回に何人来るのか
+     読み取れません。知りたいのはたいてい直近の1回です。 */
+  const next = upcoming()[0] || EVENTS.slice().sort(byDate).reverse()[0];
+  if (next) rem.value = next.id;
 }
 
 /** 表とリマインダーが見ているイベント。空文字は「すべて」です。 */
@@ -339,12 +345,16 @@ const rsvpFilter = () => (($('#rsvpEvent') || {}).value || '');
 function renderAdmin() {
   if (!isAdmin) return;
 
-  const seatsBooked = ADMIN_RSVPS.reduce((n, r) => n + (Number(r.guests) || 1), 0);
+  /* 上の数字は、下で選んでいる回のものです。累計だと「今回は何人来るのか」が
+     読み取れませんでした。選び直すと、この数字も一緒に変わります。 */
+  const kpiPick  = rsvpFilter();
+  const kpiRows  = kpiPick ? ADMIN_RSVPS.filter(r => r.eventId === kpiPick) : ADMIN_RSVPS;
+  const kpiScope = kpiPick ? 'this event' : 'all events';
+  const seatsBooked = kpiRows.reduce((n, r) => n + (Number(r.guests) || 1), 0);
   $('#adminKpi').innerHTML = `
     <div><b>${upcoming().length}</b><span>Upcoming events</span></div>
-    <div><b>${ADMIN_RSVPS.length}</b><span>RSVPs</span></div>
-    <div><b>${seatsBooked}</b><span>Seats booked</span></div>
-    <div><b>${MSGS.length}</b><span>Messages</span></div>`;
+    <div><b>${kpiRows.length}</b><span>RSVPs · ${kpiScope}</span></div>
+    <div><b>${seatsBooked}</b><span>Seats booked · ${kpiScope}</span></div>`;
 
   $('#aeCount').textContent = EVENTS.length;
   const evs = EVENTS.slice().sort(byDate).reverse();
@@ -383,18 +393,6 @@ function renderAdmin() {
       <td>${esc(r.guests)}</td>
       <td><button class="mini mini--danger" type="button" data-del-rsvp="${esc(r.id)}">✕</button></td>
     </tr>`).join('')}</tbody>` : '<tbody><tr><td><div class="empty">No RSVPs yet.</div></td></tr></tbody>';
-
-  const ms = MSGS.slice().reverse();
-  $('#msgTable').innerHTML = ms.length ? `
-    <thead><tr><th>Received</th><th>Type</th><th>From</th><th>Subject</th><th>Message</th><th></th></tr></thead>
-    <tbody>${ms.map(m => `<tr>
-      <td>${esc(new Date(m.createdAt).toLocaleDateString('en-GB'))}</td>
-      <td><span class="pill ${m.kind === 'partner' ? 'pill--orange' : ''}">${esc(m.kind)}</span></td>
-      <td>${esc(m.name)}${m.company ? '<br><small>' + esc(m.company) + '</small>' : ''}<br><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></td>
-      <td>${esc(m.topic || '—')}${m.website ? '<br><small>' + esc(m.website) + '</small>' : ''}</td>
-      <td>${esc(m.message)}</td>
-      <td><button class="mini mini--danger" type="button" data-del-msg="${esc(m.id)}">✕</button></td>
-    </tr>`).join('')}</tbody>` : '<tbody><tr><td><div class="empty">No messages yet.</div></td></tr></tbody>';
 }
 
 /* チェックが外れている項目の入力欄は出しません。
@@ -571,11 +569,6 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
       ADMIN_RSVPS = ADMIN_RSVPS.filter(x => x.id !== goneRsvp);
       RSVPS = RSVPS.filter(x => x.id !== goneRsvp); saveRsvps(); renderAdmin();
       deleteRsvp(goneRsvp).catch(err => toast(err.message, true));
-      return;
-    }
-    if (t.dataset.delMsg) {
-      if (!confirm('Delete this message?')) return;
-      MSGS = MSGS.filter(x => x.id !== t.dataset.delMsg); saveMsgs(); renderAdmin();
       return;
     }
   });
@@ -763,10 +756,6 @@ They receive it straight away.`;
     if (!rows.length) return toast('Nothing to export.', true);
     const slug = ev ? '-' + String(ev.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) : '';
     download('asr-rsvps' + slug + '.csv', toCsv(rows), 'text/csv;charset=utf-8');
-  });
-  $('#exportMsg').addEventListener('click', () => {
-    if (!MSGS.length) return toast('Nothing to export.', true);
-    download('asr-messages.csv', toCsv(MSGS), 'text/csv;charset=utf-8');
   });
 
   eventFormFill(null);
