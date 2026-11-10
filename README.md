@@ -25,9 +25,7 @@ asian-socials-rotterdam/
 ├── email-templates/    … EmailJS に貼り付けるメール本文（HTML）
 ├── supabase/schema.sql … events / notes テーブルの作成SQL
 ├── assets/
-│   ├── logo.jpg        … ロゴ
-│   ├── bg-*.jpg        … セクション背景写真（フリー素材）
-│   └── CREDITS.json    … 背景写真の出典とライセンス
+│   └── logo.jpg        … ロゴ
 └── README.md
 ```
 
@@ -295,17 +293,15 @@ cron で自動リマインドを送ることもできるようになります。
 | やりたいこと | 場所 |
 |---|---|
 | キャッチコピー・ミッション文言 | `index.html`（`#home` / `#about`） |
-| セクション背景写真 | `assets/bg-*.jpg` を差し替え（`index.html` の `band__bg`） |
 | SNS / Meetup のリンク | 各HTMLのフッター（index / event / booked の3ファイル） |
 | 色・フォント | `styles.css` 冒頭の `:root` |
 | 連絡先メール・パスコード・Supabase設定 | `core.js` の `CONFIG` |
 
 ## 11. 写真のライセンス
 
-`assets/CREDITS.json` に出典を記録しています。
-背景写真はすべてフリー素材（CC0 / パブリックドメイン）ですが、**昼の写真（`bg-day.jpg`）だけ
-CC BY 2.0** でクレジット表記が必要なため、フッターに `Daylight photo: Weldon Ken, CC BY 2.0`
-を入れています。差し替える場合はこの表記も外してください。
+背景写真（`bg-*.jpg`）は 2026-11 にサイトから外しました。
+第三者の写真を使っていないので、フッターのクレジット表記も不要になっています。
+写真を戻すときは出典とライセンスを記録し、CC BY なら表記も戻してください。
 
 ## 12. 予約データとプライバシー
 

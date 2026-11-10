@@ -450,7 +450,8 @@ async function submitRsvp(input) {
       /* absolute URLs so the confirmation email can link and show images */
       first_name: rsvp.name.split(' ')[0],
       event_url: absUrl(eventUrl(ev.id)),
-      event_image: /^https?:/i.test(ev.image || '') ? ev.image : absUrl('assets/bg-crowd.jpg'),
+      /* 背景写真（bg-*.jpg）はサイトから外したので、写真の無い回は OGP 画像で代用します */
+      event_image: /^https?:/i.test(ev.image || '') ? ev.image : absUrl('assets/og-image.jpg'),
       logo_url: absUrl('assets/logo.jpg'),
       site_url: absUrl('index.html'),
       subject: `[RSVP] ${ev.title} — ${rsvp.name} (${guests})`

@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bootstrapContent(drawAll);
 
   /* Scroll-spy */
-  ['home', 'events', 'membership', 'en'].forEach(id => {
+  ['home', 'events', 'en'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     new IntersectionObserver(entries => {

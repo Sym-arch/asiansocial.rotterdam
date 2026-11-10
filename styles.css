@@ -206,10 +206,10 @@ ul,ol{margin:0;padding:0;list-style:none}
 .band h1,.band h2,.band h3,.band h4{color:var(--on-night)}
 .band p{color:var(--on-night-muted)}
 /* 明るい地の上で引いた細い線は、写真の帯の上ではほぼ消えます */
-.band .perks,.band .perk,.band .join{border-color:var(--rule-night)}
-/* .perk p / .join p は .band p より詳しいので、明るい地の色が勝ちます。
+.band .perks,.band .perk{border-color:var(--rule-night)}
+/* .perk p は .band p より詳しいので、明るい地の色が勝ちます。
    そのままだと写真の上でコントラストが 3.43 しかありません（基準 4.5）。 */
-.band .perk p,.band .join p{color:var(--on-night-muted)}
+.band .perk p{color:var(--on-night-muted)}
 
 /* daylight variant: same photographic band, read as light */
 .band--day{background:var(--paper);color:var(--ink)}
@@ -917,12 +917,6 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 .acct-page{max-width:560px}
 
-/* 会員になる導線。並べた特典のあとに、押す場所を1つだけ置きます */
-.join{
-  margin-top:clamp(34px,4vw,54px);padding-top:28px;border-top:1px solid var(--rule);
-  display:flex;flex-wrap:wrap;align-items:center;gap:16px 28px;
-}
-.join p{font-size:.88rem;color:var(--muted);max-width:46ch;margin:0}
 
 /* =========================================================
    会員証（ブランドレッド）
