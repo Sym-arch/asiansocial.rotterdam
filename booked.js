@@ -41,12 +41,6 @@ function render(rsvp, ev) {
     ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) : '';
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
 
-  const organiserMail = mailtoUrl(
-    CONFIG.contactEmail,
-    `[RSVP] ${ev.title} — ${rsvp.name} (${rsvp.guests})`,
-    `New RSVP\n\nEvent: ${ev.title}\nDate: ${fmtLong(ev)} ${fmtTime(ev)}\n` +
-    `Name: ${rsvp.name}\nEmail: ${rsvp.email}\nGuests: ${rsvp.guests}`
-  );
 
   $('#bookedMain').innerHTML = `
   <section class="booked">
@@ -54,7 +48,7 @@ function render(rsvp, ev) {
       <div class="booked__card">
         <div class="booked__tick">${esc(t('booked.tick'))}</div>
         <h1>${esc(t('booked.title', { name: rsvp.name.split(' ')[0] }))}</h1>
-        <p class="lead">${esc(t(MODE === 'manual' ? 'booked.lead.manual' : 'booked.lead.auto'))}</p>
+        <p class="lead">${esc(t(MODE === 'manual' ? 'booked.lead.saved' : 'booked.lead.auto'))}</p>
 
         <div class="booked__event">
           ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">` : ''}
@@ -70,32 +64,22 @@ function render(rsvp, ev) {
           </div>
         </div>
 
-        ${MODE === 'manual' ? `
-        <a class="btn btn--brand btn--block booked__primary" href="${esc(organiserMail)}">
-          ${esc(t('booked.manualBtn'))}</a>
-        <p class="booked__hint">${esc(t('booked.manualHint'))}</p>` : ''}
 
         ${TICKET_SECRET ? `
         <h3 class="booked__sub">${esc(t('booked.ticketTitle'))}</h3>
-        <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.ticketBody'))}</p>
+        <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t(MODE === 'manual' ? 'booked.ticketBodyNoMail' : 'booked.ticketBody'))}</p>
         <a class="btn btn--brand" href="ticket.html#${encodeURIComponent(TICKET_SECRET)}">
           ${esc(t('booked.ticketBtn'))}</a>` : ''}
 
         <h3 class="booked__sub">${esc(t('booked.calendar'))}</h3>
         <div class="booked__actions">
-          <a class="btn ${MODE === 'manual' ? 'btn--line' : 'btn--brand'}" href="${esc(gcal)}" target="_blank" rel="noopener">
+          <a class="btn btn--line" href="${esc(gcal)}" target="_blank" rel="noopener">
             ${esc(t('booked.gcal'))}</a>
           ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('booked.maps'))}</a>` : ''}
         </div>
 
         <div id="bookedProfile" hidden></div>
 
-        <h3 class="booked__sub">${esc(t('booked.next'))}</h3>
-        <ol class="steps">
-          <li><b>${esc(t('booked.step1'))}</b><span>${esc(t(MODE === 'manual' ? 'booked.step1.manual' : 'booked.step1.body'))}</span></li>
-          <li><b>${esc(t('booked.step2'))}</b><span>${esc(t('booked.step2.body'))}</span></li>
-          <li><b>${esc(t('booked.step3'))}</b><span>${esc(t('booked.step3.body'))}</span></li>
-        </ol>
 
       </div>
 
