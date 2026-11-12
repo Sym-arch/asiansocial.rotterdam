@@ -1060,14 +1060,6 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
   color:var(--en-muted);
 }
 
-/* ホームの En. は回の一覧だけにしました（説明は About へ移動）。
-   見出しは一行にまとめ、上下の余白も詰めます */
-.en-teaser--events{padding:clamp(44px,6vw,80px) 0}
-.en-teaser--events .en-teaser__events{margin-top:22px}
-.en-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px 24px}
-.en-head h2{font-family:var(--display);font-weight:500;font-size:clamp(1.5rem,3.4vw,2.2rem);letter-spacing:-.02em}
-.en-head a{color:var(--en-ink);font-size:.86rem;font-weight:600}
-
 /* En. の回 */
 .en-teaser__events{
   margin-top:clamp(38px,5vw,64px);
