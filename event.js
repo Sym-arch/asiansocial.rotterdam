@@ -61,14 +61,11 @@ function bookingHTML(ev) {
 
   const signed = isSignedIn();
   const myName = (MEMBER && MEMBER.profile && MEMBER.profile.name || '').trim();
-  /* 名前を登録していない人がいます。以前はメールアドレスで代用していたので、
-     確認画面やチケットに「t.iino@…さん」と出ていました。ここで聞きます。 */
-  const needName = signed && !myName;
 
   return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
     <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('rsvp.title'))}</h2>
     <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">
-      ${priceInlineHTML(ev)} ${esc(t('rsvp.note'))}</p>
+      ${priceInlineHTML(ev)}</p>
 
     <form id="bookForm" novalidate>
       ${signed ? `
@@ -76,14 +73,7 @@ function bookingHTML(ev) {
         ${esc(t('rsvp.asMember', { name: myName || signedInAs() }))}
         <button type="button" class="linkish" data-member>${esc(t('rsvp.notYou'))}</button>
       </p>
-      ${needName ? `
-      <div class="form-grid" style="grid-template-columns:1fr">
-        <div class="field">
-          <label for="bName">${esc(t('rsvp.name'))} <span class="req">*</span></label>
-          <input id="bName" type="text" autocomplete="name" required>
-          <small class="field__hint">${esc(t('rsvp.nameWhy'))}</small>
-        </div>
-      </div>` : ''}` : `
+` : `
       <div class="form-grid" style="grid-template-columns:1fr">
         <div class="field">
           <label for="bName">${esc(t('rsvp.name'))} <span class="req">*</span></label>
@@ -115,8 +105,11 @@ function bookingHTML(ev) {
       ${consentHTML('bConsent', 'consent.booking')}
 
       <button class="btn btn--brand btn--block" type="submit" id="bSubmit" style="margin-top:18px">
-        ${esc(isPaid(ev) ? t('rsvp.payBtn', { price: priceFor(ev).label })
+        ${esc(isPaid(ev) ? t('rsvp.title')
                          : t(signed ? 'rsvp.submit' : 'rsvp.bookBtn'))}</button>
+
+      ${isPaid(ev) ? `
+      <p class="pay-help"><button type="button" class="linkish" data-pay-help>${esc(t('rsvp.payHelp'))}</button></p>` : ''}
 
       ${signed ? '' : `
       <p class="acct-swap" style="margin-top:16px">
@@ -124,6 +117,48 @@ function bookingHTML(ev) {
         <button type="button" class="linkish" data-member>${esc(t('account.toSignin'))}</button>
       </p>`}
     </form>`;
+}
+
+/* 「支払いがうまくいかないとき」の説明。
+   カードや Apple Pay の決済は、カード自体に問題が無くても、決済会社（Stripe）の
+   自動の安全チェックで止められることがあります（新しいアカウントの少額決済で
+   起きやすい）。止められた画面は Stripe の中なので、こちらから説明を差し込めません。
+   そこで、押す前に読める場所に置きます。決済の流れそのものは変えません。 */
+function openPayHelp() {
+  let el = $('#payHelpModal');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'modal modal--sm';
+    el.id = 'payHelpModal';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-labelledby', 'payHelpTitle');
+    document.body.appendChild(el);
+    el.addEventListener('click', e => {
+      if (e.target === el || e.target.closest('[data-close]')) {
+        el.classList.remove('is-open');
+        /* 予約欄のモーダルの上から開いたときは、そちらが開いたままなので
+           背景のスクロールは止めたままにします */
+        if (!BOOK_MODAL_OPEN) document.body.style.overflow = '';
+      }
+    });
+  }
+  /* 言語を切り替えたあとでも合うよう、開くたびに描き直します */
+  el.innerHTML = `
+    <div class="modal__scrim" data-close></div>
+    <div class="modal__panel">
+      <div class="modal__head"><h3 id="payHelpTitle">${esc(t('rsvp.payHelpTitle'))}</h3>
+        <button class="modal__close" type="button" data-close aria-label="Close">\u2715</button></div>
+      <div class="modal__body pay-help__body">
+        <p>${esc(t('rsvp.payHelp1'))}</p>
+        <p><b>${esc(t('rsvp.payHelp2'))}</b></p>
+        <p>${esc(t('rsvp.payHelp3'))}
+          <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a></p>
+        <button class="btn btn--brand btn--block" type="button" data-close>${esc(t('rsvp.payHelpOk'))}</button>
+      </div>
+    </div>`;
+  el.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
 }
 
 /* 「席を予約する」を押したら、予約欄をその場で中央に開きます。
@@ -275,8 +310,10 @@ function renderEvent(ev) {
 
   /* wiring */
   const bookLabel = () => isPaid(ev)
-    ? t('rsvp.payBtn', { price: priceFor(ev).label })
+    ? t('rsvp.title')
     : t(isSignedIn() ? 'rsvp.submit' : 'rsvp.bookBtn');
+
+  $$('[data-pay-help]').forEach(b => b.addEventListener('click', openPayHelp));
 
   /* JavaScript が動かないときは、これまでどおり下の予約欄へ飛びます */
   $$('[data-book-open]').forEach(b => b.addEventListener('click', e => {

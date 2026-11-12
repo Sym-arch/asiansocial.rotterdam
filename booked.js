@@ -31,7 +31,7 @@ async function fillProfileNudge() {
     if (p.nationality && p.city && p.birthdate) return;
   }
   box.innerHTML = `
-    <a class="btn btn--line booked__profile" href="profile.html">${esc(t('booked.profile.btn'))}</a>`;
+    <a class="btn btn--line booked__profile" href="details.html">${esc(t('booked.profile.btn'))}</a>`;
   box.hidden = false;
 }
 

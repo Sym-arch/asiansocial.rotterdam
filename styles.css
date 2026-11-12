@@ -836,9 +836,14 @@ ul,ol{margin:0;padding:0;list-style:none}
 
 /* 名前の編集。ふだんは表示だけにします */
 /* プロフィールの任意項目 */
-.about__why{color:var(--muted);font-size:.9rem;margin:-8px 0 20px;max-width:52ch}
 .about__grid{display:grid;gap:20px}
 .about__act{margin-top:22px}
+/* 過去の予約は、これからの予約より一段控えめに */
+.acct-list--past .acct-list__main b{color:var(--ink-2);font-weight:500}
+/* 予約ボタンの下の「支払いがうまくいかないとき」 */
+.pay-help{margin-top:12px;text-align:center;font-size:.86rem}
+.pay-help__body p{color:var(--ink-2);font-size:.94rem;line-height:1.6;margin:0 0 14px}
+.pay-help__body .btn{margin-top:8px}
 /* 予約完了ページの「プロフィールを完成させる」ボタン */
 .booked__profile{margin-top:28px}
 .namebox{display:flex;align-items:center;justify-content:space-between;gap:16px}

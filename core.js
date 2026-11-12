@@ -477,9 +477,12 @@ async function submitRsvp(input) {
   if (isSignedIn()) {
     const known = (MEMBER && MEMBER.profile && MEMBER.profile.name || '').trim();
     const given = String(input.name || '').trim();
-    if (!known && !given) throw new Error(t('rsvp.err.name'));
+    /* 登録済みの人には名前を聞きません（予約の手間を増やさないため）。
+       プロフィールに名前が無い古いアカウントだけ、メールアドレスの前半を
+       名前の代わりにします。名前は「Your details」でいつでも直せます。 */
+    const fallback = personName(signedInAs());
 
-    input = Object.assign({}, input, { name: known || given, email: signedInAs() });
+    input = Object.assign({}, input, { name: known || given || fallback, email: signedInAs() });
 
     /* 名前を初めて教えてもらったので控えます。次回から聞きません */
     if (!known && given) {
@@ -1297,7 +1300,6 @@ function aboutBlockHTML(profile) {
   return `
     <div class="acct-block about" id="mcAbout">
       <h2>${esc(t('profile.about'))}</h2>
-      <p class="about__why">${esc(t('profile.aboutNote'))}</p>
 
       <div class="about__grid">
         <div class="field">
@@ -1402,6 +1404,13 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
       'my tickets:', (tickets || []).map(tk => ({ id: tk.id, event_id: tk.event_id, status: tk.status })));
   }
 
+  /* 過去の予約も残して見せます。「行ったことがある回」を本人が
+     振り返れるように、終わった回を消さずに下へまとめます */
+  const dateOf = r => { const ev = findEvent(r.event_id); return (ev && ev.date) || r.event_date || ''; };
+  const pastRow = r => { const ev = findEvent(r.event_id); return ev ? isPast(ev) : false; };
+  const coming = shown.filter(r => !pastRow(r)).sort((a, b) => dateOf(a).localeCompare(dateOf(b)));
+  const gone   = shown.filter(pastRow).sort((a, b) => dateOf(b).localeCompare(dateOf(a)));
+
   const bookingRow = r => {
     const tk = ticketFor(r);
     /* 控えてある名前は予約した当時のものです。イベント名を変えると
@@ -1420,7 +1429,7 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
       ${tk
         ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
              ${esc(t('account.openTicket'))}</a>`
-        : (ev && !isPaid(ev))
+        : (ev && !isPaid(ev) && !isPast(ev))
           /* 無料の回でチケットが無いときは、押された時点で作ります */
           ? `<button class="acct-ticket" type="button" data-ticket="${esc(r.id)}">
                ${esc(t('account.openTicket'))}</button>`
@@ -1443,32 +1452,23 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
     </section>
 
     <div class="acct-block">
-      <h2>${esc(t('account.name'))}</h2>
-      <!-- ふだんは表示だけにします。保存ボタンが出たままだと、
-           何か書きかけのように見えます -->
-      <div class="namebox" id="mcNameView">
-        <span class="namebox__value">${esc(profile.name || '\u2014')}</span>
-        <button class="mini" type="button" id="mcEdit">${esc(t('account.edit'))}</button>
-      </div>
-      <div id="mcNameEdit" hidden>
-        <div class="field">
-          <label for="mcName" class="sr-only">${esc(t('account.name'))}</label>
-          <input id="mcName" type="text" value="${esc(profile.name || '')}" placeholder="${esc(t('account.namePh'))}">
-        </div>
-        <div class="namebox__act">
-          <button class="mini" type="button" id="mcSave">${esc(t('account.save'))}</button>
-          <button class="linkish" type="button" id="mcCancel">${esc(t('account.cancel'))}</button>
-        </div>
-      </div>
+      <h2>${esc(t('account.upcoming'))}</h2>
+      ${coming.length
+        ? `<ul class="acct-list">${coming.map(bookingRow).join('')}</ul>`
+        : `<p style="color:var(--muted)">${esc(t('account.noBookings'))}
+             <a href="index.html#events">${esc(t('account.seeEvents'))}</a></p>`}
     </div>
 
-    ${aboutBlockHTML(profile)}
+    ${gone.length ? `
+    <div class="acct-block">
+      <h2>${esc(t('account.past'))}</h2>
+      <ul class="acct-list acct-list--past">${gone.map(bookingRow).join('')}</ul>
+    </div>` : ''}
 
     <div class="acct-block">
-      <h2>${esc(t('account.bookings'))}</h2>
-      ${shown.length
-        ? `<ul class="acct-list">${shown.map(bookingRow).join('')}</ul>`
-        : `<p style="color:var(--muted)">${esc(t('account.noBookings'))}</p>`}
+      <h2>${esc(t('account.details'))}</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin:-6px 0 14px">${esc(name)}</p>
+      <a class="btn btn--line btn--sm" href="details.html">${esc(t('account.editDetails'))}</a>
     </div>
 
     ${isOrganiser ? `
@@ -1645,7 +1645,38 @@ function wireMemberAuth() {
   });
 }
 
-function wireMemberCard() {
+/* =========================================================
+   Your details（details.html）
+   名前・国籍・住んでいる都市・生年月日。
+   予約の一覧（profile.html）とは分けました。予約を見に来た人に
+   入力欄を並べると、どこを見ればいいのか分かりにくくなるためです。
+   ========================================================= */
+function detailsHTML(profile) {
+  return `
+    <div class="acct-block">
+      <h2>${esc(t('account.name'))}</h2>
+      <!-- ふだんは表示だけにします。保存ボタンが出たままだと、
+           何か書きかけのように見えます -->
+      <div class="namebox" id="mcNameView">
+        <span class="namebox__value">${esc(profile.name || '\u2014')}</span>
+        <button class="mini" type="button" id="mcEdit">${esc(t('account.edit'))}</button>
+      </div>
+      <div id="mcNameEdit" hidden>
+        <div class="field">
+          <label for="mcName" class="sr-only">${esc(t('account.name'))}</label>
+          <input id="mcName" type="text" value="${esc(profile.name || '')}" placeholder="${esc(t('account.namePh'))}">
+        </div>
+        <div class="namebox__act">
+          <button class="mini" type="button" id="mcSave">${esc(t('account.save'))}</button>
+          <button class="linkish" type="button" id="mcCancel">${esc(t('account.cancel'))}</button>
+        </div>
+      </div>
+    </div>
+
+    ${aboutBlockHTML(profile)}`;
+}
+
+function wireDetails() {
   /* 名前は「編集」を押したときだけ書き換えられるようにします */
   const nameView = $('#mcNameView'), nameEdit = $('#mcNameEdit');
   const showEdit = on => { if (nameView && nameEdit) { nameView.hidden = on; nameEdit.hidden = !on; } };
@@ -1662,7 +1693,8 @@ function wireMemberCard() {
     showEdit(false);
   });
 
-  $('#mcSave').addEventListener('click', async () => {
+  const saveBtn = $('#mcSave');
+  if (saveBtn) saveBtn.addEventListener('click', async () => {
     const btn = $('#mcSave');
     btn.disabled = true;
     try {
@@ -1677,6 +1709,9 @@ function wireMemberCard() {
     btn.disabled = false;
   });
   wireAboutBlock();
+}
+
+function wireMemberCard() {
 
   /* 無料の回でチケットがまだ無い予約。押されたら作って、そのまま開きます */
   $$('[data-ticket]').forEach(btn => btn.addEventListener('click', async () => {
