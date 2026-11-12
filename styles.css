@@ -1349,3 +1349,8 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .cm-admin-photos figcaption{font-size:.74rem;color:var(--muted)}
 .admin-row__main strong .cm-av{margin-right:8px;width:28px;height:28px}
 .admin-row__main strong .cm-av__i{width:28px;height:28px;font-size:.66rem}
+
+/* 管理画面の上の数字。箱にせず、左寄せで大きく */
+.kpi-row{display:flex;flex-wrap:wrap;gap:16px clamp(36px,6vw,72px);margin:4px 0 30px}
+.kpi-big b{display:block;font-family:var(--display);font-weight:500;font-size:clamp(2.6rem,6vw,3.6rem);line-height:1;letter-spacing:-.03em;color:var(--ink)}
+.kpi-big span{display:block;margin-top:8px;font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}

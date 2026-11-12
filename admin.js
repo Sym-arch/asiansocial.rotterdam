@@ -130,7 +130,6 @@ async function refreshPastAdmin() {
   ]);
   PAST_ADMIN = Object.assign({}, cm, { checkins });
   renderPastAdmin();
-  renderKpi();   /* 来た人数が分かったので、上の Show-up rate も描き直します */
 }
 
 function renderPastAdmin() {
@@ -326,8 +325,6 @@ const rsvpFilter = () => (($('#rsvpEvent') || {}).value || '');
    ここには、運営全体の調子が一目で分かるものだけを置きます。
    - Upcoming events … これからの回の数
    - Members … 会員の総数と、この30日で増えた数
-   - Bookings · 30 days … この30日に入った予約の人数
-   - Show-up rate … 終わった回で、予約した人のうち実際に来た割合
    --------------------------------------------------------- */
 let MEMBER_STATS = null;   /* { total, recent } */
 
@@ -343,19 +340,10 @@ async function loadMemberStats() {
 }
 
 function renderKpi() {
-  const since = Date.now() - 30 * 864e5;
-  const recentSeats = ADMIN_RSVPS
-    .filter(r => new Date(r.createdAt).getTime() >= since)
-    .reduce((n, r) => n + (Number(r.guests) || 1), 0);
-  const past = EVENTS.filter(isPast);
-  const booked = past.reduce((n, ev) => n + seatsFor(ev.id), 0);
-  const came = past.reduce((n, ev) => n + attendedFor(ev), 0);
-  const rate = booked && came ? Math.round(came / booked * 100) + '%' : '—';
+  /* 箱には入れず、左に大きく並べます。数字が2つだけなので、見出しのように読ませます */
   $('#adminKpi').innerHTML = `
-    <div><b>${upcoming().length}</b><span>Upcoming events</span></div>
-    <div><b>${MEMBER_STATS ? MEMBER_STATS.total : '—'}</b><span>Members${MEMBER_STATS && MEMBER_STATS.recent ? ' · +' + MEMBER_STATS.recent + ' in 30 days' : ''}</span></div>
-    <div><b>${recentSeats}</b><span>Seats booked · last 30 days</span></div>
-    <div><b>${rate}</b><span>Show-up rate · past events</span></div>`;
+    <div class="kpi-big"><b>${upcoming().length}</b><span>Upcoming events</span></div>
+    <div class="kpi-big"><b>${MEMBER_STATS ? MEMBER_STATS.total : '—'}</b><span>Members${MEMBER_STATS && MEMBER_STATS.recent ? ' · +' + MEMBER_STATS.recent + ' in 30 days' : ''}</span></div>`;
 }
 
 function renderAdmin() {

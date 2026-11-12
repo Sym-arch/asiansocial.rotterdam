@@ -58,7 +58,7 @@ function renderEventRail() {
 
 /* ---------------------------------------------------------
    Past events（ホームの一番下）
-   終わった回を新しい順に6件。参加者の写真があれば1枚目を表紙にし、
+   終わった回を新しい順に4件（全部は events.html の See all past events で）。参加者の写真があれば1枚目を表紙にし、
    写真とレビューの数、いちばん新しいレビューを添えます。
    写真・レビューのテーブル（19 の SQL）が無いときは、回だけを並べます。
    --------------------------------------------------------- */
@@ -101,7 +101,7 @@ function pastCardHTML(ev, cm) {
 async function renderPastEvents() {
   const sec = $('#past'), grid = $('#pastGrid');
   if (!sec || !grid) return;
-  const list = EVENTS.filter(isPast).sort(byDate).reverse().slice(0, 6);
+  const list = EVENTS.filter(isPast).sort(byDate).reverse().slice(0, 4);
   sec.hidden = !list.length;
   if (!list.length) return;
   const cm = await loadPastCommunity();
