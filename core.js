@@ -1967,7 +1967,10 @@ const evFromRow = r => ({
   earlyBird:        !!r.early_bird,
   priceEarlyCents:  r.price_early_cents,
   earlyBirdUntil:   r.early_bird_until,
-  capacity:         r.capacity
+  capacity:         r.capacity,
+  /* 実際に来た人数（20-event-attendance.sql）。書くのは管理画面の Past Events だけで、
+     イベントの保存（evToRow）には含めません。列が無い環境でも保存が通るようにするためです */
+  attendance:       r.attendance ?? null
 });
 const evToRow = e => ({
   id: e.id, title: e.title, date: e.date, start_time: e.start, end_time: e.end,

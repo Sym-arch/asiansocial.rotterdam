@@ -1323,11 +1323,28 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .past__more{margin-top:26px}
 
 /* 管理画面の Community タブ */
-.cm-admin-add{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
-.cm-admin-add .admin-select{flex:1 1 260px}
-.cm-admin-add label{cursor:pointer}
+/* 管理画面の Past events。回ごとに畳んで並べます */
+.pe{border-top:1px solid var(--rule)}
+.pe:last-child{border-bottom:1px solid var(--rule)}
+.pe__sum{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;padding:16px 0;cursor:pointer;list-style:none}
+.pe__sum::-webkit-details-marker{display:none}
+.pe__title b{display:block;font-size:.98rem;font-weight:600}
+.pe__title span{font-size:.78rem;color:var(--muted)}
+.pe__nums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.78rem;color:var(--muted);align-items:center}
+.pe__nums b{color:var(--ink);font-size:.92rem}
+.pe__body{padding:4px 0 26px}
+.pe__stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.pe__stats div{padding:12px 14px;border:1px solid var(--rule);border-radius:10px;background:var(--paper-2)}
+.pe__stats b{display:block;font-size:1.3rem;font-family:var(--display);font-weight:500}
+.pe__stats span{font-size:.74rem;color:var(--muted)}
+.pe__att{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.pe__att label{font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.pe__att input{width:90px;font:inherit;padding:6px 8px;border:1px solid var(--rule);background:transparent;color:var(--ink)}
+.pe__att small{flex-basis:100%;font-size:.76rem;color:var(--muted)}
+.pe__add{cursor:pointer}
+.admin-row__nums{display:block;margin-top:2px;font-size:.78rem;color:var(--ink-2);font-weight:600}
 .cm-admin-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.cm-admin-photos figure{margin:0;display:grid;gap:6px}
+.cm-admin-photos figure{margin:0;display:grid;gap:6px;justify-items:start}
 .cm-admin-photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
 .cm-admin-photos figcaption{font-size:.74rem;color:var(--muted)}
 .admin-row__main strong .cm-av{margin-right:8px;width:28px;height:28px}

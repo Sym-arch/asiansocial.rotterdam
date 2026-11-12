@@ -66,14 +66,16 @@ async function gate() {
   renderAdmin();
   prepAdminPanel();
   refreshRsvps();
+  loadMemberStats();
+  loadCheckins().then(c => { PAST_ADMIN.checkins = c; renderAdmin(); }).catch(() => {});
   if (currentTab() === 'organisers') refreshOrganisers();
-  if (currentTab() === 'community') refreshCommunityAdmin();
+  if (currentTab() === 'past') refreshPastAdmin();
 }
 
 /* ---------------------------------------------------------
    タブ。URL の # で覚えるので、再読み込みしても同じタブに戻ります
    --------------------------------------------------------- */
-const TABS = ['events', 'rsvps', 'community', 'organisers'];
+const TABS = ['events', 'rsvps', 'past', 'organisers'];
 const currentTab = () => {
   const h = location.hash.slice(1);
   return TABS.includes(h) ? h : 'events';
@@ -84,55 +86,157 @@ function showTab(name) {
   $$('.tabpane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === name));
   /* 管理者の一覧は開いたときに取りに行きます */
   if (name === 'organisers' && isAdmin) refreshOrganisers();
-  if (name === 'community' && isAdmin) refreshCommunityAdmin();
+  if (name === 'past' && isAdmin) refreshPastAdmin();
 }
 
 /* ---------------------------------------------------------
-   Community（参加者の写真とレビュー）
-   投稿はすぐ公開されるので、ここで見て、問題があれば消します。
-   --------------------------------------------------------- */
-let CM_ADMIN = { photos: [], reviews: [] };
+   Past events（終わった回の管理）
+   回ごとに、予約した人数・受付でチェックインした人数・実際に来た人数・
+   写真・感想をまとめて扱います。来た人数は、あとで分析に使うために残します。
 
-/* 写真を足す回の選択肢。写真は終わった回に載せるので、終わった回を新しい順に */
-function fillCommunityEventSelect() {
-  const sel = $('#cmAdminEvent');
-  if (!sel) return;
-  const keep = sel.value;
-  const list = EVENTS.filter(isPast).sort(byDate).reverse();
-  sel.innerHTML = list.map(e =>
-    `<option value="${esc(e.id)}">${esc(fmtDate(e, { day: 'numeric', month: 'short', year: 'numeric' }))} — ${esc(e.title)}</option>`).join('');
-  if (keep && list.some(e => e.id === keep)) sel.value = keep;
+   - 予約した人数 … rsvps の人数の合計
+   - チェックイン … tickets の status が used の人数（受付ページで付けたもの）
+   - 実際に来た人数 … 手で入れた数（events.attendance）。空ならチェックインの数を使う
+   --------------------------------------------------------- */
+let PAST_ADMIN = { photos: [], reviews: [], checkins: {}, cmReady: true };
+
+/** 回ごとのチェックイン人数。tickets を1回だけ読んで数えます */
+async function loadCheckins() {
+  const rows = await sbSelect('tickets', 'select=event_id,quantity,status');
+  const out = {};
+  rows.forEach(r => {
+    if (r.status !== 'used' || !r.event_id) return;
+    out[r.event_id] = (out[r.event_id] || 0) + (Number(r.quantity) || 1);
+  });
+  return out;
 }
 
-async function refreshCommunityAdmin() {
-  fillCommunityEventSelect();
-  try {
-    const [photos, reviews] = await Promise.all([loadPhotos(null, 200), loadReviews(null, 200)]);
-    CM_ADMIN = { photos, reviews };
-  } catch (err) {
-    $('#cmAdminReviews').innerHTML = '<div class="empty">Not set up yet — run supabase/19-community-posts.sql.</div>';
-    $('#cmAdminPhotos').innerHTML = '';
-    return;
+const seatsFor = id => ADMIN_RSVPS.filter(r => r.eventId === id)
+  .reduce((n, r) => n + (Number(r.guests) || 1), 0);
+
+/* 実際に来た人数。手で入れた数があればそれを、無ければチェックインの数 */
+const attendedFor = ev => (ev.attendance ?? null) !== null
+  ? Number(ev.attendance)
+  : (PAST_ADMIN.checkins[ev.id] || 0);
+
+async function refreshPastAdmin() {
+  const box = $('#pastAdmin');
+  if (!box) return;
+  const [cm, checkins] = await Promise.all([
+    Promise.all([loadPhotos(null, 500), loadReviews(null, 500)])
+      .then(([photos, reviews]) => ({ photos, reviews, cmReady: true }))
+      .catch(() => ({ photos: [], reviews: [], cmReady: false })),
+    loadCheckins().catch(() => ({}))
+  ]);
+  PAST_ADMIN = Object.assign({}, cm, { checkins });
+  renderPastAdmin();
+  renderKpi();   /* 来た人数が分かったので、上の Show-up rate も描き直します */
+}
+
+function renderPastAdmin() {
+  const box = $('#pastAdmin');
+  const list = EVENTS.filter(isPast).sort(byDate).reverse();
+  if (!list.length) { box.innerHTML = '<div class="empty">No past events yet.</div>'; return; }
+  const open = new Set($$('#pastAdmin details[open]').map(d => d.dataset.ev));
+
+  box.innerHTML = (PAST_ADMIN.cmReady ? '' :
+      '<div class="notice">Photos and reviews are not set up yet — run supabase/19-community-posts.sql.</div>') +
+    list.map(ev => {
+      const photos  = PAST_ADMIN.photos.filter(p => p.event_id === ev.id);
+      const reviews = PAST_ADMIN.reviews.filter(r => r.event_id === ev.id);
+      const booked  = seatsFor(ev.id);
+      const checked = PAST_ADMIN.checkins[ev.id] || 0;
+      const manual  = ev.attendance ?? '';
+      const came    = attendedFor(ev);
+      const rate    = booked ? Math.round(came / booked * 100) + '%' : '—';
+      return `
+      <details class="pe" data-ev="${esc(ev.id)}"${open.has(ev.id) ? ' open' : ''}>
+        <summary class="pe__sum">
+          <span class="pe__title"><b>${esc(ev.title)}</b>
+            <span>${esc(fmtDate(ev, { day: 'numeric', month: 'short', year: 'numeric' }))} · ${esc(ev.venue)}</span></span>
+          <span class="pe__nums">
+            <span><b>${booked}</b> booked</span>
+            <span><b>${came}</b> came</span>
+            <span><b>${photos.length}</b> ${photos.length === 1 ? 'photo' : 'photos'}</span>
+            <span><b>${reviews.length}</b> ${reviews.length === 1 ? 'review' : 'reviews'}</span>
+          </span>
+        </summary>
+
+        <div class="pe__body">
+          <div class="pe__stats">
+            <div><b>${booked}</b><span>Seats booked</span></div>
+            <div><b>${checked}</b><span>Checked in at the door</span></div>
+            <div><b>${rate}</b><span>Show-up rate</span></div>
+          </div>
+          <div class="pe__att">
+            <label for="att-${esc(ev.id)}">Actual attendance</label>
+            <input id="att-${esc(ev.id)}" type="number" min="0" step="1" inputmode="numeric"
+                   value="${esc(manual)}" placeholder="${checked}">
+            <button class="mini" type="button" data-save-att="${esc(ev.id)}">Save</button>
+            <small>Leave empty to use the door check-ins (${checked}).</small>
+          </div>
+
+          <div class="admin-head"><h4>Photos</h4>
+            ${PAST_ADMIN.cmReady ? `<label class="btn btn--brand btn--sm pe__add">
+              <input type="file" accept="image/*" multiple hidden data-add-photos="${esc(ev.id)}">
+              <span>Add photos</span></label>` : ''}</div>
+          ${photos.length ? `<div class="cm-admin-photos">${photos.map(p => `
+            <figure>
+              <a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="" loading="lazy"></a>
+              <button class="mini mini--danger" type="button" data-cm-admin-photo="${esc(p.id)}">Delete</button>
+            </figure>`).join('')}</div>` : '<div class="empty">No photos yet.</div>'}
+
+          <div class="admin-head"><h4>Reviews</h4></div>
+          ${reviews.length ? `<div class="admin-list">${reviews.map(r => `
+            <div class="admin-row">
+              <div class="admin-row__main">
+                <strong>${avatarHTML(r.initials, r.nationality)} ${esc(r.body)}</strong>
+                <span>${esc(new Date(r.created_at).toLocaleDateString('en-GB'))}</span>
+              </div>
+              <div class="admin-row__act">
+                <button class="mini mini--danger" type="button" data-cm-admin-review="${esc(r.id)}">Delete</button>
+              </div>
+            </div>`).join('')}</div>` : '<div class="empty">No reviews yet.</div>'}
+        </div>
+      </details>`;
+    }).join('');
+
+  /* 写真を選んだら、その場で縮めて順に送ります */
+  $$('#pastAdmin [data-add-photos]').forEach(input => input.addEventListener('change', async () => {
+    const files = [...input.files];
+    const eventId = input.dataset.addPhotos;
+    input.value = '';
+    if (!files.length) return;
+    const label = input.nextElementSibling;
+    let done = 0;
+    for (const f of files) {
+      label.textContent = 'Uploading ' + (done + 1) + '/' + files.length + '…';
+      try { await uploadCommunityPhoto(eventId, f); done++; }
+      catch (err) { toast(err.message, true); break; }
+    }
+    label.textContent = 'Add photos';
+    if (done) toast(done + ' photo(s) added.');
+    refreshPastAdmin();
+  }));
+}
+
+/* 実際に来た人数を保存します（events.attendance）。空欄は「未入力」に戻します */
+async function saveAttendance(eventId, value) {
+  await ensureSession();
+  const n = String(value).trim() === '' ? null : Math.max(0, parseInt(value, 10) || 0);
+  const res = await fetch(sbUrl('events', 'id=eq.' + encodeURIComponent(eventId)), {
+    method: 'PATCH',
+    headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
+    body: JSON.stringify({ attendance: n })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    if (/attendance/.test(text)) throw new Error('Run supabase/20-event-attendance.sql first.');
+    throw new Error('Could not save (' + res.status + ').');
   }
-  const title = id => { const ev = findEvent(id); return ev ? ev.title : id; };
-  $('#cmReviewCount').textContent = CM_ADMIN.reviews.length;
-  $('#cmPhotoCount').textContent = CM_ADMIN.photos.length;
-  $('#cmAdminReviews').innerHTML = CM_ADMIN.reviews.length ? CM_ADMIN.reviews.map(r => `
-    <div class="admin-row">
-      <div class="admin-row__main">
-        <strong>${avatarHTML(r.initials, r.nationality)} ${esc(r.body)}</strong>
-        <span>${esc(title(r.event_id))} · ${esc(new Date(r.created_at).toLocaleDateString('en-GB'))}</span>
-      </div>
-      <div class="admin-row__act">
-        <button class="mini mini--danger" type="button" data-cm-admin-review="${esc(r.id)}">Delete</button>
-      </div>
-    </div>`).join('') : '<div class="empty">No reviews yet.</div>';
-  $('#cmAdminPhotos').innerHTML = CM_ADMIN.photos.length ? CM_ADMIN.photos.map(p => `
-    <figure>
-      <a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="" loading="lazy"></a>
-      <figcaption>${esc(title(p.event_id))}</figcaption>
-      <button class="mini mini--danger" type="button" data-cm-admin-photo="${esc(p.id)}">Delete</button>
-    </figure>`).join('') : '<div class="empty">No photos yet.</div>';
+  const ev = findEvent(eventId);
+  if (ev) ev.attendance = n;
+  saveEvents();
 }
 
 /* ---------------------------------------------------------
@@ -216,19 +320,48 @@ function fillReminderSelect() {
 /** 表とリマインダーが見ているイベント。空文字は「すべて」です。 */
 const rsvpFilter = () => (($('#rsvpEvent') || {}).value || '');
 
+/* ---------------------------------------------------------
+   上の数字（全体）
+   回ごとの数字は、Events の各行と Past events の中に出します。
+   ここには、運営全体の調子が一目で分かるものだけを置きます。
+   - Upcoming events … これからの回の数
+   - Members … 会員の総数と、この30日で増えた数
+   - Bookings · 30 days … この30日に入った予約の人数
+   - Show-up rate … 終わった回で、予約した人のうち実際に来た割合
+   --------------------------------------------------------- */
+let MEMBER_STATS = null;   /* { total, recent } */
+
+async function loadMemberStats() {
+  try {
+    const rows = await sbSelect('profiles', 'select=created_at');
+    const since = Date.now() - 30 * 864e5;
+    MEMBER_STATS = { total: rows.length, recent: rows.filter(r => new Date(r.created_at).getTime() >= since).length };
+  } catch (err) {
+    MEMBER_STATS = null;
+  }
+  renderKpi();
+}
+
+function renderKpi() {
+  const since = Date.now() - 30 * 864e5;
+  const recentSeats = ADMIN_RSVPS
+    .filter(r => new Date(r.createdAt).getTime() >= since)
+    .reduce((n, r) => n + (Number(r.guests) || 1), 0);
+  const past = EVENTS.filter(isPast);
+  const booked = past.reduce((n, ev) => n + seatsFor(ev.id), 0);
+  const came = past.reduce((n, ev) => n + attendedFor(ev), 0);
+  const rate = booked && came ? Math.round(came / booked * 100) + '%' : '—';
+  $('#adminKpi').innerHTML = `
+    <div><b>${upcoming().length}</b><span>Upcoming events</span></div>
+    <div><b>${MEMBER_STATS ? MEMBER_STATS.total : '—'}</b><span>Members${MEMBER_STATS && MEMBER_STATS.recent ? ' · +' + MEMBER_STATS.recent + ' in 30 days' : ''}</span></div>
+    <div><b>${recentSeats}</b><span>Seats booked · last 30 days</span></div>
+    <div><b>${rate}</b><span>Show-up rate · past events</span></div>`;
+}
+
 function renderAdmin() {
   if (!isAdmin) return;
 
-  /* 上の数字は、下で選んでいる回のものです。累計だと「今回は何人来るのか」が
-     読み取れませんでした。選び直すと、この数字も一緒に変わります。 */
-  const kpiPick  = rsvpFilter();
-  const kpiRows  = kpiPick ? ADMIN_RSVPS.filter(r => r.eventId === kpiPick) : ADMIN_RSVPS;
-  const kpiScope = kpiPick ? 'this event' : 'all events';
-  const seatsBooked = kpiRows.reduce((n, r) => n + (Number(r.guests) || 1), 0);
-  $('#adminKpi').innerHTML = `
-    <div><b>${upcoming().length}</b><span>Upcoming events</span></div>
-    <div><b>${kpiRows.length}</b><span>RSVPs · ${kpiScope}</span></div>
-    <div><b>${seatsBooked}</b><span>Seats booked · ${kpiScope}</span></div>`;
+  renderKpi();
 
   $('#aeCount').textContent = EVENTS.length;
   const evs = EVENTS.slice().sort(byDate).reverse();
@@ -238,7 +371,8 @@ function renderAdmin() {
         <strong>${esc(ev.title)}
           ${ev.brand === 'en' ? '<span class="pill">En.</span>' : ''}
           ${isPast(ev) ? '<span class="pill">past</span>' : ''}</strong>
-        <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)} · ${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} RSVPs</span>
+        <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)}</span>
+        <span class="admin-row__nums">${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} bookings · ${seatsFor(ev.id)} seats${ev.capacity ? ' / ' + ev.capacity : ''}${isPast(ev) ? ' · ' + attendedFor(ev) + ' came' : ''}</span>
       </div>
       <div class="admin-row__act">
         <a class="mini" href="${esc(publicEventUrl(ev.id))}" target="_blank" rel="noopener">View page</a>
@@ -339,21 +473,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo]');
+    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo],[data-save-att]');
     if (!t) return;
 
+    if (t.dataset.saveAtt) {
+      const input = document.getElementById('att-' + t.dataset.saveAtt);
+      saveAttendance(t.dataset.saveAtt, input ? input.value : '')
+        .then(() => { toast('Attendance saved.'); renderPastAdmin(); renderAdmin(); })
+        .catch(err => toast(err.message, true));
+      return;
+    }
     if (t.dataset.cmAdminReview) {
       if (!confirm('Delete this review? It disappears from the site straight away.')) return;
       deleteCommunityReview(t.dataset.cmAdminReview)
-        .then(() => { toast('Review deleted.'); refreshCommunityAdmin(); })
+        .then(() => { toast('Review deleted.'); refreshPastAdmin(); })
         .catch(err => toast(err.message, true));
       return;
     }
     if (t.dataset.cmAdminPhoto) {
-      const p = CM_ADMIN.photos.find(x => x.id === t.dataset.cmAdminPhoto);
+      const p = PAST_ADMIN.photos.find(x => x.id === t.dataset.cmAdminPhoto);
       if (!p || !confirm('Delete this photo? It disappears from the site straight away.')) return;
       deleteCommunityPhoto(p)
-        .then(() => { toast('Photo deleted.'); refreshCommunityAdmin(); })
+        .then(() => { toast('Photo deleted.'); refreshPastAdmin(); })
         .catch(err => toast(err.message, true));
       return;
     }
@@ -562,25 +703,6 @@ They receive it straight away.`;
      気づかないまま配ってしまいます */
   $('#rsvpEvent').addEventListener('change', renderAdmin);
 
-  /* Community: 写真を選んだら、その場で縮めて順に送ります */
-  $('#cmAdminFile').addEventListener('change', async e => {
-    const input = e.currentTarget;
-    const eventId = $('#cmAdminEvent').value;
-    const files = [...input.files];
-    input.value = '';
-    if (!eventId) return toast('Pick an event first.', true);
-    if (!files.length) return;
-    const label = $('#cmAdminFileLabel');
-    let done = 0;
-    for (const f of files) {
-      label.textContent = 'Uploading ' + (done + 1) + '/' + files.length + '…';
-      try { await uploadCommunityPhoto(eventId, f); done++; }
-      catch (err) { toast(err.message, true); break; }
-    }
-    label.textContent = 'Choose photos';
-    if (done) toast(done + ' photo(s) added.');
-    refreshCommunityAdmin();
-  });
 
   $('#exportRsvp').addEventListener('click', () => {
     const ev   = findEvent(rsvpFilter());

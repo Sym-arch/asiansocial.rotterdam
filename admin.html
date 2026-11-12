@@ -52,7 +52,7 @@
         <div class="tabs" role="tablist">
           <button type="button" class="is-on" data-tab="events">Events</button>
           <button type="button" data-tab="rsvps">RSVPs</button>
-          <button type="button" data-tab="community">Community</button>
+          <button type="button" data-tab="past">Past events</button>
           <button type="button" data-tab="organisers">Organisers</button>
         </div>
 
@@ -169,23 +169,9 @@
           <div class="admin-list" id="adminEventList"></div>
         </section>
 
-        <!-- COMMUNITY TAB: 参加者の写真とレビュー。すぐ公開なので、問題があればここで消します -->
-        <section class="tabpane" data-pane="community">
-          <div class="notice">Only organisers can add photos. Attendees can view and download them on the event page.
-            Reviews go live as soon as an attendee posts them — delete anything that should not be on the site.</div>
-
-          <div class="admin-head" style="margin-top:0"><h4>Add photos</h4></div>
-          <div class="cm-admin-add">
-            <select id="cmAdminEvent" class="admin-select" aria-label="Event for the photos"></select>
-            <label class="btn btn--brand btn--sm">
-              <input type="file" accept="image/*" multiple id="cmAdminFile" hidden>
-              <span id="cmAdminFileLabel">Choose photos</span>
-            </label>
-          </div>
-          <div class="admin-head"><h4>Reviews</h4><span class="pill" id="cmReviewCount">0</span></div>
-          <div class="admin-list" id="cmAdminReviews"></div>
-          <div class="admin-head"><h4>Photos</h4><span class="pill" id="cmPhotoCount">0</span></div>
-          <div class="cm-admin-photos" id="cmAdminPhotos"></div>
+        <!-- PAST EVENTS TAB: 終わった回ごとに、予約数・実際に来た人数・写真・感想を管理します -->
+        <section class="tabpane" data-pane="past">
+          <div class="pe-list" id="pastAdmin"></div>
         </section>
 
         <!-- ORGANISERS TAB -->
