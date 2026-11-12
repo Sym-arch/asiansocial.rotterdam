@@ -171,8 +171,17 @@
 
         <!-- COMMUNITY TAB: 参加者の写真とレビュー。すぐ公開なので、問題があればここで消します -->
         <section class="tabpane" data-pane="community">
-          <div class="notice">Photos and reviews go live as soon as an attendee posts them.
-            Delete anything that should not be on the site — it disappears straight away.</div>
+          <div class="notice">Only organisers can add photos. Attendees can view and download them on the event page.
+            Reviews go live as soon as an attendee posts them — delete anything that should not be on the site.</div>
+
+          <div class="admin-head" style="margin-top:0"><h4>Add photos</h4></div>
+          <div class="cm-admin-add">
+            <select id="cmAdminEvent" class="admin-select" aria-label="Event for the photos"></select>
+            <label class="btn btn--brand btn--sm">
+              <input type="file" accept="image/*" multiple id="cmAdminFile" hidden>
+              <span id="cmAdminFileLabel">Choose photos</span>
+            </label>
+          </div>
           <div class="admin-head"><h4>Reviews</h4><span class="pill" id="cmReviewCount">0</span></div>
           <div class="admin-list" id="cmAdminReviews"></div>
           <div class="admin-head"><h4>Photos</h4><span class="pill" id="cmPhotoCount">0</span></div>

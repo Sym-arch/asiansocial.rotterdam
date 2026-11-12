@@ -93,7 +93,19 @@ function showTab(name) {
    --------------------------------------------------------- */
 let CM_ADMIN = { photos: [], reviews: [] };
 
+/* 写真を足す回の選択肢。写真は終わった回に載せるので、終わった回を新しい順に */
+function fillCommunityEventSelect() {
+  const sel = $('#cmAdminEvent');
+  if (!sel) return;
+  const keep = sel.value;
+  const list = EVENTS.filter(isPast).sort(byDate).reverse();
+  sel.innerHTML = list.map(e =>
+    `<option value="${esc(e.id)}">${esc(fmtDate(e, { day: 'numeric', month: 'short', year: 'numeric' }))} — ${esc(e.title)}</option>`).join('');
+  if (keep && list.some(e => e.id === keep)) sel.value = keep;
+}
+
 async function refreshCommunityAdmin() {
+  fillCommunityEventSelect();
   try {
     const [photos, reviews] = await Promise.all([loadPhotos(null, 200), loadReviews(null, 200)]);
     CM_ADMIN = { photos, reviews };
@@ -549,6 +561,26 @@ They receive it straight away.`;
   /* 表を絞ったら CSV も同じ範囲にします。見えているものと出るものが違うと
      気づかないまま配ってしまいます */
   $('#rsvpEvent').addEventListener('change', renderAdmin);
+
+  /* Community: 写真を選んだら、その場で縮めて順に送ります */
+  $('#cmAdminFile').addEventListener('change', async e => {
+    const input = e.currentTarget;
+    const eventId = $('#cmAdminEvent').value;
+    const files = [...input.files];
+    input.value = '';
+    if (!eventId) return toast('Pick an event first.', true);
+    if (!files.length) return;
+    const label = $('#cmAdminFileLabel');
+    let done = 0;
+    for (const f of files) {
+      label.textContent = 'Uploading ' + (done + 1) + '/' + files.length + '…';
+      try { await uploadCommunityPhoto(eventId, f); done++; }
+      catch (err) { toast(err.message, true); break; }
+    }
+    label.textContent = 'Choose photos';
+    if (done) toast(done + ' photo(s) added.');
+    refreshCommunityAdmin();
+  });
 
   $('#exportRsvp').addEventListener('click', () => {
     const ev   = findEvent(rsvpFilter());

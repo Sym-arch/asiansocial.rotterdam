@@ -1141,6 +1141,8 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
   overflow-x:auto;-webkit-overflow-scrolling:touch;
 }
 #adminModal .tabs button,.admin-page .tabs button{white-space:nowrap;padding-bottom:12px}
+/* 横にはみ出したときだけ横に送ります。縦のスクロールバーまで出ると、タブの横に矢印が残ります */
+.admin-page .tabs{overflow-y:hidden}
 
 /* 管理ページ（admin.html）。モーダルだった頃の中身をそのままページに置いています */
 .admin-page{padding:clamp(24px,4vw,44px) 0 90px;min-height:calc(100vh - var(--header-h))}
@@ -1283,8 +1285,6 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .cm-head h2{font-size:1.5rem;font-weight:500}
 .cm-head p{color:var(--muted);font-size:.92rem;margin-top:6px}
 .cm-post{display:grid;gap:14px;margin:22px 0 28px;max-width:640px}
-.cm-post__photo{justify-self:start;cursor:pointer}
-.cm-post__photo.is-busy{opacity:.6;pointer-events:none}
 .cm-post__review{display:grid;gap:10px}
 .cm-post__review textarea{
   font:inherit;font-size:.95rem;padding:12px 14px;border:1px solid var(--rule);
@@ -1295,10 +1295,12 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .cm-photo{margin:0;position:relative}
 /* 国旗も img なので、写真の指定は a の中の img だけに当てます */
 .cm-photo > a img{width:100%;aspect-ratio:1;object-fit:cover;display:block;border-radius:8px}
-.cm-photo figcaption{position:absolute;left:8px;bottom:8px;display:flex;align-items:center;gap:8px}
-.cm-photo figcaption .linkish{background:var(--paper);padding:2px 8px;border-radius:999px;font-size:.74rem}
-.cm-photo .cm-av,.cm-photo .cm-av__i{width:30px;height:30px}
-.cm-photo .cm-av__i{font-size:.7rem}
+.cm-photo figcaption{position:absolute;right:8px;bottom:8px}
+.cm-photo__dl{
+  display:inline-block;background:rgba(14,11,20,.72);color:#fff;text-decoration:none;
+  font-size:.74rem;font-weight:600;padding:5px 10px;border-radius:999px;backdrop-filter:blur(4px);
+}
+.cm-photo__dl:hover{background:var(--brand)}
 .cm-reviews{display:grid;gap:0;border-top:1px solid var(--rule);max-width:760px}
 .cm-review{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--rule)}
 .cm-review__body p{color:var(--ink-2);line-height:1.6;white-space:pre-line}
@@ -1321,6 +1323,9 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .past__more{margin-top:26px}
 
 /* 管理画面の Community タブ */
+.cm-admin-add{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+.cm-admin-add .admin-select{flex:1 1 260px}
+.cm-admin-add label{cursor:pointer}
 .cm-admin-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .cm-admin-photos figure{margin:0;display:grid;gap:6px}
 .cm-admin-photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}

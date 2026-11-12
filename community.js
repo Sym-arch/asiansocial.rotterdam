@@ -3,14 +3,15 @@
    core.js が必要です。19-community-posts.sql が前提です。
 
    使う場所:
-   - event.html … 終わった回のページに、写真・レビューの一覧と投稿欄
-   - index.html … Past Events に、回ごとの写真とレビューの数
-   - admin.html … Community タブで、投稿を消す
+   - event.html … 終わった回のページに、写真（見る・ダウンロード）と感想の一覧・投稿欄
+   - index.html … Past Events に、回ごとの写真と感想の数
+   - admin.html … Community タブで、写真を追加し、投稿を消す
 
    決めごと（本人と相談済み）:
-   - 投稿できるのは、その回に参加した人だけ（DB の attended_event で判定）
+   - 写真を追加できるのは管理者だけ。参加者は見てダウンロードできる
+   - 感想を書けるのは、その回に参加した人だけ（DB の attended_event で判定）
    - 投稿はすぐ公開、問題があれば管理画面で消す
-   - 表に出すのはイニシャルと国旗だけ
+   - 感想に出すのはイニシャルと国旗だけ
    SQL を流す前はテーブルが無いので、読み込みに失敗したら黙って何も出しません。
    ========================================================= */
 
@@ -18,8 +19,10 @@ const CM_BUCKET = 'community-photos';
 /* 国旗は画像で出します。Windows は国旗の絵文字を描けず「JP」の文字になるためです。
    版を固定した CDN から読みます（2週間以上前に出た版）。 */
 const FLAG_BASE = 'https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/4x3/';
-const CM_PHOTO_MAX = 1600;     // 長い辺の最大ピクセル。保存容量（無料枠 1GB）を守るため縮めます
-const CM_PHOTO_QUALITY = 0.82;
+/* 長い辺の最大ピクセル。ダウンロードして使えるだけの大きさは残しつつ、
+   保存容量（無料枠 1GB、1枚 0.5MB 前後で 2000 枚ほど）を守るために縮めます */
+const CM_PHOTO_MAX = 2048;
+const CM_PHOTO_QUALITY = 0.85;
 
 /* 参加者のアイコン：イニシャルの丸と、右下に国旗 */
 function avatarHTML(initials, nat) {
@@ -94,10 +97,9 @@ function shrinkImage(file) {
 async function uploadCommunityPhoto(eventId, file) {
   if (!/^image\//.test(file.type)) throw new Error(t('cm.err.photo'));
   await ensureSession();
-  const uid = await ensureUserId();
   const blob = await shrinkImage(file);
-  /* 自分のフォルダ（user_id/…）にだけ置けるよう、Storage 側で絞ってあります */
-  const path = uid + '/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + '.jpg';
+  /* 置けるのは管理者だけです（Storage 側で絞ってあります）。回ごとのフォルダに置きます */
+  const path = eventId + '/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) + '.jpg';
   const base = CONFIG.supabase.url.replace(/\/+$/, '');
   const res = await fetch(`${base}/storage/v1/object/${CM_BUCKET}/${path}`, {
     method: 'POST',
@@ -116,7 +118,6 @@ async function uploadCommunityPhoto(eventId, file) {
   } catch (err) {
     /* 行が作れなかった写真は、置き場所からも消しておきます（どこからも見えないゴミになるため） */
     removeStoredPhoto(path).catch(() => {});
-    if (/photo_limit/.test(err.message)) throw new Error(t('cm.err.limit'));
     throw new Error(t('cm.err.post'));
   }
 }
@@ -129,7 +130,7 @@ async function removeStoredPhoto(path) {
   });
 }
 
-/** 写真を消す（行と、置き場所のファイルの両方）。本人か管理者だけが通ります */
+/** 写真を消す（行と、置き場所のファイルの両方）。管理者だけが通ります */
 async function deleteCommunityPhoto(photo) {
   await ensureSession();
   await sbDelete('event_photos', photo.id);
@@ -154,11 +155,18 @@ function reviewHTML(r, mine) {
   </li>`;
 }
 
-function photoHTML(p, mine) {
+/* ダウンロード用の URL。Supabase Storage は ?download を付けると
+   「保存する」形で返します（別ドメインなので <a download> だけでは保存になりません） */
+function photoDownloadUrl(p, ev, i) {
+  const slug = String((ev && ev.title) || 'asian-socials').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'asian-socials';
+  return p.url + '?download=' + encodeURIComponent(slug + '-' + (i + 1) + '.jpg');
+}
+
+function photoHTML(p, ev, i) {
   return `<figure class="cm-photo">
     <a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="" loading="lazy"></a>
-    <figcaption>${avatarHTML(p.initials, p.nationality)}
-      ${mine ? `<button type="button" class="linkish" data-cm-del-photo="${esc(p.id)}">${esc(t('cm.delete'))}</button>` : ''}</figcaption>
+    <figcaption><a class="cm-photo__dl" href="${esc(photoDownloadUrl(p, ev, i))}" download>${esc(t('cm.download'))}</a></figcaption>
   </figure>`;
 }
 
@@ -186,21 +194,16 @@ async function renderEventCommunity(ev, box) {
           ${!isSignedIn() ? `<button type="button" class="linkish" data-member>${esc(t('account.signin'))}</button>` : ''}</p>
       </div>
 
-      ${can ? `
+      ${photos.length ? `<div class="cm-photos">${photos.map((p, i) => photoHTML(p, ev, i)).join('')}</div>` : ''}
+
+      ${can && !myReview ? `
       <div class="cm-post">
-        <label class="btn btn--line btn--sm cm-post__photo">
-          <input type="file" accept="image/*" multiple id="cmFile" hidden>
-          <span id="cmFileLabel">${esc(t('cm.addPhotos'))}</span>
-        </label>
-        ${myReview ? '' : `
         <form class="cm-post__review" id="cmReviewForm">
           <label for="cmReview" class="sr-only">${esc(t('cm.writeReview'))}</label>
           <textarea id="cmReview" rows="3" maxlength="1000" placeholder="${esc(t('cm.reviewPh'))}"></textarea>
           <button class="btn btn--brand btn--sm" type="submit">${esc(t('cm.postReview'))}</button>
-        </form>`}
+        </form>
       </div>` : ''}
-
-      ${photos.length ? `<div class="cm-photos">${photos.map(p => photoHTML(p, (mine.photos || []).includes(p.id))).join('')}</div>` : ''}
 
       ${reviews.length
         ? `<ul class="cm-reviews">${reviews.map(r => reviewHTML(r, (mine.reviews || []).includes(r.id))).join('')}</ul>`
@@ -210,22 +213,6 @@ async function renderEventCommunity(ev, box) {
   initMemberLinks();
 
   const again = () => renderEventCommunity(ev, box);
-
-  const file = box.querySelector('#cmFile');
-  if (file) file.addEventListener('change', async () => {
-    const files = [...file.files].slice(0, 12);
-    if (!files.length) return;
-    const label = file.closest('label');
-    label.classList.add('is-busy');
-    let done = 0;
-    for (const f of files) {
-      box.querySelector('#cmFileLabel').textContent = t('cm.uploading', { n: done + 1, total: files.length });
-      try { await uploadCommunityPhoto(ev.id, f); done++; }
-      catch (err) { toast(err.message, true); break; }
-    }
-    if (done) toast(t('cm.photosAdded', { n: done }));
-    again();
-  });
 
   const form = box.querySelector('#cmReviewForm');
   if (form) form.addEventListener('submit', async e => {
@@ -241,12 +228,6 @@ async function renderEventCommunity(ev, box) {
   box.querySelectorAll('[data-cm-del-review]').forEach(b => b.addEventListener('click', async () => {
     if (!confirm(t('cm.confirmDelete'))) return;
     try { await deleteCommunityReview(b.dataset.cmDelReview); again(); }
-    catch (err) { toast(err.message, true); }
-  }));
-  box.querySelectorAll('[data-cm-del-photo]').forEach(b => b.addEventListener('click', async () => {
-    const p = photos.find(x => x.id === b.dataset.cmDelPhoto);
-    if (!p || !confirm(t('cm.confirmDelete'))) return;
-    try { await deleteCommunityPhoto(p); again(); }
     catch (err) { toast(err.message, true); }
   }));
 }

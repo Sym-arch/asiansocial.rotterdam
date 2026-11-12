@@ -4,10 +4,15 @@
 -- 流し方: Supabase → SQL Editor に全部貼って Run。何度流しても壊れません。
 --
 -- 決めごと（本人と相談済み）:
---   - 投稿できるのは、その回に参加した人だけ（予約かチケットがある会員）
---   - 終わった回にだけ投稿できる
+--   - 写真を追加できるのは管理者だけ（まずは運営が撮った写真を載せる）。
+--     参加者は見てダウンロードできる
+--   - 感想を投稿できるのは、その回に参加した人だけ（予約かチケットがある会員）。
+--     終わった回にだけ投稿できる
 --   - 投稿はすぐ公開。問題があれば管理画面から消す
 --   - 公開するのはイニシャルと国籍だけ。名前やメールアドレスは出さない
+--
+-- 以前の版（写真も参加者が追加できる形）をすでに流していても、
+-- これをもう一度流せば権限が置き換わります。
 -- =========================================================
 
 -- ---------------------------------------------------------
@@ -80,7 +85,6 @@ create index if not exists event_photos_event_idx  on event_photos  (event_id, c
 -- ---------------------------------------------------------
 -- 3. 投稿者の情報をプロフィールから写すトリガー
 --    名前の頭文字（最大2文字）と国籍だけを残します。
---    1人1回あたりの写真は 12 枚まで。無料枠の保存容量（1GB）を守るためです。
 -- ---------------------------------------------------------
 create or replace function public.community_post_stamp()
 returns trigger
@@ -102,13 +106,6 @@ begin
     left(coalesce(auth.jwt() ->> 'email', '?'), 1)
   ));
   new.nationality := p_nat;
-
-  if tg_table_name = 'event_photos' then
-    if (select count(*) from event_photos
-         where event_id = new.event_id and user_id = auth.uid()) >= 12 then
-      raise exception 'photo_limit';
-    end if;
-  end if;
   return new;
 end;
 $$;
@@ -125,8 +122,9 @@ create trigger event_photos_stamp before insert on event_photos
 -- ---------------------------------------------------------
 -- 4. 読み書きの権限
 --    読むのは誰でも（サイトに公開するため）。user_id は返しません
---    （列の権限で外します）。書けるのは参加した本人だけ。
---    消せるのは本人と管理者です。
+--    （列の権限で外します）。
+--    感想: 書けるのは参加した本人、消せるのは本人と管理者。
+--    写真: 足すのも消すのも管理者だけ。
 -- ---------------------------------------------------------
 alter table event_reviews enable row level security;
 alter table event_photos  enable row level security;
@@ -148,12 +146,14 @@ create policy "public read photos" on event_photos
   for select to anon, authenticated using ( true );
 
 drop policy if exists "attendee adds photo" on event_photos;
-create policy "attendee adds photo" on event_photos
-  for insert to authenticated with check ( attended_event(event_id) );
+drop policy if exists "admin adds photo" on event_photos;
+create policy "admin adds photo" on event_photos
+  for insert to authenticated with check ( is_admin() );
 
 drop policy if exists "owner or admin deletes photo" on event_photos;
-create policy "owner or admin deletes photo" on event_photos
-  for delete to authenticated using ( user_id = auth.uid() or is_admin() );
+drop policy if exists "admin deletes photo" on event_photos;
+create policy "admin deletes photo" on event_photos
+  for delete to authenticated using ( is_admin() );
 
 -- 誰の投稿か（user_id）は公開しません。本人の投稿かどうかは
 -- 下の my_community_posts() で見分けます。
@@ -185,24 +185,24 @@ grant execute on function public.my_community_posts(text) to authenticated;
 
 -- ---------------------------------------------------------
 -- 5. 写真の置き場所（Storage）
---    公開バケット community-photos。会員は自分のフォルダ（user_id/…）
---    にだけ置けます。消せるのは本人と管理者です。
+--    公開バケット community-photos。置くのも消すのも管理者だけです。
+--    読むのは誰でも（公開バケットなので、URL を知っていればダウンロードできます）。
 -- ---------------------------------------------------------
 insert into storage.buckets (id, name, public)
 values ('community-photos', 'community-photos', true)
 on conflict (id) do nothing;
 
 drop policy if exists "member uploads own community photo" on storage.objects;
-create policy "member uploads own community photo" on storage.objects
+drop policy if exists "admin uploads community photo" on storage.objects;
+create policy "admin uploads community photo" on storage.objects
   for insert to authenticated
-  with check ( bucket_id = 'community-photos'
-               and (storage.foldername(name))[1] = auth.uid()::text );
+  with check ( bucket_id = 'community-photos' and is_admin() );
 
 drop policy if exists "owner or admin deletes community photo" on storage.objects;
-create policy "owner or admin deletes community photo" on storage.objects
+drop policy if exists "admin deletes community photo" on storage.objects;
+create policy "admin deletes community photo" on storage.objects
   for delete to authenticated
-  using ( bucket_id = 'community-photos'
-          and ((storage.foldername(name))[1] = auth.uid()::text or is_admin()) );
+  using ( bucket_id = 'community-photos' and is_admin() );
 
 
 -- ---------------------------------------------------------
