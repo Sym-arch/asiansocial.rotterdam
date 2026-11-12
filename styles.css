@@ -841,7 +841,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* 過去の予約は、これからの予約より一段控えめに */
 .acct-list--past .acct-list__main b{color:var(--ink-2);font-weight:500}
 /* 予約ボタンの下の「支払いがうまくいかないとき」 */
-.pay-help{margin-top:12px;text-align:center;font-size:.86rem}
+.pay-help{margin-top:10px;text-align:right;font-size:.76rem}
+.pay-help .linkish{color:var(--muted)}
 .pay-help__body p{color:var(--ink-2);font-size:.94rem;line-height:1.6;margin:0 0 14px}
 .pay-help__body .btn{margin-top:8px}
 /* 予約完了ページの「プロフィールを完成させる」ボタン */
@@ -1059,6 +1060,14 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
   color:var(--en-muted);
 }
 
+/* ホームの En. は回の一覧だけにしました（説明は About へ移動）。
+   見出しは一行にまとめ、上下の余白も詰めます */
+.en-teaser--events{padding:clamp(44px,6vw,80px) 0}
+.en-teaser--events .en-teaser__events{margin-top:22px}
+.en-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px 24px}
+.en-head h2{font-family:var(--display);font-weight:500;font-size:clamp(1.5rem,3.4vw,2.2rem);letter-spacing:-.02em}
+.en-head a{color:var(--en-ink);font-size:.86rem;font-weight:600}
+
 /* En. の回 */
 .en-teaser__events{
   margin-top:clamp(38px,5vw,64px);
@@ -1147,6 +1156,9 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .admin-page__head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-bottom:22px}
 .admin-page__who{display:flex;align-items:center;gap:12px;font-size:.84rem;color:var(--muted)}
 .nav--admin{display:flex}
+/* 管理画面のサインインに「新規登録」「パスワードを忘れた」は要りません。
+   主催者のアカウントは招待で作り、パスワードの再設定も招待メールから行います */
+.admin-body .acct-swap{display:none}
 /* 管理ページのナビは1項目だけなので、電話でもハンバーガーにたたみません */
 @media (max-width:820px){
   .nav--admin{position:static;display:flex;flex-direction:row;background:none;padding:0;border:0}

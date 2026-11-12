@@ -63,6 +63,9 @@ function renderEnEvents() {
   if (!box) return;
   const list = upcoming().filter(ev => ev.brand === 'en');
   box.hidden = !list.length;
+  /* 説明は About に移したので、回が無いと見出しだけが残ります。セクションごと隠します */
+  const sec = box.closest('section');
+  if (sec) sec.hidden = !list.length;
   if (!list.length) { box.innerHTML = ''; return; }
   box.innerHTML = list.slice(0, 3).map(ev => `
     <a class="en-event" href="${esc(eventUrl(ev.id))}">

@@ -133,7 +133,7 @@
     </p>
 
     <div class="hero__cta">
-      <a class="btn btn--brand" href="#events" data-i18n="hero.cta1">Reserve your spot</a>
+      <a class="btn btn--brand" href="#events" data-i18n="hero.explore">Explore events</a>
       <a class="btn btn--on-night" href="about.html" data-i18n="hero.cta2">What we do</a>
     </div>
     <p class="hero__note" data-i18n="hero.note">Events are hosted in English · Everyone is welcome, Asian or not.</p>
@@ -199,31 +199,16 @@
 </section>
 
 
-<!-- ============ EN. — 日本コミュニティ ============ -->
-<section class="sec en-teaser" id="en">
+<!-- ============ EN. — 日本コミュニティの回 ============ -->
+<!-- 説明は About に移しました。ここは En. の回の一覧だけです。
+     回が1件も無いときは、セクションごと隠します（app.js の renderEnEvents） -->
+<section class="sec en-teaser en-teaser--events" id="en" hidden>
   <div class="wrap">
-    <div class="en-teaser__inner">
-      <div>
-        <p class="en-kicker" data-i18n-html="en.kicker">Japan <i>×</i> Rotterdam</p>
-        <h2 class="en-display" data-i18n-html="en.title">Different languages.<br>One table.</h2>
-        <p class="en-body" data-i18n-html="en.body">
-          <b>En.</b> is our Japanese social club — sports, meat and culture, with Japan as
-          the excuse to meet someone new. You don't come to study Japanese. You come
-          because it looks fun.
-        </p>
-        <p class="en-triad" data-i18n-html="en.triad"><span>Sports</span><i>·</i><span>Meat</span><i>·</i><span>Culture</span></p>
-      </div>
-      <div class="en-teaser__mark">
-        <div class="en-mark">
-          <img src="assets/en-logo.png" alt="En. — Japanese Social Club"
-               onerror="this.closest('.en-mark').classList.add('en-mark--fallback')">
-          <span class="en-mark__text" aria-hidden="true">En.<em>Japanese Social Club</em></span>
-        </div>
-      </div>
+    <div class="en-head">
+      <h2 data-i18n="footer.en">En. Japanese Social Club</h2>
+      <a href="about.html#en" data-i18n="en.more">About En. →</a>
     </div>
-
-    <!-- En. の回。無いときは何も出しません（空の枠は場所を取るだけです） -->
-    <div class="en-teaser__events" id="enEvents" hidden></div>
+    <div class="en-teaser__events" id="enEvents"></div>
   </div>
 </section>
 
@@ -245,7 +230,7 @@
         <h4 data-i18n="footer.explore">Explore</h4>
         <ul>
           <li><a href="index.html#events" data-i18n="footer.events">Events</a></li>
-          <li><a href="index.html#en" data-i18n="footer.en">En. Japanese Social Club</a></li>
+          <li><a href="about.html#en" data-i18n="footer.en">En. Japanese Social Club</a></li>
           <li><a href="about.html" data-i18n="footer.about">About &amp; mission</a></li>
           <li><a href="policy.html" data-i18n="footer.policy">Event policy and privacy</a></li>
           <li><a href="about.html#partners" data-i18n="footer.partners">For partners</a></li>

@@ -803,6 +803,25 @@ async function startCheckout(eventId, quantity) {
  * 宛先はサーバが名簿から作ります。ここからは渡しません。
  * @returns {Promise<{sent:number, recipients:number}>}
  */
+/* イベントを公開・更新したら、Google にサイトマップを読み直してもらいます
+   （api/notify-google.mjs）。失敗しても公開そのものは済んでいるので、
+   画面には出さずに記録だけ残します。 */
+async function notifyGoogle() {
+  try {
+    await ensureSession();
+    const res = await fetch('/api/notify-google', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + (SESSION ? SESSION.access_token : '') }
+    });
+    const data = await res.json().catch(() => ({}));
+    console.info('notify-google:', res.status, data);
+    return data;
+  } catch (err) {
+    console.warn('notify-google failed:', err.message);
+    return null;
+  }
+}
+
 async function sendEventReminder(eventId) {
   await ensureSession();
   const res = await fetch('/api/reminder', {
@@ -1168,7 +1187,8 @@ async function renderMemberModal() {
   if (!body) return;
 
   const head = $('#memberTitle');
-  if (head) head.textContent = t('account.title');
+  /* 管理画面から開いたときに「My bookings」と出ると、何のサインインか分かりません */
+  if (head) head.textContent = document.body.classList.contains('admin-body') ? 'Organiser sign-in' : t('account.title');
 
   if (isSignedIn()) {
     body.innerHTML = '<div class="empty" style="padding:40px 0">\u2026</div>';

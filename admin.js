@@ -450,6 +450,8 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
     if (existing) Object.assign(existing, rec); else EVENTS.push(rec);
     saveEvents(); eventFormFill(null); fillReminderSelect(); renderAdmin();
     toast(existing ? 'Event updated' : 'Event published');
+    /* 新しいページや日付の変更に、Google が早く気づくように */
+    notifyGoogle();
   });
 
   /* Reminders + exports */

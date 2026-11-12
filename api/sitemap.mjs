@@ -27,10 +27,12 @@ export default async function handler(req, res) {
   const urls = PAGES.map(p => ({ loc: SITE + p.loc, changefreq: p.changefreq, priority: p.priority }));
 
   try {
-    const events = await sb('events?select=id,date&order=date.desc');
+    const events = await sb('events?select=id,date,created_at&order=date.desc');
     for (const ev of events || []) {
       urls.push({
         loc: SITE + '/e/' + encodeURIComponent(ev.id),
+        /* Google は <lastmod> が正確なら使います。新しい回に早く気づいてもらうためです */
+        lastmod: String(ev.created_at || '').slice(0, 10),
         /* 終わった回も残します。過去の回も検索から見つかってよいためです */
         changefreq: isPast(ev.date) ? 'monthly' : 'daily',
         priority: isPast(ev.date) ? '0.4' : '0.8'
@@ -45,6 +47,7 @@ export default async function handler(req, res) {
     urls.map(u =>
       '  <url>\n' +
       '    <loc>' + esc(u.loc) + '</loc>\n' +
+      (u.lastmod ? '    <lastmod>' + esc(u.lastmod) + '</lastmod>\n' : '') +
       '    <changefreq>' + u.changefreq + '</changefreq>\n' +
       '    <priority>' + u.priority + '</priority>\n' +
       '  </url>'
