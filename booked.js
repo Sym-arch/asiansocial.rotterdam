@@ -18,6 +18,23 @@ function noBooking() {
     </div>`;
 }
 
+/* 予約が済んだ直後に、プロフィールへのボタンを出します。
+   予約フォームそのものには項目を足しません（入力が増えると予約が減るため）。
+   サインインしていて、国籍・都市・生年月日がもう全部入っている人には出しません。 */
+async function fillProfileNudge() {
+  const box = $('#bookedProfile');
+  if (!box) return;
+  if (isSignedIn()) {
+    const m = await loadMember().catch(() => null);
+    const p = m && m.profile;
+    if (!hasProfileDetails(p)) return;           /* 18 の SQL がまだの間は出しません */
+    if (p.nationality && p.city && p.birthdate) return;
+  }
+  box.innerHTML = `
+    <a class="btn btn--line booked__profile" href="profile.html">${esc(t('booked.profile.btn'))}</a>`;
+  box.hidden = false;
+}
+
 function render(rsvp, ev) {
   const gcal = googleCalendarUrl(ev);
   const mapUrl = ev.address
@@ -71,6 +88,8 @@ function render(rsvp, ev) {
           ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('booked.maps'))}</a>` : ''}
         </div>
 
+        <div id="bookedProfile" hidden></div>
+
         <h3 class="booked__sub">${esc(t('booked.next'))}</h3>
         <ol class="steps">
           <li><b>${esc(t('booked.step1'))}</b><span>${esc(t(MODE === 'manual' ? 'booked.step1.manual' : 'booked.step1.body'))}</span></li>
@@ -95,6 +114,7 @@ function render(rsvp, ev) {
   </section>`;
 
   initShell();
+  fillProfileNudge();
 }
 
 /* 決済から戻ってきた場合。
@@ -167,11 +187,14 @@ async function renderPaid(sessionId) {
         ${esc(t('booked.gcal'))}</a>
     </div>` : ''}
 
+    <div id="bookedProfile" hidden></div>
+
     <div class="booked__foot" style="margin-top:40px">
       <a class="btn btn--line" href="index.html">${esc(t('booked.home'))}</a>
     </div>
   </div></div></section>`;
   initShell();
+  if (data.ticketSecret) fillProfileNudge();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- 運営専用のページです。検索に出さず、解析（GTM）も読み込みません。
+     vercel.json でも X-Robots-Tag: noindex を付けています。 -->
+<title>Admin — Asian Socials</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48-v3.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/assets/favicon-96-v3.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192-v3.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon-v3.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#c10e2e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-body">
+<header class="header">
+  <div class="wrap header__inner">
+    <a class="brand" id="adminSite" href="index.html">
+      <img src="assets/logo.jpg" alt="Asian Socials logo">
+      <span class="brand__txt"><b>Asian Socials</b><span>Admin</span></span>
+    </a>
+    <nav class="nav nav--admin">
+      <a href="checkin.html" target="_blank" rel="noopener">Door check-in</a>
+    </nav>
+  </div>
+</header>
+
+<main class="admin-page">
+  <div class="wrap">
+    <!-- サインイン前・管理者でないときはここだけを出します -->
+    <section class="ci" id="adminGate"></section>
+
+    <div id="adminApp" hidden>
+      <div class="admin-page__head">
+        <h1 class="ci__h1">Admin dashboard</h1>
+        <div class="admin-page__who">
+          <span id="adminWho"></span>
+          <button class="btn btn--line btn--sm" type="button" id="adminLogout">Sign out</button>
+        </div>
+      </div>
+
+
+        <div class="kpi" id="adminKpi"></div>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="is-on" data-tab="events">Events</button>
+          <button type="button" data-tab="rsvps">RSVPs</button>
+          <button type="button" data-tab="organisers">Organisers</button>
+        </div>
+
+        <!-- EVENTS TAB -->
+        <section class="tabpane is-on" data-pane="events">
+          <!-- 電話ではたたんだ状態で開きます。長い入力欄が先頭にあると、
+               下の一覧までたどり着けません。編集を押すと自動で開きます -->
+          <details class="fold" id="aeFold" open>
+            <summary class="fold__sum">
+              <span class="fold__title" id="adminEventFormTitle">Add a new event</span>
+              <span class="fold__mark" aria-hidden="true"></span>
+            </summary>
+          <form class="admin-form" id="adminEventForm">
+            <input type="hidden" id="aeId">
+            <div class="form-grid">
+              <div class="field field--full">
+                <label for="aeTitle">Title <span class="req">*</span></label>
+                <input id="aeTitle" type="text" required placeholder="Ramen Night at Katendrecht">
+              </div>
+              <div class="field">
+                <label for="aeDate">Date <span class="req">*</span></label>
+                <input id="aeDate" type="date" required>
+              </div>
+              <div class="field">
+                <label for="aeStart">Start time <span class="req">*</span></label>
+                <input id="aeStart" type="time" value="19:00" required>
+              </div>
+              <div class="field">
+                <label for="aeEnd">End time</label>
+                <input id="aeEnd" type="time" value="22:00">
+              </div>
+              <div class="field field--full">
+                <label for="aeVenue">Venue name <span class="req">*</span></label>
+                <input id="aeVenue" type="text" required placeholder="Fenix Food Factory">
+              </div>
+              <div class="field field--full">
+                <label for="aeAddr">Address</label>
+                <input id="aeAddr" type="text" placeholder="Veerlaan 19D, 3072 AN Rotterdam">
+              </div>
+              <div class="field">
+                <label for="aePrice">Price (EUR)</label>
+                <input id="aePrice" type="number" min="0" step="0.50" value="0" placeholder="0">
+                <small class="field__hint">Leave it at 0 for a free event.</small>
+              </div>
+
+              <div class="field field--full price-opt">
+                <label class="check">
+                  <input type="checkbox" id="aeEnOn">
+                  <span>This is an En. gathering</span>
+                </label>
+                <small class="field__hint" style="margin-top:8px">
+                  Ticked events also appear in the En. section on the home page.
+                  They stay in the main events list either way.</small>
+              </div>
+
+              <div class="field field--full price-opt">
+                <label class="check">
+                  <input type="checkbox" id="aeMemberOn">
+                  <span>Member discount</span>
+                </label>
+                <div class="price-opt__body" id="aeMemberWrap" hidden>
+                  <label for="aeMemberPrice">Member price (EUR)</label>
+                  <input id="aeMemberPrice" type="number" min="0" step="0.50" placeholder="0">
+                  <small class="field__hint">Only shown when this is ticked. Otherwise everyone pays the normal price.</small>
+                </div>
+              </div>
+
+              <div class="field field--full price-opt">
+                <label class="check">
+                  <input type="checkbox" id="aeEarlyOn">
+                  <span>Early bird discount</span>
+                </label>
+                <div class="price-opt__body" id="aeEarlyWrap" hidden>
+                  <div class="price-opt__row">
+                    <div>
+                      <label for="aeEarlyPrice">Early bird price (EUR)</label>
+                      <input id="aeEarlyPrice" type="number" min="0" step="0.50" placeholder="0">
+                    </div>
+                    <div>
+                      <label for="aeEarlyUntil">Until (last day)</label>
+                      <input id="aeEarlyUntil" type="date">
+                    </div>
+                  </div>
+                  <small class="field__hint">An early bird without a deadline is not an early bird, so both are required.</small>
+                </div>
+              </div>
+              <div class="field field--full">
+                <label for="aeFile">Event photo</label>
+                <input id="aeFile" type="file" accept="image/*">
+                <small id="aeImgState">Uploaded straight from this device.</small>
+              </div>
+              <div class="field field--full" id="aeImgClearWrap" hidden>
+                <label class="check"><input type="checkbox" id="aeImgClear">
+                  <span>Remove the current photo</span></label>
+              </div>
+              <div class="field field--full">
+                <label for="aeDesc">Description <span class="req">*</span></label>
+                <textarea id="aeDesc" rows="16" required placeholder="What happens, who it's for, what to bring…"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn--brand" type="submit" id="aeSubmit">Publish event</button>
+              <button class="mini" type="button" id="adminEventReset">Clear form</button>
+            </div>
+          </form>
+          </details>
+
+          <div class="admin-head">
+            <h4>Published events</h4>
+            <div class="admin-row__act">
+              <span class="pill" id="aeCount">0</span>
+            </div>
+          </div>
+          <div class="admin-list" id="adminEventList"></div>
+        </section>
+
+        <!-- ORGANISERS TAB -->
+        <section class="tabpane" data-pane="organisers">
+          <form class="admin-form" id="adminOrgForm">
+            <div class="admin-head" style="margin-top:0">
+              <h4>Invite an organiser</h4>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="aoEmail">Email <span class="req">*</span></label>
+                <input id="aoEmail" type="email" required placeholder="name@example.com">
+              </div>
+              <div class="field">
+                <label for="aoNote">Note</label>
+                <input id="aoNote" type="text" placeholder="e.g. En. host">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn" type="submit" id="aoSubmit">Send invitation</button>
+            </div>
+          </form>
+
+          <div class="admin-head"><h4>Organisers</h4><span class="pill" id="aoCount">0</span></div>
+          <div class="admin-list" id="adminOrgList"></div>
+        </section>
+
+        <!-- RSVPS TAB -->
+        <section class="tabpane" data-pane="rsvps">
+          <div class="notice">
+            The event picker below sets everything on this tab — the numbers at the top,
+            the list, and who gets emailed. It starts on the next event.
+            <b>Send reminder</b> emails everyone who booked that event, with an
+            <b>Add to Google Calendar</b> button — it goes out immediately, so you are
+            asked to confirm first.
+          </div>
+
+          <div class="admin-head" style="margin-top:0">
+            <h4>RSVPs <span id="rsvpCount" class="pill"></span></h4>
+            <div class="admin-tools">
+              <!-- このセレクトは表の絞り込みも兼ねます。表と送信先が食い違うと事故になるので、
+                   選ぶ場所は1つにしてあります -->
+              <select id="rsvpEvent" class="admin-select" aria-label="Filter by event"></select>
+              <button class="mini" type="button" id="sendReminder">Send reminder</button>
+              <button class="mini" type="button" id="copyEmails">Copy emails</button>
+              <button class="mini" type="button" id="exportRsvp">Export CSV</button>
+              <!-- 当日の受付。別ページなので、ここから辿れないと見つけられません -->
+              <a class="btn btn--brand btn--sm" href="checkin.html" target="_blank" rel="noopener">Door check-in</a>
+            </div>
+          </div>
+          <div class="table-scroll"><table class="inbox-table" id="rsvpTable"></table></div>
+        </section>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="i18n.js"></script>
+<script src="core.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

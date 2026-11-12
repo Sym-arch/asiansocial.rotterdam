@@ -835,6 +835,12 @@ ul,ol{margin:0;padding:0;list-style:none}
 .acct-list span{font-size:.82rem;color:var(--muted)}
 
 /* 名前の編集。ふだんは表示だけにします */
+/* プロフィールの任意項目 */
+.about__why{color:var(--muted);font-size:.9rem;margin:-8px 0 20px;max-width:52ch}
+.about__grid{display:grid;gap:20px}
+.about__act{margin-top:22px}
+/* 予約完了ページの「プロフィールを完成させる」ボタン */
+.booked__profile{margin-top:28px}
 .namebox{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .namebox__value{font-size:1.05rem}
 .namebox__act{display:flex;align-items:center;gap:16px;margin-top:14px}
@@ -1123,12 +1129,24 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
    貼り付ける位置は、見出しの実寸から prepAdminPanel() が入れます。
    ========================================================= */
 #adminModal .modal__head{position:sticky;top:0;z-index:3;background:var(--paper)}
-#adminModal .tabs{
-  position:sticky;top:var(--admin-head-h,60px);z-index:2;background:var(--paper);
+#adminModal .tabs,.admin-page .tabs{
+  position:sticky;top:var(--admin-head-h,var(--header-h));z-index:2;background:var(--paper);
   margin:0 0 22px;padding-top:6px;gap:18px;
   overflow-x:auto;-webkit-overflow-scrolling:touch;
 }
-#adminModal .tabs button{white-space:nowrap;padding-bottom:12px}
+#adminModal .tabs button,.admin-page .tabs button{white-space:nowrap;padding-bottom:12px}
+
+/* 管理ページ（admin.html）。モーダルだった頃の中身をそのままページに置いています */
+.admin-page{padding:clamp(24px,4vw,44px) 0 90px;min-height:calc(100vh - var(--header-h))}
+.admin-page .ci{padding-top:clamp(16px,4vw,48px)}
+.admin-page__head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 20px;margin-bottom:22px}
+.admin-page__who{display:flex;align-items:center;gap:12px;font-size:.84rem;color:var(--muted)}
+.nav--admin{display:flex}
+/* 管理ページのナビは1項目だけなので、電話でもハンバーガーにたたみません */
+@media (max-width:820px){
+  .nav--admin{position:static;display:flex;flex-direction:row;background:none;padding:0;border:0}
+  .nav--admin a{font-size:.82rem;padding:0;border:0}
+}
 
 /* 数字は囲みます。線だけだと、どこまでが1つの数字か分かりません */
 .kpi{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;border-top:0;margin-bottom:24px}

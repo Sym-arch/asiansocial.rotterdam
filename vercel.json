@@ -1,22 +1,113 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/e/:id", "destination": "/api/event-page?id=:id" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+    {
+      "source": "/e/:id",
+      "destination": "/api/event-page?id=:id"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    }
   ],
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "^admin\\.asiansocials\\.nl$"
+        }
+      ],
+      "destination": "/admin.html",
+      "permanent": false
+    },
+    {
+      "source": "/:page(index|about|events|event|policy|profile|ticket|booked|reset)\\.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "^admin\\.asiansocials\\.nl$"
+        }
+      ],
+      "destination": "https://www.asiansocials.nl/:page.html",
+      "permanent": false
+    },
+    {
+      "source": "/e/:id",
+      "has": [
+        {
+          "type": "host",
+          "value": "^admin\\.asiansocials\\.nl$"
+        }
+      ],
+      "destination": "https://www.asiansocials.nl/e/:id",
+      "permanent": false
+    },
+    {
+      "source": "/admin.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "^(www\\.)?asiansocials\\.nl$"
+        }
+      ],
+      "destination": "https://admin.asiansocials.nl/",
+      "permanent": false
+    },
+    {
       "source": "/:path((?!api/|google[a-z0-9]+\\.html).*)",
-      "has": [{ "type": "host", "value": "(www\\.)?symarch-llc\\.com" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "(www\\.)?symarch-llc\\.com"
+        }
+      ],
       "destination": "https://www.asiansocials.nl/:path",
       "permanent": true
     },
     {
       "source": "/event.html",
-      "has": [{ "type": "query", "key": "id", "value": "(?<eid>[^&]+)" }],
+      "has": [
+        {
+          "type": "query",
+          "key": "id",
+          "value": "(?<eid>[^&]+)"
+        }
+      ],
       "destination": "/e/:eid",
       "permanent": true
     },
-    { "source": "/exams/:path*", "destination": "/", "permanent": true }
+    {
+      "source": "/exams/:path*",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "^admin\\.asiansocials\\.nl$"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
   ]
 }

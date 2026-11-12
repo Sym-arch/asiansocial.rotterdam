@@ -12,6 +12,8 @@ const CONFIG = {
      ドメインを変えるときは index/event.html の canonical・og:url・構造化データ、
      robots.txt、sitemap.xml も合わせて差し替えてください */
   siteUrl: 'https://www.asiansocials.nl',
+  /* 管理画面は別のサブドメインです（admin.html）。vercel.json で振り分けています */
+  adminUrl: 'https://admin.asiansocials.nl/',
   timezone: 'Europe/Amsterdam',
 
   /* Admin sign-in uses Supabase Auth (email + password) — see README.
@@ -1243,6 +1245,107 @@ async function ensureTicket(ev, r) {
   }
 }
 
+/* =========================================================
+   プロフィールの任意項目（国籍・住んでいる都市・生年月日）
+   18-profile-details.sql を流すまでは列が無いので、入力欄そのものを出しません。
+   列が無いのに保存ボタンだけ出ると、押しても必ず失敗するためです。
+   ========================================================= */
+const hasProfileDetails = p => !!p && Object.prototype.hasOwnProperty.call(p, 'birthdate');
+
+/* 国は ISO の2文字コードで持ち、表示名はブラウザに訳させます（Intl.DisplayNames）。
+   国名を3言語ぶん抱えずに済み、表記の揺れで集計が割れることもありません。
+   アジアの国を上にまとめるのは、このコミュニティで選ばれる国の大半だからです。 */
+const ASIA_CODES = ['CN','HK','MO','TW','JP','KR','KP','MN','VN','TH','KH','LA','MM','MY','SG','ID',
+  'PH','BN','TL','IN','PK','BD','LK','NP','BT','MV','AF','KZ','UZ','TM','KG','TJ'];
+const OTHER_CODES = ['AD','AE','AG','AL','AM','AO','AR','AT','AU','AZ','BA','BB','BE','BF','BG','BH','BI',
+  'BJ','BO','BR','BS','BW','BY','BZ','CA','CD','CF','CG','CH','CI','CL','CM','CO','CR','CU','CV','CY',
+  'CZ','DE','DJ','DK','DM','DO','DZ','EC','EE','EG','ER','ES','ET','FI','FJ','FM','FR','GA','GB','GD',
+  'GE','GH','GM','GN','GQ','GR','GT','GW','GY','HN','HR','HT','HU','IE','IL','IQ','IR','IS','IT','JM',
+  'JO','KE','KI','KM','KN','KW','LB','LC','LI','LR','LS','LT','LU','LV','LY','MA','MC','MD','ME','MG',
+  'MH','MK','ML','MR','MT','MU','MW','MX','MZ','NA','NE','NG','NI','NL','NO','NR','NZ','OM','PA','PE',
+  'PG','PL','PS','PT','PW','PY','QA','RO','RS','RU','RW','SA','SB','SC','SD','SE','SI','SK','SL','SM',
+  'SN','SO','SR','SS','ST','SV','SY','SZ','TD','TG','TN','TO','TR','TT','TV','TZ','UA','UG','US','UY',
+  'VA','VC','VE','VU','WS','XK','YE','ZA','ZM','ZW'];
+const CITY_CODES = ['rotterdam', 'amsterdam', 'the-hague', 'utrecht', 'other-nl', 'abroad'];
+
+function countryName(code) {
+  try {
+    return new Intl.DisplayNames([currentLang()], { type: 'region' }).of(code) || code;
+  } catch (err) {
+    return code;
+  }
+}
+
+function countryOptions(selected) {
+  const byName = codes => codes.map(c => [c, countryName(c)])
+    .sort((a, b) => a[1].localeCompare(b[1], currentLang()));
+  const opt = ([c, n]) => `<option value="${c}"${c === selected ? ' selected' : ''}>${esc(n)}</option>`;
+  return `<option value="">${esc(t('profile.choose'))}</option>
+    <optgroup label="${esc(t('profile.asia'))}">${byName(ASIA_CODES).map(opt).join('')}</optgroup>
+    <optgroup label="${esc(t('profile.allCountries'))}">${byName(OTHER_CODES).map(opt).join('')}</optgroup>`;
+}
+
+/* 16歳未満は、EU の規則で保護者の同意が要ります。ここで選べなくしておきます */
+function birthdateMax() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 16);
+  return d.toISOString().slice(0, 10);
+}
+
+function aboutBlockHTML(profile) {
+  if (!hasProfileDetails(profile)) return '';
+  return `
+    <div class="acct-block about" id="mcAbout">
+      <h2>${esc(t('profile.about'))}</h2>
+      <p class="about__why">${esc(t('profile.aboutNote'))}</p>
+
+      <div class="about__grid">
+        <div class="field">
+          <label for="mcNat">${esc(t('profile.nationality'))}</label>
+          <select id="mcNat">${countryOptions(profile.nationality || '')}</select>
+        </div>
+        <div class="field">
+          <label for="mcCity">${esc(t('profile.city'))}</label>
+          <select id="mcCity">
+            <option value="">${esc(t('profile.choose'))}</option>
+            ${CITY_CODES.map(c => `<option value="${c}"${profile.city === c ? ' selected' : ''}>${esc(t('profile.city.' + c))}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label for="mcBirth">${esc(t('profile.birthdate'))}</label>
+          <input id="mcBirth" type="date" min="1900-01-01" max="${birthdateMax()}" value="${esc(profile.birthdate || '')}">
+        </div>
+      </div>
+      <div class="about__act">
+        <button class="btn btn--brand btn--sm" type="button" id="mcAboutSave">${esc(t('account.save'))}</button>
+      </div>
+    </div>`;
+}
+
+function wireAboutBlock() {
+  const box = $('#mcAbout');
+  if (!box) return;
+
+  $('#mcAboutSave').addEventListener('click', async () => {
+    const btn = $('#mcAboutSave');
+    const birth = $('#mcBirth').value;
+    if (birth && (birth > birthdateMax() || birth < '1900-01-01')) {
+      return toast(t('profile.birthInvalid'), true);
+    }
+    btn.disabled = true;
+    try {
+      /* 空欄は null で送ります。空の文字列を入れると「答えた」扱いになり、集計が狂います */
+      await saveProfile({
+        nationality: $('#mcNat').value || null,
+        city: $('#mcCity').value || null,
+        birthdate: birth || null
+      });
+      toast(t('account.saved'));
+    } catch (err) { toast(err.message, true); }
+    btn.disabled = false;
+  });
+}
+
 function memberCardHTML(rsvps, tickets, isOrganiser) {
   MY_RSVPS = rsvps || [];
   const profile = (MEMBER && MEMBER.profile) || {};
@@ -1359,6 +1462,8 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
       </div>
     </div>
 
+    ${aboutBlockHTML(profile)}
+
     <div class="acct-block">
       <h2>${esc(t('account.bookings'))}</h2>
       ${shown.length
@@ -1369,7 +1474,7 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
     ${isOrganiser ? `
     <div class="acct-block">
       <h2>${esc(t('account.organiser'))}</h2>
-      <a class="btn btn--line btn--sm" href="index.html#admin">${esc(t('account.openAdmin'))}</a>
+      <a class="btn btn--line btn--sm" href="${esc(adminUrl())}">${esc(t('account.openAdmin'))}</a>
     </div>` : ''}
 
     <div class="acct-foot">
@@ -1571,6 +1676,8 @@ function wireMemberCard() {
     } catch (err) { toast(err.message, true); }
     btn.disabled = false;
   });
+  wireAboutBlock();
+
   /* 無料の回でチケットがまだ無い予約。押されたら作って、そのまま開きます */
   $$('[data-ticket]').forEach(btn => btn.addEventListener('click', async () => {
     const r  = MY_RSVPS.find(x => String(x.id) === btn.dataset.ticket);
@@ -1655,7 +1762,7 @@ function memberTier() {
   return (MEMBER && MEMBER.membership && MEMBER.membership.tier) || 'free';
 }
 
-/** 名前と言語だけ更新できます（他の列はDB側で拒否されます）。 */
+/** 名前・言語と、任意の3項目（国籍・都市・生年月日）だけ更新できます（他の列はDB側で拒否されます）。 */
 async function saveProfile(fields) {
   if (!(await ensureSession())) throw new Error('Not signed in.');
   const uid = await ensureUserId();
@@ -2254,19 +2361,20 @@ function initLangMenu() {
 }
 
 /* ---------------------------------------------------------
-   ヘッダーの Admin ボタン（ホーム以外のページ）
+   ヘッダーの Admin ボタン
 
-   管理画面そのものは index.html の中にしかありません。
-   これまで入口を出す処理も app.js（ホーム専用）にしかなかったので、
-   About やマイページでは、管理者で入っていてもボタンが出ませんでした。
-   ここではボタンを出すところまでを引き受け、押されたらホームへ送ります。
-   ホーム（#adminModal がある）では app.js がその場で開くので、
-   二重に確かめないよう、何もせずに戻ります。
+   管理画面は admin.asiansocials.nl（admin.html）に分けました。
+   どのページでも、管理者だと確かめられたときだけボタンを出し、
+   押されたらそちらへ送ります。
+   向こうは別ドメイン扱いなので、初回はもう一度サインインが要ります。
    --------------------------------------------------------- */
+function adminUrl() {
+  return isLocalHost() ? 'admin.html' : CONFIG.adminUrl;
+}
+
 function initAdminEntry() {
   const btn = $('#adminOpen');
   if (!btn) return;
-  if ($('#adminModal')) return;           /* ホームは app.js の担当です */
 
   const show = ok => { btn.hidden = !ok; };
 
@@ -2277,8 +2385,8 @@ function initAdminEntry() {
   document.addEventListener('member:changed', check);
 
   btn.addEventListener('click', () => {
-    /* 翻訳プロキシの上では管理画面は動きません。本来のドメインへ送ります。 */
-    location.href = onProxy() ? nativeUrl('en', '#admin') : 'index.html#admin';
+    /* 翻訳プロキシの上からでも、管理画面は本来のドメインで開きます */
+    location.href = adminUrl();
   });
 }
 
@@ -2304,7 +2412,8 @@ function initShell() {
   }
   syncAccountLink();
   bindOnce('admin-entry', initAdminEntry);
-  bindOnce('consent', consentInit);
+  /* 管理ページには解析を入れていないので、Cookie の同意を聞く理由がありません */
+  if (!document.body.classList.contains('admin-body')) bindOnce('consent', consentInit);
 
   const rev = new IntersectionObserver((entries, obs) => {
     entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-in'); obs.unobserve(en.target); } });
