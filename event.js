@@ -306,7 +306,12 @@ function renderEvent(ev) {
         </div>
       </aside>
     </div>
-  </section>`;
+  </section>
+
+  ${done ? `<!-- 参加者の写真とレビュー。中身は community.js が描きます -->
+  <section class="cm" id="eventCommunity" hidden></section>` : ''}`;
+
+  if (done) renderEventCommunity(ev, $('#eventCommunity'));
 
   /* wiring */
   const bookLabel = () => isPaid(ev)

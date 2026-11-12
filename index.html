@@ -148,13 +148,26 @@
   </div>
 </section>
 
-<!-- ============ EVENTS ============ -->
+<!-- ============ OUR COMMUNITY ============ -->
+<!-- 文章は本人がこれから書きます。届くまでは出しません（hidden を外せば表示されます） -->
+<section class="sec" id="community" hidden>
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="label label--brand" data-i18n="community.label">Our community</p>
+      <div>
+        <h2 data-i18n="community.title">Our community</h2>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UPCOMING EVENTS ============ -->
 <section class="sec sec--flush" id="events">
   <div class="wrap events__intro">
     <div class="sec__head reveal">
       <p class="label label--brand" data-i18n="events.label">Events</p>
       <div>
-        <h2 data-i18n="events.title">What's coming up</h2>
+        <h2 data-i18n="events.title">Upcoming events</h2>
         <p data-i18n="events.body">We meet whenever there is something worth gathering for — there is no fixed
            schedule. Scroll sideways through what is planned, and open any event to book.</p>
       </div>
@@ -200,6 +213,22 @@
 
 
 
+<!-- ============ PAST EVENTS ============ -->
+<!-- 終わった回と、参加者の写真・レビュー。中身は app.js の renderPastEvents が描きます -->
+<section class="sec past" id="past" hidden>
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="label label--brand" data-i18n="past.label">Past events</p>
+      <div>
+        <h2 data-i18n="past.title">Where we have been</h2>
+        <p data-i18n="past.body">Photos and reviews from people who were there.</p>
+      </div>
+    </div>
+    <div class="past__grid" id="pastGrid"></div>
+    <p class="past__more"><a class="link" href="events.html" data-i18n="past.seeAll">See all past events</a></p>
+  </div>
+</section>
+
 </main>
 
 <!-- ============ FOOTER ============ -->
@@ -244,6 +273,7 @@
 
 <script src="i18n.js"></script>
 <script src="core.js"></script>
+<script src="community.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -67,12 +67,13 @@ async function gate() {
   prepAdminPanel();
   refreshRsvps();
   if (currentTab() === 'organisers') refreshOrganisers();
+  if (currentTab() === 'community') refreshCommunityAdmin();
 }
 
 /* ---------------------------------------------------------
    タブ。URL の # で覚えるので、再読み込みしても同じタブに戻ります
    --------------------------------------------------------- */
-const TABS = ['events', 'rsvps', 'organisers'];
+const TABS = ['events', 'rsvps', 'community', 'organisers'];
 const currentTab = () => {
   const h = location.hash.slice(1);
   return TABS.includes(h) ? h : 'events';
@@ -83,6 +84,43 @@ function showTab(name) {
   $$('.tabpane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === name));
   /* 管理者の一覧は開いたときに取りに行きます */
   if (name === 'organisers' && isAdmin) refreshOrganisers();
+  if (name === 'community' && isAdmin) refreshCommunityAdmin();
+}
+
+/* ---------------------------------------------------------
+   Community（参加者の写真とレビュー）
+   投稿はすぐ公開されるので、ここで見て、問題があれば消します。
+   --------------------------------------------------------- */
+let CM_ADMIN = { photos: [], reviews: [] };
+
+async function refreshCommunityAdmin() {
+  try {
+    const [photos, reviews] = await Promise.all([loadPhotos(null, 200), loadReviews(null, 200)]);
+    CM_ADMIN = { photos, reviews };
+  } catch (err) {
+    $('#cmAdminReviews').innerHTML = '<div class="empty">Not set up yet — run supabase/19-community-posts.sql.</div>';
+    $('#cmAdminPhotos').innerHTML = '';
+    return;
+  }
+  const title = id => { const ev = findEvent(id); return ev ? ev.title : id; };
+  $('#cmReviewCount').textContent = CM_ADMIN.reviews.length;
+  $('#cmPhotoCount').textContent = CM_ADMIN.photos.length;
+  $('#cmAdminReviews').innerHTML = CM_ADMIN.reviews.length ? CM_ADMIN.reviews.map(r => `
+    <div class="admin-row">
+      <div class="admin-row__main">
+        <strong>${avatarHTML(r.initials, r.nationality)} ${esc(r.body)}</strong>
+        <span>${esc(title(r.event_id))} · ${esc(new Date(r.created_at).toLocaleDateString('en-GB'))}</span>
+      </div>
+      <div class="admin-row__act">
+        <button class="mini mini--danger" type="button" data-cm-admin-review="${esc(r.id)}">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="empty">No reviews yet.</div>';
+  $('#cmAdminPhotos').innerHTML = CM_ADMIN.photos.length ? CM_ADMIN.photos.map(p => `
+    <figure>
+      <a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="" loading="lazy"></a>
+      <figcaption>${esc(title(p.event_id))}</figcaption>
+      <button class="mini mini--danger" type="button" data-cm-admin-photo="${esc(p.id)}">Delete</button>
+    </figure>`).join('') : '<div class="empty">No photos yet.</div>';
 }
 
 /* ---------------------------------------------------------
@@ -289,8 +327,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-org]');
+    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo]');
     if (!t) return;
+
+    if (t.dataset.cmAdminReview) {
+      if (!confirm('Delete this review? It disappears from the site straight away.')) return;
+      deleteCommunityReview(t.dataset.cmAdminReview)
+        .then(() => { toast('Review deleted.'); refreshCommunityAdmin(); })
+        .catch(err => toast(err.message, true));
+      return;
+    }
+    if (t.dataset.cmAdminPhoto) {
+      const p = CM_ADMIN.photos.find(x => x.id === t.dataset.cmAdminPhoto);
+      if (!p || !confirm('Delete this photo? It disappears from the site straight away.')) return;
+      deleteCommunityPhoto(p)
+        .then(() => { toast('Photo deleted.'); refreshCommunityAdmin(); })
+        .catch(err => toast(err.message, true));
+      return;
+    }
 
     if (t.hasAttribute('data-admin-out')) {
       signOut(); isAdmin = false; ADMIN_RSVPS = [];

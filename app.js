@@ -57,6 +57,59 @@ function renderEventRail() {
 }
 
 /* ---------------------------------------------------------
+   Past events（ホームの一番下）
+   終わった回を新しい順に6件。参加者の写真があれば1枚目を表紙にし、
+   写真とレビューの数、いちばん新しいレビューを添えます。
+   写真・レビューのテーブル（19 の SQL）が無いときは、回だけを並べます。
+   --------------------------------------------------------- */
+let PAST_COMMUNITY = null;   /* { photos, reviews } を一度だけ読みます */
+
+async function loadPastCommunity() {
+  if (PAST_COMMUNITY) return PAST_COMMUNITY;
+  try {
+    const [photos, reviews] = await Promise.all([loadPhotos(null, 300), loadReviews(null, 300)]);
+    PAST_COMMUNITY = { photos, reviews };
+  } catch (err) {
+    console.info('past community not loaded:', err.message);
+    PAST_COMMUNITY = { photos: [], reviews: [] };
+  }
+  return PAST_COMMUNITY;
+}
+
+function pastCardHTML(ev, cm) {
+  const photos  = cm.photos.filter(p => p.event_id === ev.id);
+  const reviews = cm.reviews.filter(r => r.event_id === ev.id);
+  const cover = (photos[0] && photos[0].url) || ev.image;
+  const latest = reviews[0];
+  const counts = [
+    /* 1件のときは単数形にします（「1 photos」と出ないように） */
+    photos.length ? t(photos.length === 1 ? 'past.photo' : 'past.photos', { n: photos.length }) : '',
+    reviews.length ? t(reviews.length === 1 ? 'past.review' : 'past.reviews', { n: reviews.length }) : ''
+  ].filter(Boolean).join(' · ');
+  return `<a class="past-card" href="${esc(eventUrl(ev.id))}#eventCommunity">
+    <span class="past-card__img">${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : ''}</span>
+    <span class="past-card__body">
+      <span class="past-card__date">${esc(fmtDate(ev, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>
+      <b>${esc(ev.title)}</b>
+      ${counts ? `<span class="past-card__counts">${esc(counts)}</span>` : ''}
+      ${latest ? `<span class="past-card__review">${avatarHTML(latest.initials, latest.nationality)}
+        <span>${esc(latest.body.length > 110 ? latest.body.slice(0, 110) + '…' : latest.body)}</span></span>` : ''}
+    </span>
+  </a>`;
+}
+
+async function renderPastEvents() {
+  const sec = $('#past'), grid = $('#pastGrid');
+  if (!sec || !grid) return;
+  const list = EVENTS.filter(isPast).sort(byDate).reverse().slice(0, 6);
+  sec.hidden = !list.length;
+  if (!list.length) return;
+  const cm = await loadPastCommunity();
+  grid.innerHTML = list.map(ev => pastCardHTML(ev, cm)).join('');
+  keepLangOnLinks(grid);
+}
+
+/* ---------------------------------------------------------
    Scroll-driven horizontal rails
    Scrolling down through a pinned section moves the track right.
    Falls back to a plain swipe track on small screens.
@@ -199,14 +252,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const drawAll = () => {
     if (!calTouched) calCursor = initialCalMonth();
-    renderCalendar(); renderEventRail(); renderHeroNext();
+    renderCalendar(); renderEventRail(); renderHeroNext(); renderPastEvents();
     keepLangOnLinks();   /* カードは後から描かれるので、描くたびに ?lang= を付け直す */
     requestAnimationFrame(measureRails);
   };
   bootstrapContent(drawAll);
 
   /* Scroll-spy */
-  ['home', 'events'].forEach(id => {
+  ['home', 'events', 'past'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     new IntersectionObserver(entries => {

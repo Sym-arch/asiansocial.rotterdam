@@ -52,6 +52,7 @@
         <div class="tabs" role="tablist">
           <button type="button" class="is-on" data-tab="events">Events</button>
           <button type="button" data-tab="rsvps">RSVPs</button>
+          <button type="button" data-tab="community">Community</button>
           <button type="button" data-tab="organisers">Organisers</button>
         </div>
 
@@ -168,6 +169,16 @@
           <div class="admin-list" id="adminEventList"></div>
         </section>
 
+        <!-- COMMUNITY TAB: 参加者の写真とレビュー。すぐ公開なので、問題があればここで消します -->
+        <section class="tabpane" data-pane="community">
+          <div class="notice">Photos and reviews go live as soon as an attendee posts them.
+            Delete anything that should not be on the site — it disappears straight away.</div>
+          <div class="admin-head"><h4>Reviews</h4><span class="pill" id="cmReviewCount">0</span></div>
+          <div class="admin-list" id="cmAdminReviews"></div>
+          <div class="admin-head"><h4>Photos</h4><span class="pill" id="cmPhotoCount">0</span></div>
+          <div class="cm-admin-photos" id="cmAdminPhotos"></div>
+        </section>
+
         <!-- ORGANISERS TAB -->
         <section class="tabpane" data-pane="organisers">
           <form class="admin-form" id="adminOrgForm">
@@ -226,6 +237,7 @@
 
 <script src="i18n.js"></script>
 <script src="core.js"></script>
+<script src="community.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

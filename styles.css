@@ -1265,3 +1265,65 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 
 /* あとから変えるための導線（フッター） */
 #cookieSettings{font-size:inherit}
+
+/* =========================================================
+   参加者の写真とレビュー（community.js）
+   アイコンはイニシャルの丸と、右下に小さな国旗
+   ========================================================= */
+.cm-av{position:relative;display:inline-flex;flex:none;width:40px;height:40px;vertical-align:middle}
+.cm-av__i{
+  width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  background:var(--ink);color:var(--paper);font-size:.82rem;font-weight:700;letter-spacing:.04em;
+}
+.cm-av__flag{
+  position:absolute;right:-3px;bottom:-2px;width:18px;height:13.5px;object-fit:cover;
+  border-radius:2px;box-shadow:0 0 0 2px var(--paper);
+}
+.cm{padding:clamp(24px,4vw,48px) 0 clamp(56px,8vw,110px);border-top:1px solid var(--rule)}
+.cm-head h2{font-size:1.5rem;font-weight:500}
+.cm-head p{color:var(--muted);font-size:.92rem;margin-top:6px}
+.cm-post{display:grid;gap:14px;margin:22px 0 28px;max-width:640px}
+.cm-post__photo{justify-self:start;cursor:pointer}
+.cm-post__photo.is-busy{opacity:.6;pointer-events:none}
+.cm-post__review{display:grid;gap:10px}
+.cm-post__review textarea{
+  font:inherit;font-size:.95rem;padding:12px 14px;border:1px solid var(--rule);
+  background:transparent;color:var(--ink);resize:vertical;width:100%;
+}
+.cm-post__review .btn{justify-self:start}
+.cm-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:8px 0 30px}
+.cm-photo{margin:0;position:relative}
+/* 国旗も img なので、写真の指定は a の中の img だけに当てます */
+.cm-photo > a img{width:100%;aspect-ratio:1;object-fit:cover;display:block;border-radius:8px}
+.cm-photo figcaption{position:absolute;left:8px;bottom:8px;display:flex;align-items:center;gap:8px}
+.cm-photo figcaption .linkish{background:var(--paper);padding:2px 8px;border-radius:999px;font-size:.74rem}
+.cm-photo .cm-av,.cm-photo .cm-av__i{width:30px;height:30px}
+.cm-photo .cm-av__i{font-size:.7rem}
+.cm-reviews{display:grid;gap:0;border-top:1px solid var(--rule);max-width:760px}
+.cm-review{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--rule)}
+.cm-review__body p{color:var(--ink-2);line-height:1.6;white-space:pre-line}
+.cm-review__meta{display:block;margin-top:6px;font-size:.78rem;color:var(--muted)}
+.cm-empty{color:var(--muted);margin-top:10px}
+
+/* ホームの Past events */
+.past__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px}
+.past-card{display:flex;flex-direction:column;text-decoration:none;color:inherit;border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:var(--paper)}
+.past-card__img{aspect-ratio:16/10;background:var(--paper-2);overflow:hidden}
+.past-card__img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.past-card:hover .past-card__img img{transform:scale(1.03)}
+.past-card__body{display:grid;gap:6px;padding:16px 18px 18px}
+.past-card__date{font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.past-card__body b{font-family:var(--display);font-weight:500;font-size:1.05rem;line-height:1.3}
+.past-card__counts{font-size:.8rem;color:var(--brand-text);font-weight:600}
+.past-card__review{display:flex;gap:10px;align-items:flex-start;margin-top:6px;font-size:.84rem;color:var(--ink-2);line-height:1.5}
+.past-card__review .cm-av,.past-card__review .cm-av__i{width:30px;height:30px}
+.past-card__review .cm-av__i{font-size:.68rem}
+.past__more{margin-top:26px}
+
+/* 管理画面の Community タブ */
+.cm-admin-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.cm-admin-photos figure{margin:0;display:grid;gap:6px}
+.cm-admin-photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+.cm-admin-photos figcaption{font-size:.74rem;color:var(--muted)}
+.admin-row__main strong .cm-av{margin-right:8px;width:28px;height:28px}
+.admin-row__main strong .cm-av__i{width:28px;height:28px;font-size:.66rem}
