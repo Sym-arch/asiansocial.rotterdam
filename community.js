@@ -19,10 +19,15 @@ const CM_BUCKET = 'community-photos';
 /* 国旗は画像で出します。Windows は国旗の絵文字を描けず「JP」の文字になるためです。
    版を固定した CDN から読みます（2週間以上前に出た版）。 */
 const FLAG_BASE = 'https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/flags/4x3/';
-/* 長い辺の最大ピクセル。ダウンロードして使えるだけの大きさは残しつつ、
-   保存容量（無料枠 1GB、1枚 0.5MB 前後で 2000 枚ほど）を守るために縮めます */
-const CM_PHOTO_MAX = 2048;
-const CM_PHOTO_QUALITY = 0.85;
+/* 写真の圧縮は「見て分からない」範囲にとどめます（ダウンロードして使う人がいるため）。
+   - 長い辺は 3000px まで。スマホの原寸（4032px）から少し縮めるだけで、
+     画面でも L 判の印刷でも差は出ません。ファイルは半分ほどになります
+   - JPEG の品質は 0.92。0.9 を超えると目で見て元との差はほぼ分かりません
+   - 縮める必要がなく、元から JPEG なら作り直さずにそのまま置きます
+     （作り直すたびに少しずつ劣化するため）。作り直したほうが大きくなるときも元を使います
+   1枚 1MB 前後なので、Supabase の無料枠 1GB で 1000 枚ほど置けます */
+const CM_PHOTO_MAX = 3000;
+const CM_PHOTO_QUALITY = 0.92;
 
 /* 参加者のアイコン：イニシャルの丸と、右下に国旗 */
 function avatarHTML(initials, nat) {
@@ -74,24 +79,51 @@ async function postReview(eventId, body) {
   }
 }
 
-/* 写真は送る前に縮めます。スマホの写真は 1枚 3〜6MB あり、
-   そのまま置くと保存容量も表示の速さも持ちません */
-function shrinkImage(file) {
+/* 写真は送る前に整えます（上の決めごとのとおり）。 */
+function loadImageFile(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, CM_PHOTO_MAX / Math.max(img.width, img.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(img.width * scale);
-      c.height = Math.round(img.height * scale);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      c.toBlob(b => (b ? resolve(b) : reject(new Error(t('cm.err.photo')))), 'image/jpeg', CM_PHOTO_QUALITY);
-    };
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t('cm.err.photo'))); };
     img.src = url;
   });
+}
+
+const canvasToJpeg = (c, q) => new Promise((resolve, reject) =>
+  c.toBlob(b => (b ? resolve(b) : reject(new Error(t('cm.err.photo')))), 'image/jpeg', q));
+
+async function shrinkImage(file) {
+  const img = await loadImageFile(file);
+  const w0 = img.naturalWidth, h0 = img.naturalHeight;
+  const scale = Math.min(1, CM_PHOTO_MAX / Math.max(w0, h0));
+  const isJpeg = /^image\/jpe?g$/i.test(file.type);
+
+  /* 縮めなくてよい JPEG は、そのまま使います */
+  if (scale === 1 && isJpeg) return file;
+
+  /* 一気に縮めるとギザギザやモアレが出るので、半分ずつ段階的に縮めます */
+  let src = img, w = w0, h = h0;
+  const tw = Math.round(w0 * scale), th = Math.round(h0 * scale);
+  while (w / 2 > tw) {
+    const step = document.createElement('canvas');
+    step.width = Math.round(w / 2); step.height = Math.round(h / 2);
+    const sx = step.getContext('2d');
+    sx.imageSmoothingEnabled = true; sx.imageSmoothingQuality = 'high';
+    sx.drawImage(src, 0, 0, step.width, step.height);
+    src = step; w = step.width; h = step.height;
+  }
+  const c = document.createElement('canvas');
+  c.width = tw; c.height = th;
+  const ctx = c.getContext('2d');
+  /* PNG の透明部分が JPEG で黒くならないよう、白を敷いてから描きます */
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, tw, th);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, tw, th);
+  const out = await canvasToJpeg(c, CM_PHOTO_QUALITY);
+
+  /* 作り直したほうが大きいなら、元の JPEG を使います */
+  return (isJpeg && out.size >= file.size) ? file : out;
 }
 
 async function uploadCommunityPhoto(eventId, file) {
