@@ -211,7 +211,7 @@ function renderEvent(ev) {
         <div>
           ${done ? `<p class="label label--brand">${esc(t('ev.past'))}</p>` : ''}
           <h1>${esc(ev.title)}</h1>
-          <p class="lead" style="margin-top:14px">${esc(ev.description).split('\n')[0]}</p>
+          <p class="lead" style="margin-top:14px">${esc(mdLead(ev.description))}</p>
 
           <div class="ev-facts">
             <div><span class="lbl">${esc(t('meta.date'))}</span><div><b>${esc(fmtLong(ev))}</b><span>${esc(fmtTime(ev))} · ${esc(CONFIG.timezone)}</span></div></div>
@@ -240,7 +240,7 @@ function renderEvent(ev) {
       <div>
         <div class="prose reveal">
           <h2>${esc(t('ev.about'))}</h2>
-          <p>${esc(ev.description)}</p>
+          <div class="md">${mdToHtml(ev.description)}</div>
 
           <h3>${esc(t('ev.know'))}</h3>
           <ul class="ticks">

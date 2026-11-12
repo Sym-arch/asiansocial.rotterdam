@@ -113,10 +113,102 @@ const byDate = (a, b) => startOf(a) - startOf(b);
 const upcoming = () => EVENTS.filter(e => !isPast(e)).sort(byDate);
 const findEvent = id => EVENTS.find(e => e.id === id);
 
+/* =========================================================
+   イベント説明のマークダウン
+   AI が書いた説明文（見出し・太字・箇条書き）をそのまま貼れるようにします。
+   ライブラリは入れません。ビルドの無いサイトに外部スクリプトを足すと、
+   読み込み失敗で説明文ごと消える危険があるうえ、使う記法はごく一部だからです。
+   先に esc() で全部エスケープしてから記法だけを戻すので、
+   説明文に <script> などが書かれても HTML としては動きません。
+   ========================================================= */
+function mdInline(escaped) {
+  return escaped
+    /* リンクは http(s) と mailto だけ。javascript: などは文字のまま残します */
+    .replace(/\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(?=\S)(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(?=\S)(.+?)__/g, '<strong>$1</strong>')
+    /* 斜体は * だけ。_ は URL や名前の中に普通に出てくるので拾いません */
+    .replace(/(^|[^*\w])\*(?=\S)([^*]+?)\*(?!\w)/g, '$1<em>$2</em>');
+}
+
+const MD_LIST = /^\s*(?:([-*+•・])|(\d+)[.)])\s+(.*)$/;
+const MD_RULE = /^\s*([-*_])(\s*\1){2,}\s*$/;
+
+function mdToHtml(text) {
+  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let para = [], list = null;   /* list = { tag, items } */
+  const flushPara = () => {
+    if (para.length) out.push('<p>' + para.map(l => mdInline(esc(l))).join('<br>') + '</p>');
+    para = [];
+  };
+  const flushList = () => {
+    if (list) out.push(`<${list.tag}>` + list.items.map(i => '<li>' + mdInline(esc(i)) + '</li>').join('') + `</${list.tag}>`);
+    list = null;
+  };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    let m;
+    if (!line.trim()) { flushPara(); flushList(); continue; }
+    /* 区切り線は箇条書きより先に見ます（「- - -」が箇条書きに取られないように） */
+    if (MD_RULE.test(line)) { flushPara(); flushList(); out.push('<hr>'); continue; }
+    if ((m = line.match(/^\s*(#{1,6})\s+(.*?)\s*#*\s*$/))) {
+      flushPara(); flushList();
+      /* ページ側に「About this event」の h2 があるので、# と ## は h3、それ以下は h4 */
+      const tag = m[1].length <= 2 ? 'h3' : 'h4';
+      out.push(`<${tag}>${mdInline(esc(m[2]))}</${tag}>`);
+      continue;
+    }
+    if ((m = line.match(MD_LIST))) {
+      flushPara();
+      const tag = m[2] ? 'ol' : 'ul';
+      if (list && list.tag !== tag) flushList();
+      if (!list) list = { tag, items: [] };
+      list.items.push(m[3]);
+      continue;
+    }
+    if ((m = line.match(/^\s*>\s?(.*)$/))) {
+      flushPara(); flushList();
+      out.push('<blockquote>' + mdInline(esc(m[1])) + '</blockquote>');
+      continue;
+    }
+    /* 箇条書きの直後の字下げ行は、前の項目の続きとして扱います */
+    if (list && /^\s{2,}\S/.test(raw)) { list.items[list.items.length - 1] += ' ' + line.trim(); continue; }
+    flushList();
+    para.push(line.trim());
+  }
+  flushPara(); flushList();
+  return out.join('\n');
+}
+
+/* カードの抜粋・カレンダー・メール用。記号を外して普通の文章に戻します */
+function mdPlain(text) {
+  return String(text || '').replace(/\r\n?/g, '\n').split('\n').map(l => l
+    .replace(MD_RULE, '')
+    .replace(/^\s*#{1,6}\s+/, '')
+    .replace(/^\s*[-*+]\s+/, '• ')
+    .replace(/^\s*>\s?/, '')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '$1 ($2)')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/(^|[^*\w])\*(?=\S)([^*]+?)\*(?!\w)/g, '$1$2')
+  ).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/* ヒーローのリード文。見出しや区切り線を飛ばして、最初の本文を1行だけ取ります */
+function mdLead(text) {
+  const lines = String(text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const body = lines.find(l => !/^#{1,6}\s/.test(l) && !MD_RULE.test(l)) || '';
+  return mdPlain(body).replace(/^•\s*/, '');
+}
+
 /* Shared card markup — used by the home rails and by the sub-pages. */
 function eventCardHTML(ev) {
   const done = isPast(ev);
-  const teaser = ev.description.length > 118 ? esc(ev.description.slice(0, 118)) + '…' : esc(ev.description);
+  const plain = mdPlain(ev.description).replace(/\s+/g, ' ');
+  const teaser = plain.length > 118 ? esc(plain.slice(0, 118)) + '…' : esc(plain);
   return `<a class="ev-card${done ? ' is-past' : ''}" href="${esc(eventUrl(ev.id))}">
     <span class="ev-card__img">
       ${ev.image ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}" loading="lazy">` : ''}
@@ -267,7 +359,7 @@ function stampLocal(d) {
 
 function eventDetailsText(ev) {
   return [
-    ev.description,
+    mdPlain(ev.description),
     '',
     'Venue: ' + ev.venue,
     ev.address ? 'Address: ' + ev.address : '',
@@ -362,7 +454,7 @@ You're booked for:
 Add it to your calendar:
 ${googleCalendarUrl(ev)}
 
-${ev.description}
+${mdPlain(ev.description)}
 
 See you there!
 ${CONFIG.orgName}

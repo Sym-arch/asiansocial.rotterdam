@@ -15,7 +15,7 @@
    ========================================================= */
 
 import { readFile } from 'node:fs/promises';
-import { sb } from './_lib.mjs';
+import { sb, mdLead } from './_lib.mjs';
 
 const SITE = 'https://www.asiansocials.nl';
 const TZ = 'Europe/Amsterdam';
@@ -205,9 +205,8 @@ function priceLabel(ev) {
   return sign + (cents / 100).toFixed(2).replace(/\.00$/, '');
 }
 
-function firstLine(text) {
-  return String(text || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
-}
+/* 説明文はマークダウンのことがあるので、見出しを飛ばした最初の本文を使います */
+const firstLine = mdLead;
 
 function cut(s, max) {
   const v = String(s || '').replace(/\s+/g, ' ').trim();

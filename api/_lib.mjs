@@ -258,3 +258,26 @@ export const priceLabel = (cents, currency = 'EUR') => {
   const sign = { EUR: '€', USD: '$', GBP: '£' }[currency] || currency + ' ';
   return sign + (n / 100).toFixed(2).replace(/\.00$/, '');
 };
+
+/* イベント説明はマークダウンで書かれることがあるので、
+   メタ説明やカレンダーに入れる前に記号を外します（core.js の mdPlain と同じ規則） */
+const MD_RULE = /^\s*([-*_])(\s*\1){2,}\s*$/;
+export function mdPlain(text) {
+  return String(text || '').replace(/\r\n?/g, '\n').split('\n').map(l => l
+    .replace(MD_RULE, '')
+    .replace(/^\s*#{1,6}\s+/, '')
+    .replace(/^\s*[-*+]\s+/, '• ')
+    .replace(/^\s*>\s?/, '')
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '$1 ($2)')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/(^|[^*\w])\*(?=\S)([^*]+?)\*(?!\w)/g, '$1$2')
+  ).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/* 見出し（# …）や区切り線を飛ばして、最初の本文の行を記号抜きで返します */
+export function mdLead(text) {
+  const lines = String(text || '').split('\n').map(s => s.trim()).filter(Boolean);
+  const body = lines.find(l => !/^#{1,6}\s/.test(l) && !MD_RULE.test(l)) || '';
+  return mdPlain(body).replace(/^•\s*/, '');
+}

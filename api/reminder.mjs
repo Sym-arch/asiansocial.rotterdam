@@ -16,7 +16,7 @@
 
 import {
   send, sb, missingEnv, userFromToken, readJson,
-  priceFor, priceLabel, sendMailBatch, env
+  priceFor, priceLabel, sendMailBatch, env, mdPlain
 } from './_lib.mjs';
 
 export default async function handler(req, res) {
@@ -144,7 +144,7 @@ function googleCalendarUrl(ev, origin) {
     dates: stamp(ev.date, start) + '/' + stamp(ev.date, end),
     ctz: TZ,
     details: [
-      ev.description || '',
+      mdPlain(ev.description),
       '',
       'Venue: ' + (ev.venue || ''),
       ev.address ? 'Address: ' + ev.address : '',

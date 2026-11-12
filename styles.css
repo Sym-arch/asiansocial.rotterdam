@@ -452,6 +452,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 }
 .field select{cursor:pointer}
 .field textarea{min-height:96px;resize:vertical}
+/* イベント説明は AI の下書きを貼って直すことが多いので、全体が見渡せる高さにします */
+#aeDesc{min-height:360px;line-height:1.55;border:1px solid var(--rule);padding:12px 14px}
 .field input:focus,.field select:focus,.field textarea:focus{
   outline:none;border-bottom-color:var(--brand);
 }
@@ -508,6 +510,20 @@ ul,ol{margin:0;padding:0;list-style:none}
 .prose h2{font-size:1.5rem;margin-bottom:14px;font-weight:500}
 .prose p{color:var(--ink-2);white-space:pre-line}
 .prose h3{font-size:1.05rem;margin:32px 0 6px;font-weight:600;font-family:var(--body);letter-spacing:0}
+/* イベント説明（マークダウンから作った HTML）。改行は <br> にしてあるので pre-line は外します */
+.md p{white-space:normal;margin:0 0 14px}
+.md h3{margin:28px 0 8px}
+.md h4{font-size:.98rem;margin:22px 0 6px;font-weight:600;font-family:var(--body);letter-spacing:0}
+.md > :first-child{margin-top:0}
+.md ul,.md ol{margin:0 0 16px;padding-left:1.3em;color:var(--ink-2)}
+.md ul{list-style:disc}
+.md ol{list-style:decimal}
+.md li{margin:4px 0;padding-left:.2em}
+.md strong{font-weight:700;color:var(--ink)}
+.md a{color:var(--brand-text)}
+.md code{font-size:.9em;background:var(--paper-2);padding:1px 5px}
+.md hr{border:0;border-top:1px solid var(--rule);margin:24px 0}
+.md blockquote{margin:0 0 14px;padding-left:14px;border-left:2px solid var(--brand);color:var(--ink-2)}
 .ticks{border-top:1px solid var(--rule)}
 .ticks li{padding:13px 0;border-bottom:1px solid var(--rule);font-size:.92rem;color:var(--ink-2)}
 
