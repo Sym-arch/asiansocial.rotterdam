@@ -12,7 +12,7 @@
    Web の Request/Response 形で書くと、呼ばれても応答せず固まります。
    ========================================================= */
 
-import { missingEnv, sb, userFromToken, priceFor, stripe, priceLabel, readJson, send } from './_lib.mjs';
+import { missingEnv, sb, userFromToken, priceFor, soldQuantity, stripe, priceLabel, readJson, send } from './_lib.mjs';
 
 /* 決済画面を開いたまま放置されたぶんを、翌日に確定させないための期限。
    Stripe の下限が30分です。枠の押さえは作らず、これだけで十分としています。 */
@@ -42,22 +42,23 @@ export default async function handler(req, res) {
     const events = await sb('events?select=*&id=eq.' + encodeURIComponent(eventId));
     const ev = events[0];
     if (!ev) return send(res, 404, { error: 'event_not_found' });
+    if (ev.registration_closed) return send(res, 409, { error: 'registration_closed' });
     if (!ev.price_cents || ev.price_cents <= 0) return send(res, 400, { error: 'event_is_free' });
 
     const ships = await sb('memberships?select=tier,status&user_id=eq.' + encodeURIComponent(user.id));
     const tier  = (ships[0] && ships[0].status === 'active' && ships[0].tier) || 'free';
 
-    const price = priceFor(ev, tier);
+    /* 人数制限つきアーリーバードのときだけ、売れた枚数を引き直します。
+       無駄なクエリを避けるため、制限が無ければ呼びません。 */
+    const sold = (ev.early_bird && ev.early_bird_limit != null) ? await soldQuantity(eventId) : 0;
+    const price = priceFor(ev, tier, sold);
     if (price.cents <= 0) return send(res, 400, { error: 'event_is_free' });
 
     /* --- 満席か --------------------------------------------------------
        枠の押さえは作らないと決めたので、1件の超過は許容します。
        そのぶん決済画面に30分の期限を付けて、大きくずれないようにしています。 */
     if (ev.capacity) {
-      const sold = await sb(
-        'orders?select=quantity&event_id=eq.' + encodeURIComponent(eventId) + '&status=eq.paid'
-      );
-      const taken = sold.reduce((n, o) => n + (o.quantity || 1), 0);
+      const taken = ev.early_bird_limit != null ? sold : await soldQuantity(eventId);
       if (taken >= ev.capacity) return send(res, 409, { error: 'sold_out' });
     }
 

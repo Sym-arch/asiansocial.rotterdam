@@ -651,12 +651,14 @@ function renderAdmin() {
       <div class="admin-row__main">
         <strong>${esc(ev.title)}
           ${ev.brand === 'en' ? '<span class="pill">En.</span>' : ''}
-          ${isPast(ev) ? '<span class="pill">past</span>' : ''}</strong>
+          ${isPast(ev) ? '<span class="pill">past</span>' : ''}
+          ${!isPast(ev) && ev.registrationClosed ? '<span class="pill">registration closed</span>' : ''}</strong>
         <span>${esc(fmtDate(ev))} · ${esc(fmtTime(ev))} · ${esc(ev.venue)}</span>
         <span class="admin-row__nums">${ADMIN_RSVPS.filter(r => r.eventId === ev.id).length} bookings · ${seatsFor(ev.id)} seats${ev.capacity ? ' / ' + ev.capacity : ''}${isPast(ev) ? ' · ' + attendedFor(ev) + ' came' : ''}</span>
       </div>
       <div class="admin-row__act">
         <a class="mini" href="${esc(publicEventUrl(ev.id))}" target="_blank" rel="noopener">View page</a>
+        ${isPast(ev) ? '' : `<button class="mini" type="button" data-toggle-closed="${esc(ev.id)}">${ev.registrationClosed ? 'Reopen registration' : 'Close registration'}</button>`}
         <button class="mini" type="button" data-edit-ev="${esc(ev.id)}">Edit</button>
         <button class="mini mini--danger" type="button" data-del-ev="${esc(ev.id)}">Delete</button>
       </div>
@@ -711,6 +713,7 @@ function eventFormFill(ev) {
   $('#aeEarlyOn').checked   = !!(ev && ev.earlyBird);
   $('#aeEarlyPrice').value  = ev ? centsToInput(ev.priceEarlyCents) : '';
   $('#aeEarlyUntil').value  = (ev && ev.earlyBirdUntil) || '';
+  $('#aeEarlyLimit').value  = (ev && ev.earlyBirdLimit != null) ? ev.earlyBirdLimit : '';
   syncPriceOptions();
   $('#aeDesc').value = ev ? ev.description : '';
   $('#aeFile').value = '';
@@ -754,8 +757,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-del-ev],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo],[data-save-att]');
+    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-del-ev],[data-toggle-closed],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo],[data-save-att]');
     if (!t) return;
+
+    if (t.dataset.toggleClosed) {
+      const ev = findEvent(t.dataset.toggleClosed);
+      if (!ev) return;
+      const next = !ev.registrationClosed;
+      t.disabled = true;
+      setRegistrationClosed(t.dataset.toggleClosed, next)
+        .then(() => { renderAdmin(); toast(next ? 'Registration closed.' : 'Registration reopened.'); })
+        .catch(err => { t.disabled = false; toast(err.message, true); });
+      return;
+    }
 
     if (t.dataset.saveAtt) {
       const input = document.getElementById('att-' + t.dataset.saveAtt);
@@ -871,8 +885,10 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
     /* チェックが入っているのに金額が空だと、表示側でどう出すか決められません */
     if ($('#aeMemberOn').checked && !$('#aeMemberPrice').value.trim())
       return toast('Member discount is ticked — fill in the member price.', true);
-    if ($('#aeEarlyOn').checked && (!$('#aeEarlyPrice').value.trim() || !$('#aeEarlyUntil').value))
-      return toast('Early bird is ticked — fill in the price and the last day.', true);
+    if ($('#aeEarlyOn').checked && !$('#aeEarlyPrice').value.trim())
+      return toast('Early bird is ticked — fill in the price.', true);
+    if ($('#aeEarlyOn').checked && !$('#aeEarlyUntil').value && !$('#aeEarlyLimit').value.trim())
+      return toast('Early bird is ticked — set a last day, a ticket limit, or both.', true);
 
     const id = $('#aeId').value;
     const existing = EVENTS.find(x => x.id === id);
@@ -904,6 +920,8 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
       earlyBird:        $('#aeEarlyOn').checked,
       priceEarlyCents:  $('#aeEarlyOn').checked ? inputToCents($('#aeEarlyPrice').value) : null,
       earlyBirdUntil:   $('#aeEarlyOn').checked ? ($('#aeEarlyUntil').value || null) : null,
+      earlyBirdLimit:   $('#aeEarlyOn').checked && $('#aeEarlyLimit').value.trim()
+                           ? Math.max(1, parseInt($('#aeEarlyLimit').value, 10) || 1) : null,
       image,
       description: $('#aeDesc').value.trim()
     };

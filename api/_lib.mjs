@@ -103,21 +103,37 @@ export async function userFromToken(token) {
    ブラウザから届いた金額は一切信用しません。
    金額をブラウザから受け取ると、誰でも1セントに書き換えられます。 */
 
-export function earlyBirdActive(ev) {
-  if (!ev || !ev.early_bird || !ev.early_bird_until) return false;
-  const [y, m, d] = String(ev.early_bird_until).split('-').map(Number);
-  return Date.now() <= Date.UTC(y, (m || 1) - 1, d || 1, 23, 59, 59);
+/** sold: その回ですでに確保済みの枚数（人数制限つきアーリーバードの判定に使う）。
+    期日と人数の両方を設定したときは、どちらか先に来た方で終わります。 */
+export function earlyBirdActive(ev, sold = 0) {
+  if (!ev || !ev.early_bird) return false;
+  const hasUntil = !!ev.early_bird_until;
+  const hasLimit = ev.early_bird_limit != null;
+  if (!hasUntil && !hasLimit) return false;
+  if (hasUntil) {
+    const [y, m, d] = String(ev.early_bird_until).split('-').map(Number);
+    if (Date.now() > Date.UTC(y, (m || 1) - 1, d || 1, 23, 59, 59)) return false;
+  }
+  if (hasLimit && sold >= ev.early_bird_limit) return false;
+  return true;
+}
+
+/** その回ですでに売れた（有効な）枚数。人数制限つきアーリーバードの判定だけに使います。
+    残り枚数は表示しない方針なので、この数自体を外へ返してはいけません。 */
+export async function soldQuantity(eventId) {
+  const rows = await sb('orders?select=quantity&event_id=eq.' + encodeURIComponent(eventId) + '&status=eq.paid');
+  return rows.reduce((n, o) => n + (o.quantity || 1), 0);
 }
 
 /** @returns {{cents:number, reason:string}} */
-export function priceFor(ev, tier) {
+export function priceFor(ev, tier, sold = 0) {
   const base = ev.price_cents || 0;
   const options = [{ cents: base, reason: '' }];
 
   if (ev.member_discount && ev.price_member_cents != null && tier !== 'guest') {
     options.push({ cents: ev.price_member_cents, reason: 'member' });
   }
-  if (earlyBirdActive(ev) && ev.price_early_cents != null) {
+  if (earlyBirdActive(ev, sold) && ev.price_early_cents != null) {
     options.push({ cents: ev.price_early_cents, reason: 'early' });
   }
   /* 割引が重なったら一番安いものを採ります。会員なのに高い、が起きないため */

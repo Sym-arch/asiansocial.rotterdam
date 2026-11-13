@@ -50,6 +50,13 @@ function notFound() {
  * 「自前ドメイン ＋ ?lang=xx」へのボタンだけを見せます。
  * 移動先では下のフォームが同じ言語で表示され、警告も出ません。
  */
+/* 主催者が募集を手で締め切ったとき（isPast とは別の状態）に出す案内 */
+function closedBookingHTML() {
+  return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
+    <h2 style="font-size:1.5rem;margin:14px 0 10px;font-weight:500">${esc(t('ev.closed'))}</h2>
+    <p style="color:var(--muted);font-size:.9rem">${esc(t('ev.closedBody'))}</p>`;
+}
+
 function bookingHTML(ev) {
   if (onProxy()) {
     return `<p class="label label--brand">${esc(t('rsvp.label'))}</p>
@@ -226,6 +233,7 @@ function closeBookingModal() {
 
 function renderEvent(ev) {
   const done = isPast(ev);
+  const closed = !done && ev.registrationClosed;
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
 
   /* /e/<id> ではサーバー側が日付入りの見出しを付けています（api/event-page.mjs）。
@@ -255,15 +263,15 @@ function renderEvent(ev) {
           <div class="ev-facts">
             <div><span class="lbl">${esc(t('meta.date'))}</span><div><b>${esc(fmtLong(ev))}</b><span>${esc(fmtTime(ev))} · ${esc(CONFIG.timezone)}</span></div></div>
             <div><span class="lbl">${esc(t('meta.venue'))}</span><div><b>${esc(ev.venue)}</b><span>${esc(ev.address || 'Rotterdam')}</span></div></div>
-            <div><span class="lbl">${esc(t('meta.tickets'))}</span><div>${priceBlockHTML(ev)}${done ? `<span>${esc(t('ev.finished'))}</span>` : ''}</div></div>
+            <div><span class="lbl">${esc(t('meta.tickets'))}</span><div>${priceBlockHTML(ev)}${done ? `<span>${esc(t('ev.finished'))}</span>` : closed ? `<span>${esc(t('ev.closed'))}</span>` : ''}</div></div>
           </div>
 
           ${done
             /* 終わった回にカレンダーや地図は要りません。代わりに、参加者の写真と感想を
                ここ（日時・会場のすぐ下）に出します。中身は community.js が描きます */
             ? `<div class="cm cm--inline" id="eventCommunity" hidden></div>`
-            /* これからの回は予約のボタンだけ。カレンダーと地図は予約完了ページとメールにあります */
-            : `<div class="hero__cta">
+            /* 締め切った回はボタンを出しません。これからの回だけ予約のボタンです */
+            : closed ? '' : `<div class="hero__cta">
             <a class="btn btn--brand" href="#book" data-book-open>${esc(t('hero.cta1'))}</a>
           </div>`}
         </div>
@@ -296,7 +304,7 @@ function renderEvent(ev) {
 
       ${done ? '' : `
       <section class="ev-book" id="book">
-        <div>${bookingHTML(ev)}</div>
+        <div>${closed ? closedBookingHTML() : bookingHTML(ev)}</div>
       </section>`}
 
       ${others.length ? `

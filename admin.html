@@ -137,8 +137,12 @@
                       <label for="aeEarlyUntil">Until (last day)</label>
                       <input id="aeEarlyUntil" type="date">
                     </div>
+                    <div>
+                      <label for="aeEarlyLimit">Or limit (number of tickets)</label>
+                      <input id="aeEarlyLimit" type="number" min="1" step="1" placeholder="e.g. 20">
+                    </div>
                   </div>
-                  <small class="field__hint">An early bird without a deadline is not an early bird, so both are required.</small>
+                  <small class="field__hint">Set an end date, a ticket limit, or both — whichever is reached first ends the early bird. The remaining count is never shown to visitors.</small>
                 </div>
               </div>
               <div class="field field--full">

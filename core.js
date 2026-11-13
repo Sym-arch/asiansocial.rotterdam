@@ -471,6 +471,7 @@ async function submitRsvp(input) {
   const ev = findEvent(input.eventId);
   const guests = Number(input.guests) || 1;
   if (!ev) throw new Error(t('rsvp.err.event'));
+  if (ev.registrationClosed) throw new Error(t('rsvp.err.closed'));
 
   /* サインイン済みなら入力させない。
      未サインインなら、予約と同時に無料会員を作ります。 */
@@ -791,6 +792,7 @@ async function startCheckout(eventId, quantity) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (data.error === 'sold_out')         throw new Error(t('rsvp.err.soldOut'));
+    if (data.error === 'registration_closed') throw new Error(t('rsvp.err.closed'));
     if (data.error === 'sign_in_required') throw new Error(t('account.err.signin'));
     if (data.error === 'not_configured')   throw new Error('Payments are not set up yet.');
     throw new Error(data.message || data.error || 'Could not open the payment page.');
@@ -1464,12 +1466,13 @@ function memberCardHTML(rsvps, tickets, isOrganiser) {
     const when = date
       ? new Date(date).toLocaleDateString(dateLocale(), { year: 'numeric', month: 'long', day: 'numeric' })
       : '';
+    const past = pastRow(r);
     return `<li>
       <div class="acct-list__main">
         <b>${esc(title)}</b>
         <span>${esc(when)} \u00b7 ${esc(r.guests)} ${esc(t(r.guests > 1 ? 'meta.people' : 'meta.person'))}</span>
       </div>
-      ${tk
+      ${past ? '' : tk
         ? `<a class="acct-ticket" href="ticket.html#${encodeURIComponent(tk.secret)}">
              ${esc(t('account.openTicket'))}</a>`
         : (ev && !isPaid(ev) && !isPast(ev))
@@ -1999,7 +2002,11 @@ const evFromRow = r => ({
   earlyBird:        !!r.early_bird,
   priceEarlyCents:  r.price_early_cents,
   earlyBirdUntil:   r.early_bird_until,
+  earlyBirdLimit:   r.early_bird_limit ?? null,
   capacity:         r.capacity,
+  /* 募集を手動で締め切ったか（24-registration-controls.sql）。日付とは別に、
+     管理者がいつでも止められるようにするための列です */
+  registrationClosed: !!r.registration_closed,
   /* 実際に来た人数（20-event-attendance.sql）。書くのは管理画面の Past Events だけで、
      イベントの保存（evToRow）には含めません。列が無い環境でも保存が通るようにするためです */
   attendance:       r.attendance ?? null
@@ -2017,7 +2024,8 @@ const evToRow = e => ({
   price_member_cents: e.memberDiscount ? (e.priceMemberCents ?? null) : null,
   early_bird:         !!e.earlyBird,
   price_early_cents:  e.earlyBird ? (e.priceEarlyCents ?? null) : null,
-  early_bird_until:   e.earlyBird ? (e.earlyBirdUntil || null) : null
+  early_bird_until:   e.earlyBird ? (e.earlyBirdUntil || null) : null,
+  early_bird_limit:   e.earlyBird ? (e.earlyBirdLimit ?? null) : null
 });
 
 /* ---------------------------------------------------------
@@ -2131,6 +2139,25 @@ async function dropEvent(id) {
   } catch (err) {
     console.warn('rsvp cleanup failed:', err.message);
   }
+}
+
+/** 募集を締め切る／再開する（events.registration_closed）。保存フォームとは別の、
+    一発で切り替えるボタン用です */
+async function setRegistrationClosed(id, closed) {
+  if (!supabaseReady()) return;
+  if (!(await ensureSession())) throw new Error('Your sign-in has expired. Sign in again, then try again.');
+  const res = await fetch(sbUrl('events', 'id=eq.' + encodeURIComponent(id)), {
+    method: 'PATCH',
+    headers: Object.assign(sbHeaders(), { Prefer: 'return=minimal' }),
+    body: JSON.stringify({ registration_closed: !!closed })
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    if (/registration_closed/.test(text)) throw new Error('Run supabase/24-registration-controls.sql first.');
+    throw new Error('Could not save (' + res.status + ').');
+  }
+  const ev = findEvent(id);
+  if (ev) ev.registrationClosed = !!closed;
 }
 
 /**

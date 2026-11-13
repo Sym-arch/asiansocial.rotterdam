@@ -28,6 +28,13 @@ function notFoundHTML() {
     <a class="btn btn--line" href="index.html">${esc(t('booked.home'))}</a>`);
 }
 
+/* 終わった回のチケットは、もう受付で見せる用途が無いので出しません */
+function pastHTML() {
+  return ticketShell(`
+    <h1 class="tk__msg">${esc(t('ticket.eventPast'))}</h1>
+    <a class="btn btn--line" href="profile.html">${esc(t('ticket.eventPastLink'))}</a>`);
+}
+
 /* 半券型。上が券面（誰が・何に・いつ）、切り取り線の下が受付用（人数と番号）。
    受付の人は下半分だけ見れば通せます。 */
 function ticketHTML(tk) {
@@ -128,9 +135,11 @@ async function wireCancel(tk) {
 }
 
 function render(tk) {
-  $('#ticketMain').innerHTML = tk ? ticketHTML(tk) : notFoundHTML();
+  const ev = tk && findEvent(tk.event_id);
+  const past = ev && isPast(ev);
+  $('#ticketMain').innerHTML = !tk ? notFoundHTML() : past ? pastHTML() : ticketHTML(tk);
   initShell();
-  if (tk) wireCancel(tk);
+  if (tk && !past) wireCancel(tk);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -142,8 +151,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!T_SECRET) { render(null); return; }
 
   $('#ticketMain').innerHTML = ticketShell('<div class="empty">…</div>');
-  /* 会場と時刻を出すために内容も読みます（失敗しても表示は続けます） */
-  loadContent().catch(() => {});
+  /* 会場と時刻、そして終わった回かどうかを出すために内容も読みます
+     （失敗してもキャッシュ済みの内容で表示は続けます） */
+  await loadContent().catch(() => {});
   try {
     render(await fetchTicket(T_SECRET));
   } catch (err) {
