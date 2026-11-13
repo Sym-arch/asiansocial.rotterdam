@@ -96,7 +96,7 @@
 
 <main>
 <!-- ============ HERO ============ -->
-<!-- 写真は実際の回のものです（2026-10 Korean Oktoberfest, Pocha Rotterdam）。
+<!-- 写真は実際の回の集合写真です（2026-09 Room Mate Bruno の回）。
      差し替えるときは assets/photos/ に同じ名前で置き換えます -->
 <section class="sec sec--flush ph" id="about">
   <div class="wrap ph__grid">
@@ -113,7 +113,7 @@
       <img src="assets/photos/about-hero-1600.jpg"
            srcset="assets/photos/about-hero-800.jpg 800w, assets/photos/about-hero-1600.jpg 1600w"
            sizes="(max-width:900px) 100vw, 50vw" width="1600" height="1200"
-           alt="Guests smiling and raising their glasses around a table at an Asian Socials night at Pocha Rotterdam">
+           alt="The whole group posing together on the rooftop at an Asian Socials night at Room Mate Bruno">
     </figure>
   </div>
 </section>
@@ -158,11 +158,11 @@
         <p class="en-kicker" data-i18n-html="en.kicker">Japan <i>×</i> Rotterdam</p>
         <h2 class="en-display" data-i18n-html="en.title">Different languages.<br>One table.</h2>
         <p class="en-body" data-i18n-html="en.body">
-          <b>En.</b> is our Japanese social club — sports, meat and culture, with Japan as
+          <b>En.</b> is our Japanese social club — sports, meals and culture, with Japan as
           the excuse to meet someone new. You don't come to study Japanese. You come
           because it looks fun.
         </p>
-        <p class="en-triad" data-i18n-html="en.triad"><span>Sports</span><i>·</i><span>Meat</span><i>·</i><span>Culture</span></p>
+        <p class="en-triad" data-i18n-html="en.triad"><span>Sports</span><i>·</i><span>Meals</span><i>·</i><span>Culture</span></p>
       </div>
       <div class="en-teaser__mark">
         <div class="en-mark">
@@ -172,6 +172,8 @@
         </div>
       </div>
     </div>
+    <!-- En. の回だけを並べます（events の brand 列で見分けます）。1件も無いときは隠します -->
+    <div class="en-teaser__events" id="enEvents" hidden></div>
   </div>
 </section>
 

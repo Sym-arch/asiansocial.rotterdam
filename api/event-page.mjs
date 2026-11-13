@@ -15,7 +15,7 @@
    ========================================================= */
 
 import { readFile } from 'node:fs/promises';
-import { sb, mdLead } from './_lib.mjs';
+import { sb, mdLead, mdPlain } from './_lib.mjs';
 
 const SITE = 'https://www.asiansocials.nl';
 const TZ = 'Europe/Amsterdam';
@@ -129,7 +129,9 @@ function jsonLd(ev, url, image) {
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     image: [image],
-    description: cut(firstLine(ev.description) || ev.title, 500),
+    /* 検索エンジンや AI が JavaScript を実行しなくても内容を読めるように、
+       説明の最初の1行だけでなく、本文全体（Markdown の記号は外して）を入れます */
+    description: cut(mdPlain(ev.description) || ev.title, 1000),
     url,
     location: {
       '@type': 'Place',

@@ -1629,3 +1629,30 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 @media (max-width:760px){
   .en-mark img{width:min(150px,45vw)}
 }
+
+/* =========================================================
+   イベント詳細ページの読み込み画面（event.html）
+   和柄の波を3つ、左から右へ順に弾ませます。地はきなり色、柄は紺色。
+   renderEvent() か notFound() が呼ばれたら event.js が .is-done を付けて消します
+   ========================================================= */
+.pageload{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  /* きなり色で固定します。ダークモードでも紺の柄が見えるように、
+     ページ本体の --paper（暗い設定では紺に近い色）には合わせません */
+  background:#faf7f2;
+  transition:opacity .35s ease;
+}
+.pageload__waves{display:flex;gap:18px}
+.pageload__wave{
+  animation:pageload-beat 1.3s ease-in-out infinite;
+  animation-delay:calc(var(--i, 0) * .18s);
+}
+@keyframes pageload-beat{
+  0%,60%,100%{opacity:.3;transform:translateY(0) scale(.92)}
+  30%{opacity:1;transform:translateY(-6px) scale(1)}
+}
+.pageload.is-done{opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){
+  .pageload__wave{animation:none;opacity:.85}
+}

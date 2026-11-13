@@ -57,6 +57,25 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<!-- イベントの詳細（終わった回も含む）を読み込んでいる間のローディング画面。
+     和柄の波を3つ、左から右へ順に動かします。地はきなり色、柄は紺色です。
+     renderEvent()／notFound() が呼ばれた時点で event.js が消します -->
+<div class="pageload" id="pageLoad" aria-hidden="true">
+  <div class="pageload__waves">
+    <svg class="pageload__wave" style="--i:0" viewBox="0 0 64 48" width="56" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34c6-12 16-12 22 0s16 12 22 0 14-11 16-7" stroke="#1c2b4a" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M2 40c6-10 16-10 22 0s16 10 22 0 14-9 16-6" stroke="#1c2b4a" stroke-width="2.4" stroke-linecap="round" opacity=".5"/>
+    </svg>
+    <svg class="pageload__wave" style="--i:1" viewBox="0 0 64 48" width="56" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34c6-12 16-12 22 0s16 12 22 0 14-11 16-7" stroke="#1c2b4a" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M2 40c6-10 16-10 22 0s16 10 22 0 14-9 16-6" stroke="#1c2b4a" stroke-width="2.4" stroke-linecap="round" opacity=".5"/>
+    </svg>
+    <svg class="pageload__wave" style="--i:2" viewBox="0 0 64 48" width="56" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 34c6-12 16-12 22 0s16 12 22 0 14-11 16-7" stroke="#1c2b4a" stroke-width="3.2" stroke-linecap="round"/>
+      <path d="M2 40c6-10 16-10 22 0s16 10 22 0 14-9 16-6" stroke="#1c2b4a" stroke-width="2.4" stroke-linecap="round" opacity=".5"/>
+    </svg>
+  </div>
+</div>
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KGS22QSJ"
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
