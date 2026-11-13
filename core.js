@@ -1548,8 +1548,14 @@ function memberAuthHTML() {
   if (MEMBER_MODE === 'sent')   return memberSentHTML();
   const creating = MEMBER_MODE === 'create';
   return `
-    <h2 style="font-size:1.3rem;font-weight:500;margin:0 0 22px">
+    <h2 style="font-size:1.3rem;font-weight:500;margin:0 0 18px">
       ${esc(t(creating ? 'account.create' : 'account.signin.title'))}</h2>
+
+    <button class="btn btn--line btn--block acct-google" type="button" id="mmGoogle">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8445c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087c1.7018-1.5668 2.6836-3.8741 2.6836-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.4673-.8059 5.9564-2.1805l-2.9087-2.2581c-.8059.5404-1.8368.8591-3.0477.8591-2.3441 0-4.3277-1.5831-5.0359-3.7104H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z" fill="#34A853"/><path d="M3.9641 10.71c-.18-.5404-.2823-1.1177-.2823-1.71s.1023-1.1696.2823-1.71V4.9582H.9573A8.9965 8.9965 0 000 9c0 1.4523.3477 2.8268.9573 4.0418L3.9641 10.71z" fill="#FBBC05"/><path d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5813-2.5813C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.9641 7.29C4.6723 5.1627 6.6559 3.5795 9 3.5795z" fill="#EA4335"/></svg>
+      <span>${esc(t('account.google'))}</span>
+    </button>
+    <p class="acct-or"><span>${esc(t('account.or'))}</span></p>
 
     ${creating ? `
     <div class="field">
@@ -1583,6 +1589,9 @@ function memberAuthHTML() {
 }
 
 function wireMemberAuth() {
+  const google = $('#mmGoogle');
+  if (google) google.addEventListener('click', signInWithGoogle);
+
   /* 「忘れた」と「送りました」は入力の意味が違うので、別に配線します */
   if (MEMBER_MODE === 'forgot' || MEMBER_MODE === 'sent') {
     const back = $('#mfBack');
@@ -2449,9 +2458,65 @@ function initAdminEntry() {
 }
 
 /* ---------------------------------------------------------
+   Google でサインイン
+
+   Supabase 側で Google プロバイダを有効にし（Google Cloud Console で作った
+   OAuth クライアントID／シークレットを登録）、このサイトの URL を
+   Redirect URLs に許可しておく必要があります。ここではその先の
+   「飛ばす」「戻ってきたら受け取る」だけをします。
+   --------------------------------------------------------- */
+function signInWithGoogle() {
+  const back = location.href.split('#')[0];
+  location.href = authBase() + '/authorize?provider=google&redirect_to=' + encodeURIComponent(back);
+}
+
+/* JWT の中身（ペイロード）だけを、署名を確かめずに読みます。
+   ここでは自分の Supabase が返したばかりのトークンを読むだけなので、
+   改ざんの心配をする相手がいません（なりすましの材料にはできません）。 */
+function decodeJwt(token) {
+  try {
+    const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(atob(b64).split('').map(c =>
+      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+  } catch { return null; }
+}
+
+/* Google から戻ってきたときは、URL に #access_token=... が付いています。
+   ページを開くたびに一度だけ確かめ、あればセッションにして URL から消します。
+   トークンの中身から読めるので、確定のための通信は要りません。 */
+function completeGoogleSignIn() {
+  const hash = location.hash.slice(1);
+  if (!/(^|&)access_token=/.test(hash)) return false;
+  const params = new URLSearchParams(hash);
+  const access_token = params.get('access_token');
+  const refresh_token = params.get('refresh_token');
+  if (!access_token) return false;
+
+  /* そのままだと再読み込みやブックマークで混乱するので、すぐ消します */
+  history.replaceState(null, '', location.pathname + location.search);
+
+  const payload = decodeJwt(access_token);
+  if (!payload) return false;
+  const email = payload.email || '';
+
+  SESSION = null;   /* 別人のセッションが残らないように */
+  storeSession({
+    access_token, refresh_token,
+    expires_in: Number(params.get('expires_in')) || 3600,
+    user: { id: payload.sub, email }
+  }, email);
+
+  document.dispatchEvent(new CustomEvent('member:changed'));
+  toast(t('account.googleWelcome'));
+  loadMember().then(() => document.dispatchEvent(new CustomEvent('member:changed')));
+  return true;
+}
+
+/* ---------------------------------------------------------
    Shared UI wiring (header menu, reveal-on-scroll, year)
    --------------------------------------------------------- */
 function initShell() {
+  completeGoogleSignIn();
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
   initLangMenu();
   initMemberLinks();

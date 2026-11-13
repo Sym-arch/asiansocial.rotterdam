@@ -30,15 +30,6 @@ function priceInlineHTML(ev) {
 }
 
 /* サインインするとその人の価格に変わるので、会員状態が動いたら描き直します */
-/* 読み込み画面を消します。中身が描けた（見つからなかった、も含む）ときに呼びます。
-   フェードが終わったら display も外し、裏で波のアニメーションを回し続けないようにします */
-function hidePageLoad() {
-  const el = $('#pageLoad');
-  if (!el || el.classList.contains('is-done')) return;
-  el.classList.add('is-done');
-  setTimeout(() => { el.hidden = true; }, 400);
-}
-
 function notFound() {
   $('#eventMain').innerHTML = `
     <div class="wrap" style="padding:90px 0 60px">
@@ -48,7 +39,6 @@ function notFound() {
         <a class="btn btn--brand" href="index.html#events">${esc(t('ev.back'))}</a>
       </div>
     </div>`;
-  hidePageLoad();
 }
 
 /**
@@ -244,8 +234,6 @@ function renderEvent(ev) {
   if (!document.title || /^Event — /.test(document.title)) {
     document.title = ev.title + ' — Asian Socials';
   }
-
-  hidePageLoad();
 
   $('#eventMain').innerHTML = `
   <section class="ev-hero">
