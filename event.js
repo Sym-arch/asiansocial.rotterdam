@@ -243,6 +243,12 @@ function renderEvent(ev) {
       <a class="crumb" href="index.html#events">${esc(t('ev.crumb'))}</a>
 
       <div class="ev-hero__grid">
+        <!-- スマホではカバー写真を一番上に。パソコンでは右の列に置きます（CSS の order） -->
+        <div class="ev-hero__img">
+          ${ev.image
+            ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">`
+            : `<div class="ev-hero__ph">Asian Socials</div>`}
+        </div>
         <div>
           ${done ? `<p class="label label--brand">${esc(t('ev.past'))}</p>` : ''}
           <h1>${esc(ev.title)}</h1>
@@ -265,50 +271,41 @@ function renderEvent(ev) {
           </div>`}
         </div>
 
-        <div class="ev-hero__img">
-          ${ev.image
-            ? `<img src="${esc(ev.image)}" alt="${esc(ev.title)}">`
-            : `<div class="ev-hero__ph">Asian Socials</div>`}
-        </div>
       </div>
     </div>
   </section>
 
-  <section class="section" style="padding-top:clamp(32px,4vw,56px)">
-    <div class="wrap ev-body${done ? ' ev-body--solo' : ''}">
-      <div>
-        ${done ? `
-        <!-- 終わった回は説明を畳んでおきます。下の「これからの回」まで早くたどり着けるように -->
-        <details class="ev-about">
-          <summary><h2>${esc(t('ev.about'))}</h2><span class="ev-about__mark" aria-hidden="true"></span></summary>
-          <div class="prose"><div class="md">${mdToHtml(ev.description)}</div></div>
-        </details>` : `
-        <div class="prose reveal">
-          <h2>${esc(t('ev.about'))}</h2>
+  <!-- 並び: 説明（畳む）→ 予約 → これからの回。
+       予約の導線を先に見せるため、説明は畳み、予約欄は「これからの回」より上に置きます -->
+  <section class="section" style="padding-top:clamp(28px,4vw,48px)">
+    <div class="wrap ev-body ev-body--solo">
+      <details class="ev-about">
+        <summary><h2>${esc(t('ev.about'))}</h2><span class="ev-about__mark" aria-hidden="true"></span></summary>
+        <div class="prose">
           <div class="md">${mdToHtml(ev.description)}</div>
-
+          ${done ? '' : `
           <h3>${esc(t('ev.know'))}</h3>
           <ul class="ticks">
             <li>${esc(t('ev.know1'))}</li>
             <li>${esc(t('ev.know2'))}</li>
             <li>${esc(t('ev.know3'))}</li>
             <li>${esc(t('ev.know4'))} <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a>.</li>
-          </ul>
-        </div>`}
-
-        ${others.length ? `
-        <div style="margin-top:38px">
-          <h2 style="font-size:1.4rem;font-weight:500;margin-bottom:24px">${esc(t('ev.others'))}</h2>
-          <div class="events__grid">
-            ${others.map(eventCardHTML).join('')}
-          </div>
-        </div>` : ''}
-      </div>
+          </ul>`}
+        </div>
+      </details>
 
       ${done ? '' : `
-      <aside class="ev-side" id="book">
+      <section class="ev-book" id="book">
         <div>${bookingHTML(ev)}</div>
-      </aside>`}
+      </section>`}
+
+      ${others.length ? `
+      <div class="ev-others">
+        <h2 style="font-size:1.4rem;font-weight:500;margin-bottom:24px">${esc(t('ev.others'))}</h2>
+        <div class="events__grid">
+          ${others.map(eventCardHTML).join('')}
+        </div>
+      </div>` : ''}
     </div>
   </section>`;
 
