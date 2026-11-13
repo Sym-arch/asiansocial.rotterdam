@@ -227,8 +227,6 @@ function closeBookingModal() {
 function renderEvent(ev) {
   const done = isPast(ev);
   const others = upcoming().filter(e => e.id !== ev.id).slice(0, 3);
-  const mapUrl = ev.address
-    ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ev.address) : '';
 
   /* /e/<id> ではサーバー側が日付入りの見出しを付けています（api/event-page.mjs）。
      Google は画面を描いたあとの <title> を見るので、ここで上書きすると
@@ -264,10 +262,9 @@ function renderEvent(ev) {
             /* 終わった回にカレンダーや地図は要りません。代わりに、参加者の写真と感想を
                ここ（日時・会場のすぐ下）に出します。中身は community.js が描きます */
             ? `<div class="cm cm--inline" id="eventCommunity" hidden></div>`
+            /* これからの回は予約のボタンだけ。カレンダーと地図は予約完了ページとメールにあります */
             : `<div class="hero__cta">
             <a class="btn btn--brand" href="#book" data-book-open>${esc(t('hero.cta1'))}</a>
-            <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">${esc(t('ev.gcal'))}</a>
-            ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('ev.maps'))}</a>` : ''}
           </div>`}
         </div>
 

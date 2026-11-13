@@ -1391,16 +1391,31 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .ev-others{margin-top:clamp(40px,5vw,64px)}
 
 /* =========================================================
-   All events（events.html）をスマホでは2列に
-   カードを小さくして、1行に2つ並べます。パソコンはそのまま
+   スマホのイベントカードは、どこでも「1行に2つ」の大きさにします
+   （All events、他の回、予約完了ページの「次の回」、ホームの横並び、Past events）
+   パソコンはそのまま
    ========================================================= */
 @media (max-width:600px){
-  .ev-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}
-  .ev-grid .ev-card__img{aspect-ratio:1;max-height:none}
-  .ev-grid .ev-card__date{padding:10px 0 8px;font-size:.6rem;letter-spacing:.08em;flex-wrap:wrap;gap:2px 8px}
-  .ev-grid .ev-card h3{font-size:.92rem;margin:10px 0 6px;line-height:1.3}
-  .ev-grid .ev-card p{display:none}
-  .ev-grid .ev-card__foot{margin-top:8px;padding-top:8px;font-size:.7rem;gap:6px}
-  .ev-grid .ev-card__foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  .ev-grid .ev-card__tag{padding:5px 8px;font-size:.55rem}
+  .ev-grid,.events__grid,.booked__more .events__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px}
+  /* ホームの横並びは、画面に2枚と少し見える幅にします（横にスワイプできると分かるように） */
+  /* 長い単語のタイトルで幅が伸びないよう、min-width を外して折り返させます */
+  .rail .ev-card{flex:0 0 calc((100vw - var(--gutter) * 2 - 14px) / 2.15);min-width:0}
+  :is(.ev-grid,.events__grid,.rail) .ev-card h3{overflow-wrap:anywhere}
+  .rail__track{gap:14px}
+
+  :is(.ev-grid,.events__grid,.rail) .ev-card__img{aspect-ratio:1;max-height:none}
+  :is(.ev-grid,.events__grid,.rail) .ev-card__date{padding:10px 0 8px;font-size:.6rem;letter-spacing:.08em;flex-wrap:wrap;gap:2px 8px}
+  :is(.ev-grid,.events__grid,.rail) .ev-card h3{font-size:.92rem;margin:10px 0 6px;line-height:1.3}
+  :is(.ev-grid,.events__grid,.rail) .ev-card p{display:none}
+  :is(.ev-grid,.events__grid,.rail) .ev-card__foot{margin-top:8px;padding-top:8px;font-size:.7rem;gap:6px}
+  :is(.ev-grid,.events__grid,.rail) .ev-card__foot span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  :is(.ev-grid,.events__grid,.rail) .ev-card__tag{padding:5px 8px;font-size:.55rem}
+
+  /* ホームの Past events も2列に。感想の抜粋は省いて数字だけ */
+  .past__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .past-card__body{padding:10px 12px 12px;gap:4px}
+  .past-card__date{font-size:.58rem;letter-spacing:.1em}
+  .past-card__body b{font-size:.9rem}
+  .past-card__counts{font-size:.7rem}
+  .past-card__review{display:none}
 }
