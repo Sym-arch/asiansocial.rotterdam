@@ -842,6 +842,29 @@ async function sendEventReminder(eventId) {
   return data;
 }
 
+/** これからのイベントを会員に知らせるメール（配信停止していない人にだけ届きます）。 */
+async function sendNewsletter(eventIds, subject, intro) {
+  await ensureSession();
+  const res = await fetch('/api/newsletter', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + (SESSION ? SESSION.access_token : '')
+    },
+    body: JSON.stringify({ eventIds, subject, intro })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (data.error === 'not_an_organiser')  throw new Error('You are not an organiser on this site.');
+    if (data.error === 'sign_in_required')  throw new Error('Please sign in again.');
+    if (data.error === 'not_configured')    throw new Error('Email sending is not set up yet.');
+    if (data.error === 'missing_events')    throw new Error('Pick at least one event first.');
+    if (data.error === 'missing_subject')   throw new Error('Write a subject line first.');
+    throw new Error(data.message || data.error || 'Could not send the newsletter.');
+  }
+  return data;
+}
+
 /** 決済から戻ってきたとき、発券を待ちます。 */
 async function fetchOrderBySession(sessionId, tries = 8) {
   for (let i = 0; i < tries; i++) {

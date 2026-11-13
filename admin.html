@@ -52,6 +52,8 @@
           <button type="button" class="is-on" data-tab="events">Events</button>
           <button type="button" data-tab="rsvps">RSVPs</button>
           <button type="button" data-tab="past">Past events</button>
+          <button type="button" data-tab="newsletter">Newsletter</button>
+          <button type="button" data-tab="insights">Insights</button>
           <button type="button" data-tab="organisers">Organisers</button>
         </div>
 
@@ -174,6 +176,39 @@
           <div class="pe-list" id="pastAdmin"></div>
         </section>
 
+        <!-- NEWSLETTER TAB: 会員への案内メール（配信停止していない人にだけ届きます） -->
+        <section class="tabpane" data-pane="newsletter">
+          <div class="notice">
+            This goes to every member who hasn't unsubscribed — not just people who've
+            booked before. It's a separate list from <b>Send reminder</b> on the RSVPs tab,
+            which only reaches people who booked that one event. It sends right away,
+            so you're asked to confirm first.
+          </div>
+
+          <div class="admin-head" style="margin-top:0"><h4>Pick the events to feature</h4></div>
+          <div class="nl-events" id="nlEvents"></div>
+
+          <div class="form-grid" style="margin-top:22px">
+            <div class="field field--full">
+              <label for="nlSubject">Subject <span class="req">*</span></label>
+              <input id="nlSubject" type="text" placeholder="What's coming up at Asian Socials">
+            </div>
+            <div class="field field--full">
+              <label for="nlIntro">A short note (optional)</label>
+              <textarea id="nlIntro" rows="3" placeholder="A line or two before the event list…"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn--brand" type="button" id="nlSend">Send to members</button>
+            <span class="pill" id="nlCount">0 events picked</span>
+          </div>
+        </section>
+
+        <!-- INSIGHTS TAB: 予約・会員データからの簡単なグラフ -->
+        <section class="tabpane" data-pane="insights">
+          <div id="insightsBody"><div class="empty">Loading…</div></div>
+        </section>
+
         <!-- ORGANISERS TAB -->
         <section class="tabpane" data-pane="organisers">
           <form class="admin-form" id="adminOrgForm">
@@ -233,6 +268,8 @@
 <script src="i18n.js"></script>
 <script src="core.js"></script>
 <script src="community.js"></script>
+<!-- Insights タブのグラフだけに使います。版は固定（2週間以上前のもの） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

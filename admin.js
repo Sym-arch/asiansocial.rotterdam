@@ -70,12 +70,14 @@ async function gate() {
   loadCheckins().then(c => { PAST_ADMIN.checkins = c; renderAdmin(); }).catch(() => {});
   if (currentTab() === 'organisers') refreshOrganisers();
   if (currentTab() === 'past') refreshPastAdmin();
+  if (currentTab() === 'newsletter') renderNewsletterEvents();
+  if (currentTab() === 'insights') renderInsights();
 }
 
 /* ---------------------------------------------------------
    タブ。URL の # で覚えるので、再読み込みしても同じタブに戻ります
    --------------------------------------------------------- */
-const TABS = ['events', 'rsvps', 'past', 'organisers'];
+const TABS = ['events', 'rsvps', 'past', 'newsletter', 'insights', 'organisers'];
 const currentTab = () => {
   const h = location.hash.slice(1);
   return TABS.includes(h) ? h : 'events';
@@ -87,6 +89,8 @@ function showTab(name) {
   /* 管理者の一覧は開いたときに取りに行きます */
   if (name === 'organisers' && isAdmin) refreshOrganisers();
   if (name === 'past' && isAdmin) refreshPastAdmin();
+  if (name === 'newsletter' && isAdmin) renderNewsletterEvents();
+  if (name === 'insights' && isAdmin) renderInsights();
 }
 
 /* ---------------------------------------------------------
@@ -346,6 +350,179 @@ function renderKpi() {
     <div class="kpi-big"><b>${MEMBER_STATS ? MEMBER_STATS.total : '—'}</b><span>Members${MEMBER_STATS && MEMBER_STATS.recent ? ' · +' + MEMBER_STATS.recent + ' in 30 days' : ''}</span></div>`;
 }
 
+/* ---------------------------------------------------------
+   NEWSLETTER タブ
+   これからの回から選んだものを、会員全員（配信停止していない人）に
+   知らせます。送信そのものは /api/newsletter（サーバー側）が行います。
+   --------------------------------------------------------- */
+function renderNewsletterEvents() {
+  const box = $('#nlEvents');
+  if (!box) return;
+  const list = upcoming();
+  box.innerHTML = list.length ? list.map(ev => `
+    <label class="nl-event">
+      <input type="checkbox" value="${esc(ev.id)}" checked>
+      <span class="nl-event__img">${ev.image ? `<img src="${esc(ev.image)}" alt="" loading="lazy">` : ''}</span>
+      <span class="nl-event__body">
+        <b>${esc(ev.title)}</b>
+        <span>${esc(fmtDate(ev, { day: 'numeric', month: 'short' }))} · ${esc(ev.venue)}</span>
+      </span>
+    </label>`).join('') : '<p class="empty">No upcoming events to feature yet.</p>';
+  updateNlCount();
+}
+
+function updateNlCount() {
+  const n = $$('#nlEvents input[type=checkbox]:checked').length;
+  $('#nlCount').textContent = n + (n === 1 ? ' event picked' : ' events picked');
+}
+
+function wireNewsletter() {
+  const box = $('#nlEvents');
+  if (box) box.addEventListener('change', e => { if (e.target.matches('input[type=checkbox]')) updateNlCount(); });
+
+  $('#nlSend').addEventListener('click', async (e) => {
+    const ids = $$('#nlEvents input[type=checkbox]:checked').map(c => c.value);
+    const subject = $('#nlSubject').value.trim();
+    const intro = $('#nlIntro').value.trim();
+    if (!ids.length) return toast('Pick at least one event first.', true);
+    if (!subject) return toast('Write a subject line first.', true);
+
+    let recipients = 0;
+    try {
+      const rows = await sbSelect('profiles', 'select=id&marketing_opt_out=eq.false');
+      recipients = rows.length;
+    } catch { /* 数えられなくても、送る前の確認はできます */ }
+
+    const ask = `Send "${subject}" with ${ids.length} event${ids.length > 1 ? 's' : ''} to` +
+      (recipients ? ` ${recipients} member(s)` : ' every member who hasn’t unsubscribed') +
+      `?\n\nThey receive it straight away.`;
+    if (!confirm(ask)) return;
+
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const was = btn.textContent;
+    btn.textContent = 'Sending…';
+    try {
+      const out = await sendNewsletter(ids, subject, intro);
+      toast('Sent to ' + (out.recipients || recipients || 0) + ' member(s).');
+    } catch (err) {
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false; btn.textContent = was;
+    }
+  });
+}
+
+/* ---------------------------------------------------------
+   INSIGHTS タブ
+   予約の記録とプロフィールから、簡単なグラフを3つ出します。
+   - 何回参加したか（同じメールアドレスで何件予約したか）
+   - 曜日ごとの予約数（どの曜日が人気か）
+   - プロフィールの「住んでいる街」の内訳
+   データそのものは他のタブで読み込んだものを使い回します。
+   重い集計ではないので、画面に出すたびに作り直します。
+   --------------------------------------------------------- */
+let INSIGHTS_CHARTS = [];
+let PROFILE_CITIES = null;   /* [{city}, ...]。一度読んだら使い回します */
+
+const CITY_LABEL = {
+  rotterdam: 'Rotterdam', amsterdam: 'Amsterdam', 'the-hague': 'The Hague',
+  utrecht: 'Utrecht', 'other-nl': 'Other NL', abroad: 'Abroad'
+};
+
+function destroyInsightsCharts() {
+  INSIGHTS_CHARTS.forEach(c => c.destroy());
+  INSIGHTS_CHARTS = [];
+}
+
+function barChart(canvas, labels, data, label) {
+  return new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets: [{ label, data, backgroundColor: '#c10e2e', borderRadius: 4, maxBarThickness: 36 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e1e0d9' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+async function renderInsights() {
+  const body = $('#insightsBody');
+  if (!body) return;
+  if (typeof Chart === 'undefined') { body.innerHTML = '<div class="empty">Charts could not load.</div>'; return; }
+
+  if (PROFILE_CITIES === null) {
+    try { PROFILE_CITIES = await sbSelect('profiles', 'select=city'); }
+    catch { PROFILE_CITIES = []; }
+  }
+
+  /* 1件以上の予約があって初めて意味が出る3つのグラフ */
+  if (!ADMIN_RSVPS.length) {
+    body.innerHTML = '<div class="empty">No bookings yet — nothing to chart.</div>';
+    return;
+  }
+
+  /* --- 何回参加したか（メールアドレスごとの予約件数を束ねます） --- */
+  const byEmail = new Map();
+  ADMIN_RSVPS.forEach(r => {
+    const k = String(r.email || '').toLowerCase();
+    if (!k) return;
+    byEmail.set(k, (byEmail.get(k) || 0) + 1);
+  });
+  const repeatBuckets = { '1': 0, '2': 0, '3': 0, '4+': 0 };
+  byEmail.forEach(n => {
+    const key = n >= 4 ? '4+' : String(n);
+    repeatBuckets[key]++;
+  });
+
+  /* --- 曜日ごとの予約数 --- */
+  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const byDow = [0, 0, 0, 0, 0, 0, 0];
+  ADMIN_RSVPS.forEach(r => {
+    const d = new Date((r.eventDate || '') + 'T12:00:00');
+    if (!isNaN(d)) byDow[d.getDay()]++;
+  });
+  /* 月曜始まりに並べ替えます */
+  const dowOrder = [1, 2, 3, 4, 5, 6, 0];
+
+  /* --- 住んでいる街 --- */
+  const byCity = {};
+  PROFILE_CITIES.forEach(p => { if (p.city) byCity[p.city] = (byCity[p.city] || 0) + 1; });
+  const cityKeys = Object.keys(byCity).sort((a, b) => byCity[b] - byCity[a]);
+
+  body.innerHTML = `
+    <div class="ins-grid">
+      <div class="ins-card">
+        <h4>Repeat attendance<span>How many events the same booker has joined</span></h4>
+        <div class="ins-chart"><canvas id="insRepeat" role="img" aria-label="Bar chart of how many events bookers have attended"></canvas></div>
+      </div>
+      <div class="ins-card">
+        <h4>Popular days<span>Bookings by the weekday of the event</span></h4>
+        <div class="ins-chart"><canvas id="insDow" role="img" aria-label="Bar chart of bookings by weekday"></canvas></div>
+      </div>
+      <div class="ins-card">
+        <h4>Where members live<span>From profiles where this is filled in</span></h4>
+        ${cityKeys.length
+          ? `<div class="ins-chart"><canvas id="insCity" role="img" aria-label="Bar chart of members by city"></canvas></div>`
+          : `<p class="empty" style="padding:30px 0">Nobody has filled this in yet.</p>`}
+      </div>
+    </div>`;
+
+  destroyInsightsCharts();
+  INSIGHTS_CHARTS.push(barChart($('#insRepeat'), ['1', '2', '3', '4+'],
+    ['1', '2', '3', '4+'].map(k => repeatBuckets[k]), 'Bookers'));
+  INSIGHTS_CHARTS.push(barChart($('#insDow'), dowOrder.map(i => DOW[i]),
+    dowOrder.map(i => byDow[i]), 'Bookings'));
+  if (cityKeys.length) {
+    INSIGHTS_CHARTS.push(barChart($('#insCity'), cityKeys.map(k => CITY_LABEL[k] || k),
+      cityKeys.map(k => byCity[k]), 'Members'));
+  }
+}
+
 function renderAdmin() {
   if (!isAdmin) return;
 
@@ -453,6 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initShell();
   eventFormFill(null);
   showTab(currentTab());
+  wireNewsletter();
 
   /* 「View site」は www へ。ローカルでは同じフォルダのトップへ */
   const site = $('#adminSite');

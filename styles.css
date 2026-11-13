@@ -1638,3 +1638,28 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 @media (max-width:760px){
   .en-mark img{width:min(150px,45vw)}
 }
+
+/* =========================================================
+   admin: Newsletter タブ（これからの回を選んで会員へ案内）
+   ========================================================= */
+.nl-events{display:grid;gap:10px}
+.nl-event{
+  display:flex;align-items:center;gap:14px;padding:10px;border:1px solid var(--rule);
+  border-radius:10px;cursor:pointer;transition:border-color .15s ease;
+}
+.nl-event:has(input:checked){border-color:var(--ink)}
+.nl-event input{flex:none;width:18px;height:18px}
+.nl-event__img{flex:none;width:48px;height:48px;border-radius:6px;overflow:hidden;background:var(--paper-2)}
+.nl-event__img img{width:100%;height:100%;object-fit:cover;display:block}
+.nl-event__body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.nl-event__body b{font-size:.92rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nl-event__body span{font-size:.78rem;color:var(--muted)}
+
+/* =========================================================
+   admin: Insights タブ（簡単なグラフ3つ）
+   ========================================================= */
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px}
+.ins-card{border:1px solid var(--rule);border-radius:12px;padding:18px 20px 20px}
+.ins-card h4{font-size:.86rem;font-weight:600;margin-bottom:2px}
+.ins-card h4 span{display:block;margin-top:4px;font-size:.76rem;font-weight:400;color:var(--muted)}
+.ins-chart{position:relative;height:220px;margin-top:14px;max-width:100%;overflow:hidden}

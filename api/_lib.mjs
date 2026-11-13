@@ -246,6 +246,33 @@ export async function sendMailBatch(messages) {
   return { sent };
 }
 
+/* --- 署名付きリンク（配信停止など） --------------------------------------
+   サインインなしで押せるリンクに「本人だけが使える」保証を付けます。
+   DB に突き合わせに行かなくても、ここだけで本物かどうか分かります。
+   秘密鍵はブラウザに出さない SERVICE_KEY を使い回します（専用の環境変数を
+   増やさないため）。 */
+async function hmacHex(message) {
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(SERVICE_KEY),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return [...new Uint8Array(mac)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function signUserToken(userId) {
+  return userId + '.' + (await hmacHex(userId)).slice(0, 32);
+}
+
+export async function verifyUserToken(userId, sig) {
+  if (!userId || !sig) return false;
+  const expected = (await hmacHex(userId)).slice(0, 32);
+  if (expected.length !== sig.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
+  return diff === 0;
+}
+
 export const randomHex = (bytes = 24) => {
   const a = new Uint8Array(bytes);
   crypto.getRandomValues(a);
