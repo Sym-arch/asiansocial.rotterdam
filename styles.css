@@ -75,7 +75,10 @@ html{scroll-behavior:smooth;scroll-padding-top:calc(var(--header-h) + 10px);-web
 body{
   margin:0;background:var(--paper);color:var(--ink);
   font-family:var(--body);font-size:1rem;line-height:1.62;
-  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  /* 横のはみ出しは clip で隠します。hidden だと iPhone の Safari で、
+     上に貼り付くヘッダーがスクロール中に位置を崩し、上へ戻ったときに
+     いちばん上の中身にかぶることがありました（clip に対応しない古い端末は hidden のまま） */
+  overflow-x:hidden;overflow-x:clip;-webkit-font-smoothing:antialiased;
 }
 body.is-locked{overflow:hidden}
 img{max-width:100%;display:block}
@@ -365,7 +368,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* 見出しの上は events__intro が自前で空けます。section 側でも空けると
    二重になります（実測 56px + 52px = 108px）。 */
 #events{padding-top:0}
-.events__intro{padding:clamp(52px,7vw,104px) 0 0}
+/* 「Explore events」から飛んだとき、ヘッダーの下が大きく空かないように詰めます */
+.events__intro{padding:clamp(28px,5vw,72px) 0 0}
 .events__intro .sec__head{margin-bottom:clamp(26px,3vw,38px)}
 .events__intro .toolbar{margin-bottom:0}
 
@@ -1437,7 +1441,8 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .community .label{color:rgba(241,237,230,.62)}
 .community__head{max-width:760px}
 .community h2{color:#f6f2eb;font-size:clamp(2rem,5vw,3.6rem);line-height:1.08;margin:10px 0 14px}
-.community h2 em{font-style:italic;color:#ff8a8a}
+/* ホームのほかの強調（Hero の「Asian culture」など）と同じ色です */
+.community h2 em{font-style:italic;color:var(--brand-text)}
 .community__sub{color:rgba(241,237,230,.78);font-size:clamp(1rem,1.6vw,1.2rem);max-width:560px}
 .reel{margin-top:clamp(30px,4vw,48px);overflow:hidden}
 .reel__track{
@@ -1497,15 +1502,6 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .ph__img img{width:100%;height:100%;object-fit:cover;display:block}
 @media (max-width:900px){
   .ph__grid{grid-template-columns:1fr}
-}
-
-/* What We Do: 写真つきの3枚。スマホでは縦に並べます */
-.ab-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(18px,3vw,36px)}
-.ab-card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;border-radius:12px;background:var(--paper-2)}
-.ab-card h3{font-size:1.4rem;margin:20px 0 8px}
-.ab-card p{color:var(--muted);line-height:1.65}
-@media (max-width:760px){
-  .ab-cards{grid-template-columns:1fr;gap:34px}
 }
 
 /* Mission と Ambition は同じ重さで横に並べます */
@@ -1603,3 +1599,12 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .ph--stack .ph__cta{margin-top:clamp(26px,3vw,38px)}
 @media (max-width:760px){ .ph--stack .ph__img{aspect-ratio:4/3} }
 .pt-stat dt{font-variant-numeric:tabular-nums}
+
+/* Our Community の説明文 */
+.community__body{color:rgba(241,237,230,.78);font-size:1rem;line-height:1.75;max-width:62ch;margin-top:18px}
+.community__body + .community__body{margin-top:10px}
+.community__sub + .community__body{margin-top:22px}
+/* En. のロゴはスマホでは小さく。文字より目立って、画面を占めすぎていました */
+@media (max-width:760px){
+  .en-mark img{width:min(150px,45vw)}
+}
