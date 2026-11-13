@@ -9,7 +9,7 @@
 
    決めごと（本人と相談済み）:
    - 写真を追加できるのは管理者だけ。参加者は見てダウンロードできる
-   - 感想を書けるのは、その回に参加した人だけ（DB の attended_event で判定）
+   - 感想はサインインしていれば誰でも書ける（21-open-reviews.sql 以降）
    - 投稿はすぐ公開、問題があれば管理画面で消す
    - 感想に出すのはイニシャルと国旗だけ
    SQL を流す前はテーブルが無いので、読み込みに失敗したら黙って何も出しません。
@@ -59,11 +59,10 @@ async function loadPhotos(eventId, limit, offset) {
    写真が何十枚もある回で、ページを開くたびに全部読み込むと重くなるためです */
 const CM_FIRST_PHOTOS = 4;
 
-/** 投稿できるか（参加した本人で、回が終わっているか）。サーバで判定します */
-async function canPostTo(eventId) {
-  if (!isSignedIn()) return false;
-  try { return (await callRpc('attended_event', { p_event: eventId })) === true; }
-  catch { return false; }
+/** 投稿できるか。21-open-reviews.sql 以降は、参加したかどうかは問わず、
+    サインインしていれば誰でも書けます（DB 側の権限も合わせて広げています） */
+function canPostTo() {
+  return isSignedIn();
 }
 
 /** 自分の投稿の id。「消す」ボタンを自分の投稿にだけ出すために使います */
@@ -225,13 +224,14 @@ async function renderEventCommunity(ev, box) {
     box.hidden = true;
     return;
   }
-  const [can, mine] = await Promise.all([canPostTo(ev.id), myPostIds(ev.id)]);
+  const can = canPostTo();
+  const mine = await myPostIds(ev.id);
   const myReview = (mine.reviews || []).length > 0;
   const morePhotos = photos.length > CM_FIRST_PHOTOS;
   photos = photos.slice(0, CM_FIRST_PHOTOS);
 
-  /* 一行の案内。参加していない人には何も出しません（読むだけの人に「書けません」は要らないため） */
-  const lead = can ? t('cm.leadCan') : (isSignedIn() ? '' : t('cm.leadSignIn'));
+  /* 一行の案内。サインインしていれば誰でも書けます */
+  const lead = can ? '' : t('cm.leadSignIn');
 
   box.innerHTML = `
       <div class="cm-head">

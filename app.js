@@ -82,17 +82,13 @@ function pastCardHTML(ev, cm) {
   /* 表紙はイベント本来の画像のまま。あとから足した写真には差し替えません */
   const cover = ev.image;
   const latest = reviews[0];
-  const counts = [
-    /* 1件のときは単数形にします（「1 photos」と出ないように） */
-    photos.length ? t(photos.length === 1 ? 'past.photo' : 'past.photos', { n: photos.length }) : '',
-    reviews.length ? t(reviews.length === 1 ? 'past.review' : 'past.reviews', { n: reviews.length }) : ''
-  ].filter(Boolean).join(' · ');
+  /* 写真・感想の件数は出しません（枚数の多さで選ばれるのを避けるため）。
+     感想が1件あれば、いちばん新しいものだけを添えます */
   return `<a class="past-card" href="${esc(eventUrl(ev.id))}#eventCommunity">
     <span class="past-card__img">${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : ''}</span>
     <span class="past-card__body">
       <span class="past-card__date">${esc(fmtDate(ev, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>
       <b>${esc(ev.title)}</b>
-      ${counts ? `<span class="past-card__counts">${esc(counts)}</span>` : ''}
       ${latest ? `<span class="past-card__review">${avatarHTML(latest.initials, latest.nationality)}
         <span>${esc(latest.body.length > 110 ? latest.body.slice(0, 110) + '…' : latest.body)}</span></span>` : ''}
     </span>
@@ -265,6 +261,32 @@ function renderCalendar() {
  * プロキシは <input> にフォーカスが入ると警告を出して入力を止めるので、
  * 母語の案内と「自前ドメイン ＋ ?lang=xx」へのボタンだけを見せます。
  */
+/* 検索結果や他サイトのリンクから来た人には、最初から Upcoming events を見せます。
+   戻る・進むボタンでの行き来、サイト内の遷移（ヘッダーの Home など）、
+   #hash 付きのリンクで来たときは、普段どおり一番上から見せます。 */
+function shouldJumpToEvents() {
+  if (location.hash) return false;
+  try {
+    const nav = performance.getEntriesByType('navigation')[0];
+    if (nav && nav.type !== 'navigate') return false;   // reload・戻る/進むは対象外
+  } catch (e) {}
+  if (!document.referrer) return false;   // 直接入力・ブックマークは一番上から
+  try {
+    if (new URL(document.referrer).host === location.host) return false;   // サイト内の遷移
+  } catch (e) { return false; }
+  return true;
+}
+let jumpedToEvents = false;
+function jumpToEventsIfNeeded() {
+  if (jumpedToEvents || !shouldJumpToEvents()) return;
+  const target = $('#events');
+  if (!target) return;
+  jumpedToEvents = true;
+  /* html の scroll-behavior:smooth を無効にして、一瞬で移動します
+     （ページを開いた瞬間にスクロールが「動いて見える」のを避けるため） */
+  target.scrollIntoView({ block: 'start', behavior: 'instant' });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initShell();
   renderDow();
@@ -278,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCalendar(); renderEventRail(); renderHeroNext(); renderPastEvents(); renderCommunityReel();
     keepLangOnLinks();   /* カードは後から描かれるので、描くたびに ?lang= を付け直す */
     requestAnimationFrame(measureRails);
+    requestAnimationFrame(jumpToEventsIfNeeded);
   };
   bootstrapContent(drawAll);
 

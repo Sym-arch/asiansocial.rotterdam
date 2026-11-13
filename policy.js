@@ -8,7 +8,7 @@
    最新版」と約束しています）。
    ========================================================= */
 
-const POLICY_UPDATED = '2026-11-12';
+const POLICY_UPDATED = '2026-11-14';
 const MAIL = '<a href="mailto:info@asiansocials.nl">info@asiansocials.nl</a>';
 
 const POLICY = {
@@ -22,6 +22,7 @@ const POLICY = {
             Representative: Taiyo Iino. Contact: ${MAIL}` },
       { id: 'tickets', h: 'Tickets & entry', items: [
         `We check tickets at the entrance. Each ticket can be used once — if the same ticket is shown twice, only the first person gets in.`,
+        `Every event has a capacity. If it's full, people with a ticket are let in first — if you don't have one, you may not be able to join. Please book ahead to be sure of your spot.`,
         `You must be 18 or older. We may ask for ID.`
       ] },
       { id: 'conduct', h: 'At the event', items: [
@@ -45,7 +46,7 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'Privacy', items: [
         `Asian Socials is responsible for your data. We keep your name, email address, member number and bookings, to run bookings, send tickets and tell you about changes to events.`,
-        `If you choose to fill them in on your profile, we also keep your nationality, the city you live in and your date of birth. All three are optional. We use them only in totals (for example, how many members live in each city) to decide where and what kind of events to host. You can change or clear them on your profile at any time.`,
+        `Your profile also has optional fields (nationality, city, date of birth) to help us plan where and what kind of events to host. They're entirely optional, and you can change or delete them at any time.`,
         `We use Supabase (database), Stripe (payments), Resend (email), Vercel (hosting) and Google Analytics (visitor statistics) to run this service.`,
         `Google Analytics tells us how many people visit and which pages they read. We only use analytics cookies if you accept them, and we never use it for advertising. You can change your choice at any time with the cookie settings link at the bottom of every page.`,
         `We may update this policy. The date at the top shows the latest version.`,
@@ -64,6 +65,7 @@ const POLICY = {
             代表：飯野太陽。お問い合わせ：${MAIL}` },
       { id: 'tickets', h: 'チケットと入場', items: [
         `入口でチケットを確認します。チケットは1回だけ使えます。同じチケットが2回提示された場合、入場できるのは先に提示した方だけです。`,
+        `すべてのイベントには定員があります。定員を超えた場合は、チケットをお持ちの方を優先してご案内します。チケットがない場合、ご参加いただけないことがありますので、あらかじめご了承ください。`,
         `参加は18歳以上に限ります。身分証明書の提示をお願いすることがあります。`
       ] },
       { id: 'conduct', h: 'イベントでのお願い', items: [
@@ -87,7 +89,7 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'プライバシー', items: [
         `個人データの管理者は Asian Socials です。予約の管理、チケットの送付、イベントの変更のお知らせのために、お名前、メールアドレス、会員番号、予約履歴を保管します。`,
-        `プロフィールでご記入いただいた場合は、国籍・住んでいる都市・生年月日も保管します。3つとも任意です。どの街に何人住んでいるか、といった集計としてのみ使い、次にどこで、どんなイベントを開くかを決める参考にします。プロフィールからいつでも変更・削除できます。`,
+        `プロフィールの国籍・都市・生年月日は、今後どこでどんなイベントを開くかを考えるための任意項目です。いつでも変更・削除できます。`,
         `このサービスの運営に、Supabase（データベース）、Stripe（決済）、Resend（メール）、Vercel（ホスティング）、Google アナリティクス（アクセス統計）を利用しています。`,
         `Google アナリティクスでは、訪問者数とどのページが読まれているかを把握しています。分析用の Cookie は、許可をいただいた場合にのみ使用し、広告には一切利用していません。各ページ下部の「Cookie の設定」から、いつでも変更できます。`,
         `このポリシーは更新することがあります。最新の版は、ページ上部の日付で確認できます。`,
@@ -106,6 +108,7 @@ const POLICY = {
             Vertegenwoordiger: Taiyo Iino. Contact: ${MAIL}` },
       { id: 'tickets', h: 'Tickets en toegang', items: [
         `We controleren tickets bij de ingang. Elk ticket kan één keer worden gebruikt — wordt hetzelfde ticket twee keer getoond, dan komt alleen de eerste persoon binnen.`,
+        `Elk evenement heeft een maximumaantal plaatsen. Is het vol, dan laten we eerst mensen met een ticket binnen — heb je er geen, dan kun je mogelijk niet meedoen. Boek dus van tevoren om zeker te zijn van je plek.`,
         `Je moet 18 jaar of ouder zijn. We kunnen om een identiteitsbewijs vragen.`
       ] },
       { id: 'conduct', h: 'Tijdens het evenement', items: [
@@ -129,7 +132,7 @@ const POLICY = {
       ] },
       { id: 'privacy', h: 'Privacy', items: [
         `Asian Socials is verantwoordelijk voor je gegevens. We bewaren je naam, e-mailadres, lidnummer en boekingen om boekingen te regelen, tickets te sturen en je te informeren over wijzigingen.`,
-        `Als je ze op je profiel invult, bewaren we ook je nationaliteit, je woonplaats en je geboortedatum. Alle drie zijn optioneel. We gebruiken ze alleen in totalen (bijvoorbeeld hoeveel leden in elke stad wonen) om te bepalen waar en wat voor events we organiseren. Je kunt ze altijd wijzigen of wissen op je profiel.`,
+        `Je profiel heeft ook optionele velden (nationaliteit, woonplaats, geboortedatum) die ons helpen te bepalen waar en wat voor events we organiseren. Ze zijn volledig optioneel, en je kunt ze altijd wijzigen of verwijderen.`,
         `We gebruiken Supabase (database), Stripe (betalingen), Resend (e-mail), Vercel (hosting) en Google Analytics (bezoekersstatistieken) voor deze dienst.`,
         `Met Google Analytics zien we hoeveel mensen de site bezoeken en welke pagina's ze lezen. We gebruiken analytische cookies alleen als je ze accepteert, en nooit voor advertenties. Je kunt je keuze altijd wijzigen via de cookie-instellingen onderaan elke pagina.`,
         `We kunnen dit beleid bijwerken. De datum bovenaan toont de nieuwste versie.`,

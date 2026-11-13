@@ -945,7 +945,8 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* =========================================================
    ページ見出し（about / profile など、下層ページの入口）
    ========================================================= */
-.pagehead{padding:clamp(96px,11vw,150px) 0 clamp(30px,4vw,54px)}
+/* ヘッダーの下の余白。以前は 96–150px もあり、見出しまでが遠すぎました */
+.pagehead{padding:clamp(40px,6vw,84px) 0 clamp(30px,4vw,54px)}
 
 .acct-h1{
   font-family:var(--display);font-weight:500;letter-spacing:-.03em;
@@ -1345,7 +1346,6 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .past-card__body{display:grid;gap:6px;padding:16px 18px 18px}
 .past-card__date{font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .past-card__body b{font-family:var(--display);font-weight:500;font-size:1.05rem;line-height:1.3}
-.past-card__counts{font-size:.8rem;color:var(--brand-text);font-weight:600}
 .past-card__review{display:flex;gap:10px;align-items:flex-start;margin-top:6px;font-size:.84rem;color:var(--ink-2);line-height:1.5}
 .past-card__review .cm-av,.past-card__review .cm-av__i{width:30px;height:30px}
 .past-card__review .cm-av__i{font-size:.68rem}
@@ -1426,7 +1426,6 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
   .past-card__body{padding:10px 12px 12px;gap:4px}
   .past-card__date{font-size:.58rem;letter-spacing:.1em}
   .past-card__body b{font-size:.9rem}
-  .past-card__counts{font-size:.7rem}
   .past-card__review{display:none}
 }
 
@@ -1564,12 +1563,20 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 @media (max-width:760px){ .pt-collabs{grid-template-columns:1fr;gap:30px} }
 
 /* How We Work Together: 3つの手順を横に */
-.pt-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(22px,3vw,44px);counter-reset:none}
+/* 説明書きと、ステップの矢印 */
+.pt-how__intro{color:var(--muted);margin-top:16px;max-width:60ch}
+.pt-steps{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);gap:clamp(14px,2vw,22px);align-items:center;counter-reset:none}
 .pt-steps li{background:var(--paper-2);border-radius:14px;padding:clamp(22px,2.6vw,32px)}
 .pt-steps__n{font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--brand-text)}
 .pt-steps h3{font-size:1.3rem;margin:12px 0 10px}
 .pt-steps p{color:var(--muted);line-height:1.65}
-@media (max-width:760px){ .pt-steps{grid-template-columns:1fr;gap:14px} }
+/* ステップの間の矢印。「流れ」だと一目で分かるように */
+.pt-steps__arrow{background:none;padding:0;font-size:1.6rem;color:var(--muted);text-align:center}
+@media (max-width:900px){
+  .pt-steps{grid-template-columns:1fr}
+  /* 縦並びでは、矢印も下向きに回して間に挟みます */
+  .pt-steps__arrow{transform:rotate(90deg);padding:2px 0}
+}
 
 /* Get in Touch */
 .pt-contact__grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(30px,6vw,90px);align-items:start}
