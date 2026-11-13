@@ -254,11 +254,15 @@ function renderEvent(ev) {
             <div><span class="lbl">${esc(t('meta.tickets'))}</span><div>${priceBlockHTML(ev)}${done ? `<span>${esc(t('ev.finished'))}</span>` : ''}</div></div>
           </div>
 
-          <div class="hero__cta">
-            ${done ? '' : `<a class="btn btn--brand" href="#book" data-book-open>${esc(t('hero.cta1'))}</a>`}
+          ${done
+            /* 終わった回にカレンダーや地図は要りません。代わりに、参加者の写真と感想を
+               ここ（日時・会場のすぐ下）に出します。中身は community.js が描きます */
+            ? `<div class="cm cm--inline" id="eventCommunity" hidden></div>`
+            : `<div class="hero__cta">
+            <a class="btn btn--brand" href="#book" data-book-open>${esc(t('hero.cta1'))}</a>
             <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">${esc(t('ev.gcal'))}</a>
             ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('ev.maps'))}</a>` : ''}
-          </div>
+          </div>`}
         </div>
 
         <div class="ev-hero__img">
@@ -273,6 +277,12 @@ function renderEvent(ev) {
   <section class="section" style="padding-top:clamp(32px,4vw,56px)">
     <div class="wrap ev-body">
       <div>
+        ${done ? `
+        <!-- 終わった回は説明を畳んでおきます。下の「これからの回」まで早くたどり着けるように -->
+        <details class="ev-about">
+          <summary><h2>${esc(t('ev.about'))}</h2><span class="ev-about__mark" aria-hidden="true"></span></summary>
+          <div class="prose"><div class="md">${mdToHtml(ev.description)}</div></div>
+        </details>` : `
         <div class="prose reveal">
           <h2>${esc(t('ev.about'))}</h2>
           <div class="md">${mdToHtml(ev.description)}</div>
@@ -284,7 +294,7 @@ function renderEvent(ev) {
             <li>${esc(t('ev.know3'))}</li>
             <li>${esc(t('ev.know4'))} <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a>.</li>
           </ul>
-        </div>
+        </div>`}
 
         ${others.length ? `
         <div style="margin-top:38px">
@@ -306,10 +316,7 @@ function renderEvent(ev) {
         </div>
       </aside>
     </div>
-  </section>
-
-  ${done ? `<!-- 参加者の写真とレビュー。中身は community.js が描きます -->
-  <section class="cm" id="eventCommunity" hidden></section>` : ''}`;
+  </section>`;
 
   if (done) renderEventCommunity(ev, $('#eventCommunity'));
 

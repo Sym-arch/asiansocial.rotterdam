@@ -58,7 +58,7 @@ function renderEventRail() {
 
 /* ---------------------------------------------------------
    Past events（ホームの一番下）
-   終わった回を新しい順に4件（全部は events.html の See all past events で）。参加者の写真があれば1枚目を表紙にし、
+   終わった回を新しい順に4件（全部は events.html の See all past events で）。表紙はイベント本来の画像。
    写真とレビューの数、いちばん新しいレビューを添えます。
    写真・レビューのテーブル（19 の SQL）が無いときは、回だけを並べます。
    --------------------------------------------------------- */
@@ -79,7 +79,8 @@ async function loadPastCommunity() {
 function pastCardHTML(ev, cm) {
   const photos  = cm.photos.filter(p => p.event_id === ev.id);
   const reviews = cm.reviews.filter(r => r.event_id === ev.id);
-  const cover = (photos[0] && photos[0].url) || ev.image;
+  /* 表紙はイベント本来の画像のまま。あとから足した写真には差し替えません */
+  const cover = ev.image;
   const latest = reviews[0];
   const counts = [
     /* 1件のときは単数形にします（「1 photos」と出ないように） */

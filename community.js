@@ -187,6 +187,11 @@ function reviewHTML(r, mine) {
   </li>`;
 }
 
+/* ダウンロードのマーク（下向きの矢印と受け皿）。文字の代わりに出します */
+const DL_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" ' +
+  'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>';
+
 /* ダウンロード用の URL。Supabase Storage は ?download を付けると
    「保存する」形で返します（別ドメインなので <a download> だけでは保存になりません） */
 function photoDownloadUrl(p, ev, i) {
@@ -198,7 +203,8 @@ function photoDownloadUrl(p, ev, i) {
 function photoHTML(p, ev, i) {
   return `<figure class="cm-photo">
     <a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="" loading="lazy"></a>
-    <figcaption><a class="cm-photo__dl" href="${esc(photoDownloadUrl(p, ev, i))}" download>${esc(t('cm.download'))}</a></figcaption>
+    <figcaption><a class="cm-photo__dl" href="${esc(photoDownloadUrl(p, ev, i))}" download
+      aria-label="${esc(t('cm.download'))}" title="${esc(t('cm.download'))}">${DL_ICON}</a></figcaption>
   </figure>`;
 }
 
@@ -219,7 +225,6 @@ async function renderEventCommunity(ev, box) {
   const myReview = (mine.reviews || []).length > 0;
 
   box.innerHTML = `
-    <div class="wrap">
       <div class="cm-head">
         <h2>${esc(t('cm.title'))}</h2>
         <p>${esc(t(can ? 'cm.leadCan' : (isSignedIn() ? 'cm.leadNotAttended' : 'cm.leadSignIn')))}
@@ -239,8 +244,7 @@ async function renderEventCommunity(ev, box) {
 
       ${reviews.length
         ? `<ul class="cm-reviews">${reviews.map(r => reviewHTML(r, (mine.reviews || []).includes(r.id))).join('')}</ul>`
-        : (photos.length ? '' : `<p class="cm-empty">${esc(t('cm.empty'))}</p>`)}
-    </div>`;
+        : (photos.length ? '' : `<p class="cm-empty">${esc(t('cm.empty'))}</p>`)}`;
   box.hidden = false;
   initMemberLinks();
 
