@@ -365,7 +365,6 @@ function renderAdmin() {
       <div class="admin-row__act">
         <a class="mini" href="${esc(publicEventUrl(ev.id))}" target="_blank" rel="noopener">View page</a>
         <button class="mini" type="button" data-edit-ev="${esc(ev.id)}">Edit</button>
-        <button class="mini" type="button" data-dup-ev="${esc(ev.id)}">Duplicate</button>
         <button class="mini mini--danger" type="button" data-del-ev="${esc(ev.id)}">Delete</button>
       </div>
     </div>`).join('') : '<div class="empty">No events yet.</div>';
@@ -434,10 +433,10 @@ function eventFormFill(ev) {
   if (fold && ev) fold.open = true;
 }
 
-/* 電話では入力フォームをたたみます（一覧が先に見えるように） */
+/* 新しい回の入力フォームは、いつもたたんで開きます（一覧が先に見えるように） */
 function prepAdminPanel() {
   const fold = $('#aeFold');
-  if (fold && !$('#aeId').value) fold.open = !window.matchMedia('(max-width:720px)').matches;
+  if (fold && !$('#aeId').value) fold.open = false;
 }
 
 function toCsv(rows) {
@@ -461,7 +460,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* Click delegation */
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-dup-ev],[data-del-ev],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo],[data-save-att]');
+    const t = e.target.closest('[data-admin-out],[data-edit-ev],[data-del-ev],[data-del-rsvp],[data-del-org],[data-cm-admin-review],[data-cm-admin-photo],[data-save-att]');
     if (!t) return;
 
     if (t.dataset.saveAtt) {
@@ -495,18 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (t.dataset.editEv) {
       eventFormFill(EVENTS.find(x => x.id === t.dataset.editEv));
       $('#adminEventForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
-    }
-    if (t.dataset.dupEv) {
-      const src = EVENTS.find(x => x.id === t.dataset.dupEv);
-      if (!src) return;
-      const copy = Object.assign({}, src, { id: uid(), title: src.title + ' (copy)' });
-      /* 保存が通ってから一覧に出します（新規作成と同じ理由） */
-      pushEvent(copy).then(() => {
-        EVENTS.push(copy);
-        saveEvents(); fillReminderSelect(); renderAdmin();
-        toast('Event duplicated — edit the date before publishing.');
-      }).catch(err => toast('Not saved: ' + err.message, true));
       return;
     }
     if (t.dataset.delEv) {

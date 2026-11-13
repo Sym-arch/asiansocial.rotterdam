@@ -276,9 +276,11 @@ function renderEvent(ev) {
        予約の導線を先に見せるため、説明は畳み、予約欄は「これからの回」より上に置きます -->
   <section class="section" style="padding-top:clamp(28px,4vw,48px)">
     <div class="wrap ev-body ev-body--solo">
-      <details class="ev-about">
-        <summary><h2>${esc(t('ev.about'))}</h2><span class="ev-about__mark" aria-hidden="true"></span></summary>
-        <div class="prose">
+      <!-- 説明は最初の数行だけ見せ、下の3行ほどを透かして「Read more」で全部開きます。
+           短い説明なら、そのまま全部出します（下の wireAboutMore） -->
+      <div class="ev-about">
+        <h2>${esc(t('ev.about'))}</h2>
+        <div class="prose ev-about__body" id="evAboutBody">
           <div class="md">${mdToHtml(ev.description)}</div>
           ${done ? '' : `
           <h3>${esc(t('ev.know'))}</h3>
@@ -289,7 +291,8 @@ function renderEvent(ev) {
             <li>${esc(t('ev.know4'))} <a href="mailto:${esc(CONFIG.contactEmail)}">${esc(CONFIG.contactEmail)}</a>.</li>
           </ul>`}
         </div>
-      </details>
+        <button type="button" class="ev-about__more" id="evAboutMore" hidden>${esc(t('ev.readMore'))}</button>
+      </div>
 
       ${done ? '' : `
       <section class="ev-book" id="book">
@@ -306,6 +309,7 @@ function renderEvent(ev) {
     </div>
   </section>`;
 
+  wireAboutMore();
   if (done) renderEventCommunity(ev, $('#eventCommunity'));
 
   /* wiring */
@@ -406,3 +410,21 @@ document.addEventListener('DOMContentLoaded', () => {
     else notFound();
   });
 });
+
+/* 説明の「Read more」。たたんだ高さに収まるなら、ボタンも透かしも付けません */
+function wireAboutMore() {
+  const body = $('#evAboutBody'), btn = $('#evAboutMore');
+  if (!body || !btn) return;
+  body.classList.add('is-clamped');
+  if (body.scrollHeight <= body.clientHeight + 8) {
+    body.classList.remove('is-clamped');
+    return;
+  }
+  btn.hidden = false;
+  btn.addEventListener('click', () => {
+    const open = body.classList.toggle('is-clamped') === false;
+    btn.textContent = t(open ? 'ev.readLess' : 'ev.readMore');
+    btn.setAttribute('aria-expanded', String(open));
+  });
+  btn.setAttribute('aria-expanded', 'false');
+}

@@ -99,6 +99,28 @@ function pastCardHTML(ev, cm) {
   </a>`;
 }
 
+/* Our Community の写真。全部の回の写真を混ぜ、毎回ちがう順に並べます。
+   切れ目なく流すため、同じ並びを2回つなげて、半分ぶん動かしたら最初に戻します（CSS の reel） */
+async function renderCommunityReel() {
+  const reel = $('#communityReel'), track = $('#communityTrack');
+  if (!reel || !track) return;
+  const cm = await loadPastCommunity();
+  const pics = cm.photos.slice();
+  for (let i = pics.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pics[i], pics[j]] = [pics[j], pics[i]];
+  }
+  const list = pics.slice(0, 24);
+  reel.hidden = !list.length;
+  if (!list.length) return;
+  const one = list.map(p => `<a class="reel__item" href="${esc(eventUrl(p.event_id))}#eventCommunity" tabindex="-1">
+      <img src="${esc(p.url)}" alt="" loading="lazy" decoding="async"></a>`).join('');
+  track.innerHTML = one + one;
+  /* 枚数が多いほどゆっくり。1枚あたり約4秒で、速さを一定に保ちます */
+  track.style.setProperty('--reel-dur', Math.max(30, list.length * 4) + 's');
+  keepLangOnLinks(track);
+}
+
 async function renderPastEvents() {
   const sec = $('#past'), grid = $('#pastGrid');
   if (!sec || !grid) return;
@@ -253,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const drawAll = () => {
     if (!calTouched) calCursor = initialCalMonth();
-    renderCalendar(); renderEventRail(); renderHeroNext(); renderPastEvents();
+    renderCalendar(); renderEventRail(); renderHeroNext(); renderPastEvents(); renderCommunityReel();
     keepLangOnLinks();   /* カードは後から描かれるので、描くたびに ?lang= を付け直す */
     requestAnimationFrame(measureRails);
   };

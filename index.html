@@ -148,19 +148,6 @@
   </div>
 </section>
 
-<!-- ============ OUR COMMUNITY ============ -->
-<!-- 文章は本人がこれから書きます。届くまでは出しません（hidden を外せば表示されます） -->
-<section class="sec" id="community" hidden>
-  <div class="wrap">
-    <div class="sec__head">
-      <p class="label label--brand" data-i18n="community.label">Our community</p>
-      <div>
-        <h2 data-i18n="community.title">Our community</h2>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============ UPCOMING EVENTS ============ -->
 <section class="sec sec--flush" id="events">
   <div class="wrap events__intro">
@@ -212,6 +199,25 @@
 </section>
 
 
+
+<!-- ============ OUR COMMUNITY ============ -->
+<!-- 墨色の帯。Past events に投稿された写真を、ランダムな順に横へ流します（app.js の renderCommunityReel） -->
+<section class="sec community" id="community">
+  <div class="wrap">
+    <div class="community__head">
+      <p class="label" data-i18n="community.label">Our community</p>
+      <h2 data-i18n-html="community.title">Don’t know anyone? <em>Perfect.</em></h2>
+      <p class="community__sub" data-i18n="community.sub">The most welcoming community in the Netherlands? That’s us!</p>
+    </div>
+  </div>
+  <!-- 写真が1枚も無いうちは出しません -->
+  <div class="reel" id="communityReel" hidden>
+    <div class="reel__track" id="communityTrack"></div>
+  </div>
+  <div class="wrap community__foot">
+    <a class="community__more" href="about.html#about" data-i18n="community.more">More about Asian Socials →</a>
+  </div>
+</section>
 
 <!-- ============ PAST EVENTS ============ -->
 <!-- 終わった回と、参加者の写真・レビュー。中身は app.js の renderPastEvents が描きます -->

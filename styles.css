@@ -1290,17 +1290,19 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .cm--inline .cm-head h2{font-size:1.2rem}
 .cm--inline .cm-photos{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));margin-top:16px}
 /* 終わった回の「About this event」は畳んでおきます */
-.ev-about{border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
-.ev-about summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0;cursor:pointer;list-style:none}
-.ev-about summary::-webkit-details-marker{display:none}
-.ev-about summary h2{font-size:1.3rem;font-weight:500}
-.ev-about__mark{
-  width:11px;height:11px;flex:none;margin-right:4px;
-  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
-  transform:rotate(45deg);transition:transform .2s ease;
+.ev-about{border-top:1px solid var(--rule);padding-top:22px}
+.ev-about h2{font-size:1.3rem;font-weight:500;margin-bottom:14px}
+/* たたんだときは、見える範囲の下 3 行ほどを透かします */
+.ev-about__body.is-clamped{
+  max-height:12.5em;overflow:hidden;
+  -webkit-mask-image:linear-gradient(180deg,#000 35%,transparent 100%);
+          mask-image:linear-gradient(180deg,#000 35%,transparent 100%);
 }
-.ev-about[open] .ev-about__mark{transform:rotate(-135deg)}
-.ev-about .prose{padding-bottom:22px}
+.ev-about__more{
+  margin-top:6px;padding:8px 0;background:none;border:0;cursor:pointer;
+  font:inherit;font-size:.9rem;font-weight:600;color:var(--brand-text);
+  text-decoration:underline;text-underline-offset:4px;
+}
 .cm-head h2{font-size:1.5rem;font-weight:500}
 .cm-head p{color:var(--muted);font-size:.92rem;margin-top:6px}
 .cm-post{display:grid;gap:14px;margin:22px 0 28px;max-width:640px}
@@ -1419,3 +1421,56 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
   .past-card__counts{font-size:.7rem}
   .past-card__review{display:none}
 }
+
+/* =========================================================
+   Our Community（ホーム・Past events の上）
+   墨色の帯。写真は横に流れ続けます
+   ========================================================= */
+.community{
+  --sumi:#1f1d1b;
+  background:var(--sumi);color:#f1ede6;border-top:0;overflow:hidden;
+}
+.community .label{color:rgba(241,237,230,.62)}
+.community__head{max-width:760px}
+.community h2{color:#f6f2eb;font-size:clamp(2rem,5vw,3.6rem);line-height:1.08;margin:10px 0 14px}
+.community h2 em{font-style:italic;color:#ff8a8a}
+.community__sub{color:rgba(241,237,230,.78);font-size:clamp(1rem,1.6vw,1.2rem);max-width:560px}
+.reel{margin-top:clamp(30px,4vw,48px);overflow:hidden}
+.reel__track{
+  display:flex;gap:12px;width:max-content;
+  animation:reel var(--reel-dur,60s) linear infinite;
+}
+.reel:hover .reel__track{animation-play-state:paused}
+.reel__item{flex:none;display:block;height:clamp(150px,22vw,250px);aspect-ratio:4/3;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.06)}
+.reel__item img{width:100%;height:100%;object-fit:cover;display:block}
+/* 2回つないだ並びの半分（gap のぶんも含めて）動かすと、最初と同じ絵になります */
+@keyframes reel{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 6px))}}
+@media (prefers-reduced-motion:reduce){
+  .reel{overflow-x:auto}
+  .reel__track{animation:none}
+}
+.community__foot{display:flex;justify-content:flex-end;margin-top:clamp(22px,3vw,34px)}
+.community__more{
+  font-size:.82rem;font-weight:600;color:rgba(241,237,230,.82);text-decoration:none;
+  border-bottom:1px solid rgba(241,237,230,.35);padding-bottom:2px;
+}
+.community__more:hover{color:#fff;border-color:#fff}
+/* Past events はすぐ下に続くので、上の線は要りません */
+.community + #past{border-top:0}
+
+/* =========================================================
+   スマホで入力欄を押すと画面が拡大されたままになる件（管理画面の RSVPs で発生）
+   iPhone の Safari は、文字が 16px 未満の入力欄を押すと自動で拡大し、
+   そのまま戻りません。RSVPs のイベント選択は 13px、ほかの欄も 15.7px でした。
+   スマホでは入力欄の文字をすべて 16px にして、拡大が起きないようにします
+   ========================================================= */
+@media (max-width:820px){
+  input,select,textarea{font-size:16px !important}
+}
+/* 長いイベント名を選んでも、選択欄が画面より広がらないように */
+.admin-select{min-width:0;text-overflow:ellipsis}
+@media (max-width:720px){
+  .admin-tools .admin-select{width:100%}
+}
+/* Our Community の下の余白を少し詰めます */
+.community{padding-bottom:clamp(40px,5vw,72px)}
