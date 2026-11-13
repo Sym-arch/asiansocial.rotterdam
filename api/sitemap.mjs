@@ -20,6 +20,7 @@ const PAGES = [
   { loc: '/',            changefreq: 'weekly',  priority: '1.0' },
   { loc: '/events.html', changefreq: 'weekly',  priority: '0.9' },
   { loc: '/about.html',  changefreq: 'monthly', priority: '0.7' },
+  { loc: '/partners.html', changefreq: 'monthly', priority: '0.6' },
   { loc: '/policy.html', changefreq: 'yearly',  priority: '0.3' }
 ];
 

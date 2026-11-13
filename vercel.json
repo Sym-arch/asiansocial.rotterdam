@@ -23,7 +23,7 @@
       "permanent": false
     },
     {
-      "source": "/:page(index|about|events|event|policy|profile|ticket|booked|reset)\\.html",
+      "source": "/:page(index|about|partners|events|event|policy|profile|details|ticket|booked|reset)\\.html",
       "has": [
         {
           "type": "host",

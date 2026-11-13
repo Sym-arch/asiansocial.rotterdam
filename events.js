@@ -10,8 +10,8 @@ function allEventsHTML() {
   const next = upcoming();
   const past = EVENTS.filter(isPast).sort(byDate).reverse();
 
-  const group = (title, list, empty) => `
-    <h2 class="ev-group">${esc(title)}</h2>
+  const group = (title, list, empty, id) => `
+    <h2 class="ev-group"${id ? ` id="${id}"` : ''}>${esc(title)}</h2>
     ${list.length
       ? `<div class="ev-grid">${list.map(eventCardHTML).join('')}</div>`
       : `<p class="empty">${esc(empty)}</p>`}`;
@@ -25,7 +25,7 @@ function allEventsHTML() {
       </div>
     </div>
     ${group(t('events.upcomingTitle'), next, t('events.none'))}
-    ${group(t('events.pastTitle'), past, t('events.noPast'))}`;
+    ${group(t('events.pastTitle'), past, t('events.noPast'), 'past')}`;
 }
 
 function renderAllEvents() {
@@ -44,4 +44,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderAllEvents();
   await loadContent().catch(() => {});
   renderAllEvents();
+  if (location.hash === '#past') { const p = $('#past'); if (p) p.scrollIntoView(); }
 });
