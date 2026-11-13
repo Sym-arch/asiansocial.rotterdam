@@ -415,36 +415,109 @@ function wireNewsletter() {
 
 /* ---------------------------------------------------------
    INSIGHTS タブ
-   予約の記録とプロフィールから、簡単なグラフを3つ出します。
-   - 何回参加したか（同じメールアドレスで何件予約したか）
-   - 曜日ごとの予約数（どの曜日が人気か）
-   - プロフィールの「住んでいる街」の内訳
-   データそのものは他のタブで読み込んだものを使い回します。
-   重い集計ではないので、画面に出すたびに作り直します。
+   予約の記録とプロフィールから、6つの指標を出します。
+   - リピート率（一度予約した人のうち、別の回も予約した人の割合）
+   - 国籍別構成
+   - 年代別構成
+   - メンバー数の推移 × イベント開催履歴（1つの線グラフに。横軸はイベントの
+     開催順。各イベントの時点での会員の累計数を線でつなぐと、
+     どの回のあとに増えたかが見えます）
+   - 初参加者・リピーター比率（イベントごと。そのイベントが各人にとって
+     何回目の予約だったかで、初参加／リピーターに分けて積み上げます）
+
+   データは他のタブで読み込んだ ADMIN_RSVPS を使い回し、プロフィールだけ
+   ここで読みます（国籍・生年月日・登録日）。重い集計ではないので、
+   画面に出すたびに作り直します。
    --------------------------------------------------------- */
 let INSIGHTS_CHARTS = [];
-let PROFILE_CITIES = null;   /* [{city}, ...]。一度読んだら使い回します */
-
-const CITY_LABEL = {
-  rotterdam: 'Rotterdam', amsterdam: 'Amsterdam', 'the-hague': 'The Hague',
-  utrecht: 'Utrecht', 'other-nl': 'Other NL', abroad: 'Abroad'
-};
+let INSIGHTS_PROFILES = null;   /* [{nationality, birthdate, created_at}, ...] */
 
 function destroyInsightsCharts() {
   INSIGHTS_CHARTS.forEach(c => c.destroy());
   INSIGHTS_CHARTS = [];
 }
 
-function barChart(canvas, labels, data, label) {
+/* 国コード（'JP' など）を表示名に。対応していないブラウザでは
+   コードのまま出します（admin は社内用なので、それで十分です） */
+function countryName(code) {
+  try {
+    if (!INSIGHTS_REGION) INSIGHTS_REGION = new Intl.DisplayNames(['en'], { type: 'region' });
+    return INSIGHTS_REGION.of(code) || code;
+  } catch { return code; }
+}
+let INSIGHTS_REGION = null;
+
+function ageBracket(birthdate) {
+  const b = new Date(birthdate + 'T12:00:00');
+  if (isNaN(b)) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) age--;
+  if (age < 20) return '< 20';
+  if (age < 25) return '20–24';
+  if (age < 30) return '25–29';
+  if (age < 35) return '30–34';
+  if (age < 40) return '35–39';
+  return '40+';
+}
+const AGE_ORDER = ['< 20', '20–24', '25–29', '30–34', '35–39', '40+'];
+
+/* 短いイベント名（グラフの横軸用）。長いタイトルは折り返すと読めないので
+   ある程度で切ります */
+function shortTitle(title, max = 18) {
+  const s = String(title || '');
+  return s.length > max ? s.slice(0, max - 1).trimEnd() + '…' : s;
+}
+
+function barChart(canvas, labels, data, label, color) {
   return new Chart(canvas, {
     type: 'bar',
-    data: { labels, datasets: [{ label, data, backgroundColor: '#c10e2e', borderRadius: 4, maxBarThickness: 36 }] },
+    data: { labels, datasets: [{ label, data, backgroundColor: color || '#c10e2e', borderRadius: 4, maxBarThickness: 36 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e1e0d9' } },
-        x: { grid: { display: false } }
+        x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 45, minRotation: labels.length > 4 ? 30 : 0 } }
+      }
+    }
+  });
+}
+
+function lineChart(canvas, labels, data, label) {
+  return new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets: [{
+      label, data, borderColor: '#c10e2e', backgroundColor: 'rgba(193,14,46,.08)',
+      fill: true, tension: 0, pointRadius: 4, pointBackgroundColor: '#c10e2e', borderWidth: 2
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e1e0d9' } },
+        x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 30 } }
+      }
+    }
+  });
+}
+
+function stackedBarChart(canvas, labels, newData, repeatData) {
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'First-timers', data: newData, backgroundColor: '#c10e2e', borderRadius: 3 },
+        { label: 'Repeat bookers', data: repeatData, backgroundColor: '#2f2840', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, usePointStyle: true } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 30 } },
+        y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#e1e0d9' } }
       }
     }
   });
@@ -455,72 +528,115 @@ async function renderInsights() {
   if (!body) return;
   if (typeof Chart === 'undefined') { body.innerHTML = '<div class="empty">Charts could not load.</div>'; return; }
 
-  if (PROFILE_CITIES === null) {
-    try { PROFILE_CITIES = await sbSelect('profiles', 'select=city'); }
-    catch { PROFILE_CITIES = []; }
+  if (INSIGHTS_PROFILES === null) {
+    try { INSIGHTS_PROFILES = await sbSelect('profiles', 'select=nationality,birthdate,created_at'); }
+    catch { INSIGHTS_PROFILES = []; }
   }
 
-  /* 1件以上の予約があって初めて意味が出る3つのグラフ */
   if (!ADMIN_RSVPS.length) {
     body.innerHTML = '<div class="empty">No bookings yet — nothing to chart.</div>';
     return;
   }
 
-  /* --- 何回参加したか（メールアドレスごとの予約件数を束ねます） --- */
+  /* --- リピート率: メールアドレスごとの予約件数を束ねます --- */
   const byEmail = new Map();
   ADMIN_RSVPS.forEach(r => {
     const k = String(r.email || '').toLowerCase();
     if (!k) return;
     byEmail.set(k, (byEmail.get(k) || 0) + 1);
   });
-  const repeatBuckets = { '1': 0, '2': 0, '3': 0, '4+': 0 };
-  byEmail.forEach(n => {
-    const key = n >= 4 ? '4+' : String(n);
-    repeatBuckets[key]++;
+  const bookers = byEmail.size;
+  const repeaters = [...byEmail.values()].filter(n => n >= 2).length;
+  const repeatRate = bookers ? Math.round((repeaters / bookers) * 100) : 0;
+
+  /* --- 国籍別構成 --- */
+  const byNat = {};
+  INSIGHTS_PROFILES.forEach(p => { if (p.nationality) byNat[p.nationality] = (byNat[p.nationality] || 0) + 1; });
+  const natKeys = Object.keys(byNat).sort((a, b) => byNat[b] - byNat[a]);
+
+  /* --- 年代別構成 --- */
+  const byAge = {};
+  INSIGHTS_PROFILES.forEach(p => { if (p.birthdate) { const b = ageBracket(p.birthdate); if (b) byAge[b] = (byAge[b] || 0) + 1; } });
+  const ageKeys = AGE_ORDER.filter(k => byAge[k]);
+
+  /* --- メンバー数の推移 × イベント開催履歴 ---
+     開催日の順に並べたイベントごとに、「そのイベントの日の時点で、
+     それまでに登録していた会員が何人いたか」を数えます。
+     まだ来ていない回は会員数が増えようがないので外します。 */
+  const pastSorted = EVENTS.filter(isPast).sort(byDate);
+  const createdTimes = INSIGHTS_PROFILES.map(p => Date.parse(p.created_at)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+  const memberLabels = [], memberCounts = [];
+  pastSorted.forEach(ev => {
+    const cutoff = Date.parse(ev.date + 'T23:59:59');
+    if (isNaN(cutoff)) return;
+    const count = createdTimes.filter(t => t <= cutoff).length;
+    memberLabels.push(shortTitle(ev.title));
+    memberCounts.push(count);
   });
 
-  /* --- 曜日ごとの予約数 --- */
-  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const byDow = [0, 0, 0, 0, 0, 0, 0];
+  /* --- 初参加者・リピーター比率（イベントごと） ---
+     その人にとって、これが（これまでの予約の中で）いちばん早いイベントなら
+     初参加、そうでなければリピーターとして数えます。 */
+  const firstEventByEmail = new Map();
   ADMIN_RSVPS.forEach(r => {
-    const d = new Date((r.eventDate || '') + 'T12:00:00');
-    if (!isNaN(d)) byDow[d.getDay()]++;
+    const k = String(r.email || '').toLowerCase();
+    if (!k) return;
+    const d = r.eventDate || '';
+    const cur = firstEventByEmail.get(k);
+    if (!cur || d < cur) firstEventByEmail.set(k, d);
   });
-  /* 月曜始まりに並べ替えます */
-  const dowOrder = [1, 2, 3, 4, 5, 6, 0];
-
-  /* --- 住んでいる街 --- */
-  const byCity = {};
-  PROFILE_CITIES.forEach(p => { if (p.city) byCity[p.city] = (byCity[p.city] || 0) + 1; });
-  const cityKeys = Object.keys(byCity).sort((a, b) => byCity[b] - byCity[a]);
+  const allSorted = EVENTS.slice().sort(byDate);
+  const nfLabels = [], nfNew = [], nfRepeat = [];
+  allSorted.forEach(ev => {
+    const rows = ADMIN_RSVPS.filter(r => r.eventId === ev.id);
+    if (!rows.length) return;
+    let n = 0, rep = 0;
+    const seen = new Set();
+    rows.forEach(r => {
+      const k = String(r.email || '').toLowerCase();
+      if (!k || seen.has(k)) return;
+      seen.add(k);
+      if (firstEventByEmail.get(k) === ev.date) n++; else rep++;
+    });
+    nfLabels.push(shortTitle(ev.title)); nfNew.push(n); nfRepeat.push(rep);
+  });
 
   body.innerHTML = `
     <div class="ins-grid">
-      <div class="ins-card">
-        <h4>Repeat attendance<span>How many events the same booker has joined</span></h4>
-        <div class="ins-chart"><canvas id="insRepeat" role="img" aria-label="Bar chart of how many events bookers have attended"></canvas></div>
+      <div class="ins-card ins-card--stat">
+        <h4>Repeat rate<span>Bookers who came back for another event</span></h4>
+        <div class="ins-stat">${repeatRate}%</div>
+        <p class="ins-stat__note">${repeaters} of ${bookers} bookers have booked more than once</p>
       </div>
       <div class="ins-card">
-        <h4>Popular days<span>Bookings by the weekday of the event</span></h4>
-        <div class="ins-chart"><canvas id="insDow" role="img" aria-label="Bar chart of bookings by weekday"></canvas></div>
-      </div>
-      <div class="ins-card">
-        <h4>Where members live<span>From profiles where this is filled in</span></h4>
-        ${cityKeys.length
-          ? `<div class="ins-chart"><canvas id="insCity" role="img" aria-label="Bar chart of members by city"></canvas></div>`
+        <h4>Nationality<span>From profiles where this is filled in</span></h4>
+        ${natKeys.length
+          ? `<div class="ins-chart"><canvas id="insNat" role="img" aria-label="Bar chart of members by nationality"></canvas></div>`
           : `<p class="empty" style="padding:30px 0">Nobody has filled this in yet.</p>`}
+      </div>
+      <div class="ins-card">
+        <h4>Age groups<span>From profiles where this is filled in</span></h4>
+        ${ageKeys.length
+          ? `<div class="ins-chart"><canvas id="insAge" role="img" aria-label="Bar chart of members by age group"></canvas></div>`
+          : `<p class="empty" style="padding:30px 0">Nobody has filled this in yet.</p>`}
+      </div>
+      <div class="ins-card ins-card--wide">
+        <h4>Member growth<span>Members registered by the time of each past event</span></h4>
+        ${memberLabels.length
+          ? `<div class="ins-chart"><canvas id="insGrowth" role="img" aria-label="Line chart of cumulative member count across past events"></canvas></div>`
+          : `<p class="empty" style="padding:30px 0">No past events yet.</p>`}
+      </div>
+      <div class="ins-card ins-card--wide">
+        <h4>First-timers vs. repeat bookers<span>Per event, in date order</span></h4>
+        <div class="ins-chart"><canvas id="insNewRepeat" role="img" aria-label="Stacked bar chart of first-time versus repeat bookers per event"></canvas></div>
       </div>
     </div>`;
 
   destroyInsightsCharts();
-  INSIGHTS_CHARTS.push(barChart($('#insRepeat'), ['1', '2', '3', '4+'],
-    ['1', '2', '3', '4+'].map(k => repeatBuckets[k]), 'Bookers'));
-  INSIGHTS_CHARTS.push(barChart($('#insDow'), dowOrder.map(i => DOW[i]),
-    dowOrder.map(i => byDow[i]), 'Bookings'));
-  if (cityKeys.length) {
-    INSIGHTS_CHARTS.push(barChart($('#insCity'), cityKeys.map(k => CITY_LABEL[k] || k),
-      cityKeys.map(k => byCity[k]), 'Members'));
-  }
+  if (natKeys.length) INSIGHTS_CHARTS.push(barChart($('#insNat'), natKeys.map(countryName), natKeys.map(k => byNat[k]), 'Members'));
+  if (ageKeys.length) INSIGHTS_CHARTS.push(barChart($('#insAge'), ageKeys, ageKeys.map(k => byAge[k]), 'Members', '#2f2840'));
+  if (memberLabels.length) INSIGHTS_CHARTS.push(lineChart($('#insGrowth'), memberLabels, memberCounts, 'Members'));
+  INSIGHTS_CHARTS.push(stackedBarChart($('#insNewRepeat'), nfLabels, nfNew, nfRepeat));
 }
 
 function renderAdmin() {
