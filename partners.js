@@ -23,7 +23,41 @@ function renderStats() {
   const box = $('#ptStats');
   if (!box) return;
   box.innerHTML = PARTNER_STATS.map(s => `
-    <div class="pt-stat"><dt>${esc(s.value)}</dt><dd>${esc(t(s.label))}</dd></div>`).join('');
+    <div class="pt-stat"><dt data-count="${esc(s.value)}">${esc(s.value)}</dt><dd>${esc(t(s.label))}</dd></div>`).join('');
+  countUpWhenSeen(box);
+}
+
+/* 数字は、画面に入ったときに 0 から数え上げます（約1.6秒）。
+   最初から最終の数字を書いておくので、動かない環境でも正しい数字が読めます。
+   動きを減らす設定の人には、数え上げをしません */
+function countUpWhenSeen(box) {
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const els = $$('[data-count]', box);
+  const parts = el => {
+    const m = String(el.dataset.count).match(/^(\D*)(\d[\d,]*)(.*)$/);
+    return m ? { pre: m[1], n: Number(m[2].replace(/,/g, '')), post: m[3] } : null;
+  };
+  els.forEach(el => { const p = parts(el); if (p) el.textContent = p.pre + '0' + p.post; });
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      io.unobserve(en.target);
+      const el = en.target, p = parts(el);
+      if (!p) return;
+      const start = performance.now(), dur = 1600;
+      const step = now => {
+        const k = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - k, 3);       /* 最後はゆっくり止まります */
+        el.textContent = p.pre + Math.round(p.n * eased).toLocaleString('en') + p.post;
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+      /* タブが裏に回ると requestAnimationFrame が止まり、途中の数字で残ることがあります。
+         終わる時刻には、必ず最後の数字にしておきます */
+      setTimeout(() => { el.textContent = el.dataset.count; }, dur + 100);
+    });
+  }, { threshold: 0.5 });
+  els.forEach(el => io.observe(el));
 }
 
 /* ---------------------------------------------------------

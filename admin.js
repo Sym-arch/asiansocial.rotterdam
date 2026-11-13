@@ -537,11 +537,6 @@ ${booked.length} booking(s) for ${heads} people will be removed from the door li
     }
   });
 
-  $('#adminLogout').addEventListener('click', () => {
-    signOut(); isAdmin = false; ADMIN_RSVPS = [];
-    showGate('signin');
-  });
-
   /* Tabs */
   $$('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
     history.replaceState(null, '', '#' + b.dataset.tab);
