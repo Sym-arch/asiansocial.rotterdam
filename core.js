@@ -27,7 +27,7 @@ const CONFIG = {
     /* public key: meant to be visible in the browser. Lock it down with
        Allowed Origins in the EmailJS dashboard (Account -> Security). */
     publicKey:        'WHpmrGhiE_fnmgVIf',
-    serviceId:        'service_3gpxwuh',
+    serviceId:        'service_4qjs2t6',
     rsvpTemplateId:   'template_tzbl1vq',   // 予約確認（参加者宛 + Bcc）
     contactTemplateId:'template_0ffqo56'    // パートナー問い合わせ（自分宛）
   },
