@@ -275,7 +275,7 @@ function renderEvent(ev) {
   </section>
 
   <section class="section" style="padding-top:clamp(32px,4vw,56px)">
-    <div class="wrap ev-body">
+    <div class="wrap ev-body${done ? ' ev-body--solo' : ''}">
       <div>
         ${done ? `
         <!-- 終わった回は説明を畳んでおきます。下の「これからの回」まで早くたどり着けるように -->
@@ -305,16 +305,10 @@ function renderEvent(ev) {
         </div>` : ''}
       </div>
 
+      ${done ? '' : `
       <aside class="ev-side" id="book">
-        <div>
-          ${done
-            ? `<h2 style="font-size:1.25rem;margin-bottom:10px">This event has finished</h2>
-               <p style="color:var(--muted);font-size:.94rem;margin-bottom:18px">
-                 Take a look at what is coming up next instead.</p>
-               <a class="btn btn--brand btn--block" href="index.html#events">See upcoming events</a>`
-            : bookingHTML(ev)}
-        </div>
-      </aside>
+        <div>${bookingHTML(ev)}</div>
+      </aside>`}
     </div>
   </section>`;
 

@@ -49,11 +49,15 @@ async function loadReviews(eventId, limit) {
     '&order=created_at.desc' + (limit ? '&limit=' + limit : ''));
 }
 
-async function loadPhotos(eventId, limit) {
+async function loadPhotos(eventId, limit, offset) {
   return sbSelect('event_photos', cmCols.photos +
     (eventId ? '&event_id=eq.' + encodeURIComponent(eventId) : '') +
-    '&order=created_at.desc' + (limit ? '&limit=' + limit : ''));
+    '&order=created_at.desc' + (limit ? '&limit=' + limit : '') + (offset ? '&offset=' + offset : ''));
 }
+
+/* イベントページの写真は、最初に4枚だけ読みます。残りは「もっと見る」で読みます。
+   写真が何十枚もある回で、ページを開くたびに全部読み込むと重くなるためです */
+const CM_FIRST_PHOTOS = 4;
 
 /** 投稿できるか（参加した本人で、回が終わっているか）。サーバで判定します */
 async function canPostTo(eventId) {
@@ -215,7 +219,7 @@ async function renderEventCommunity(ev, box) {
   if (!box) return;
   let reviews, photos;
   try {
-    [reviews, photos] = await Promise.all([loadReviews(ev.id), loadPhotos(ev.id)]);
+    [reviews, photos] = await Promise.all([loadReviews(ev.id), loadPhotos(ev.id, CM_FIRST_PHOTOS + 1)]);
   } catch (err) {
     console.info('community not shown:', err.message);   /* 19 の SQL がまだのとき */
     box.hidden = true;
@@ -223,15 +227,21 @@ async function renderEventCommunity(ev, box) {
   }
   const [can, mine] = await Promise.all([canPostTo(ev.id), myPostIds(ev.id)]);
   const myReview = (mine.reviews || []).length > 0;
+  const morePhotos = photos.length > CM_FIRST_PHOTOS;
+  photos = photos.slice(0, CM_FIRST_PHOTOS);
+
+  /* 一行の案内。参加していない人には何も出しません（読むだけの人に「書けません」は要らないため） */
+  const lead = can ? t('cm.leadCan') : (isSignedIn() ? '' : t('cm.leadSignIn'));
 
   box.innerHTML = `
       <div class="cm-head">
         <h2>${esc(t('cm.title'))}</h2>
-        <p>${esc(t(can ? 'cm.leadCan' : (isSignedIn() ? 'cm.leadNotAttended' : 'cm.leadSignIn')))}
-          ${!isSignedIn() ? `<button type="button" class="linkish" data-member>${esc(t('account.signin'))}</button>` : ''}</p>
+        ${lead ? `<p>${esc(lead)}
+          ${!isSignedIn() ? `<button type="button" class="linkish" data-member>${esc(t('account.signin'))}</button>` : ''}</p>` : ''}
       </div>
 
-      ${photos.length ? `<div class="cm-photos">${photos.map((p, i) => photoHTML(p, ev, i)).join('')}</div>` : ''}
+      ${photos.length ? `<div class="cm-photos" id="cmPhotos">${photos.map((p, i) => photoHTML(p, ev, i)).join('')}</div>` : ''}
+      ${morePhotos ? `<button class="btn btn--line btn--sm cm-more" type="button" id="cmMore">${esc(t('cm.morePhotos'))}</button>` : ''}
 
       ${can && !myReview ? `
       <div class="cm-post">
@@ -249,6 +259,21 @@ async function renderEventCommunity(ev, box) {
   initMemberLinks();
 
   const again = () => renderEventCommunity(ev, box);
+
+  /* 残りの写真は、押されたときに初めて読みます */
+  const more = box.querySelector('#cmMore');
+  if (more) more.addEventListener('click', async () => {
+    more.disabled = true;
+    try {
+      const rest = await loadPhotos(ev.id, 0, CM_FIRST_PHOTOS);
+      const grid = box.querySelector('#cmPhotos');
+      grid.insertAdjacentHTML('beforeend', rest.map((p, i) => photoHTML(p, ev, CM_FIRST_PHOTOS + i)).join(''));
+      more.remove();
+    } catch (err) {
+      toast(t('cm.err.load'), true);
+      more.disabled = false;
+    }
+  });
 
   const form = box.querySelector('#cmReviewForm');
   if (form) form.addEventListener('submit', async e => {

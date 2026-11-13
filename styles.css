@@ -1284,6 +1284,9 @@ button.acct-ticket[disabled]{opacity:.5;cursor:default}
 .cm{padding:clamp(24px,4vw,48px) 0 clamp(56px,8vw,110px);border-top:1px solid var(--rule)}
 /* 終わった回のページでは、日時・会場の下（以前ボタンがあった場所）に入ります */
 .cm--inline{padding:0;border-top:0;margin-top:30px}
+.cm-more{margin:-14px 0 26px}
+/* 終わった回は予約欄が無いので、本文を全幅で使います */
+.ev-body--solo{grid-template-columns:minmax(0,1fr)}
 .cm--inline .cm-head h2{font-size:1.2rem}
 .cm--inline .cm-photos{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));margin-top:16px}
 /* 終わった回の「About this event」は畳んでおきます */
