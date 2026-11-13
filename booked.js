@@ -7,6 +7,36 @@ const Q = new URLSearchParams(location.search);
 const MODE = Q.get('m') || 'manual';
 const TICKET_SECRET = Q.get('t') || '';
 
+/* 共有アイコン（矢印の付いた箱）。ボタンの文字の前に置きます */
+const SHARE_ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' +
+  'style="margin-right:8px;vertical-align:-3px">' +
+  '<path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
+
+/* 予約したイベントを共有します。対応していれば端末の共有シートを、
+   できなければリンクをコピーして知らせます（ネイティブの共有シートが
+   無い環境向けの、いちばん確実な代わりです） */
+function wireShare(ev) {
+  const btn = $('#bookedShare');
+  if (!btn) return;
+  const url = absUrl(eventUrl(ev.id));
+  const title = ev.title;
+  const text = t('booked.shareText', { title });
+
+  btn.addEventListener('click', async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title, text, url }); return; }
+      catch (err) { if (err.name === 'AbortError') return; /* 本人が閉じただけ */ }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast(t('booked.shareCopied'));
+    } catch {
+      prompt(t('booked.shareCopyManual'), url);
+    }
+  });
+}
+
 function noBooking() {
   $('#bookedMain').innerHTML = `
     <div class="wrap" style="padding:90px 0 60px">
@@ -78,6 +108,13 @@ function render(rsvp, ev) {
           ${mapUrl ? `<a class="btn btn--line" href="${esc(mapUrl)}" target="_blank" rel="noopener">${esc(t('booked.maps'))}</a>` : ''}
         </div>
 
+        <h3 class="booked__sub">${esc(t('booked.shareTitle'))}</h3>
+        <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.shareBody'))}</p>
+        <div class="booked__actions">
+          <button class="btn btn--line" type="button" id="bookedShare">
+            ${SHARE_ICON}${esc(t('booked.shareBtn'))}</button>
+        </div>
+
         <div id="bookedProfile" hidden></div>
 
 
@@ -99,6 +136,7 @@ function render(rsvp, ev) {
 
   initShell();
   fillProfileNudge();
+  wireShare(ev);
 }
 
 /* 決済から戻ってきた場合。
@@ -169,6 +207,13 @@ async function renderPaid(sessionId) {
     <div class="booked__actions">
       <a class="btn btn--line" href="${esc(googleCalendarUrl(ev))}" target="_blank" rel="noopener">
         ${esc(t('booked.gcal'))}</a>
+    </div>
+
+    <h3 class="booked__sub">${esc(t('booked.shareTitle'))}</h3>
+    <p style="color:var(--muted);font-size:.92rem;margin-bottom:16px">${esc(t('booked.shareBody'))}</p>
+    <div class="booked__actions">
+      <button class="btn btn--line" type="button" id="bookedShare">
+        ${SHARE_ICON}${esc(t('booked.shareBtn'))}</button>
     </div>` : ''}
 
     <div id="bookedProfile" hidden></div>
@@ -179,6 +224,7 @@ async function renderPaid(sessionId) {
   </div></div></section>`;
   initShell();
   if (data.ticketSecret) fillProfileNudge();
+  if (ev) wireShare(ev);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -12,7 +12,7 @@
    そして下の POLICY_UPDATED を合わせて直してください。
    ========================================================= */
 
-const POLICY_UPDATED = '2026-11-14';
+const POLICY_UPDATED = '2026-11-15';
 
 document.addEventListener('DOMContentLoaded', () => {
   const y = $('#year'); if (y) y.textContent = new Date().getFullYear();
